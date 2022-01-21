@@ -1,0 +1,250 @@
+import os
+from pathlib import Path
+from string import Template
+import re
+from pprint import pprint
+import shutil
+from typing import Any, Dict, List, Union
+import tempfile
+from subprocess import run
+
+from .config import Config
+
+
+class _BuildBackend(object):
+
+    fileopt = {'encoding': 'utf-8'}
+
+    def get_requires_for_build_wheel(self, config_settings=None):
+        """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
+        return [
+            'distlib',  # for building wheels and writing metadata
+            'flit',  # for reading pyproject.toml[project]
+        ]
+
+    def get_requires_for_build_sdist(self, config_settings=None):
+        """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist"""
+        return []
+
+    def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
+        if 'text' in license:
+            with open(distinfo_dir / 'LICENSE', 'w', encoding='utf-8') as f:
+                f.write(license['text'])
+        elif 'file' in license:
+            shutil.copy2(srcdir / license['file'], distinfo_dir)
+
+    def build_wheel(self,
+                    wheel_directory,
+                    config_settings=None,
+                    metadata_directory=None):
+        """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
+        assert metadata_directory is None
+        print("config_settings:")
+        pprint(config_settings)
+
+        with tempfile.TemporaryDirectory() as tmp_build_dir:
+            whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir)
+        return whl_name
+
+    def build_wheel_in_dir(self,
+                           wheel_directory,
+                           tmp_build_dir,
+                           editable=False):
+        wheel_directory = Path(wheel_directory)
+        tmp_build_dir = Path(tmp_build_dir)
+        src_dir = Path().absolute()
+
+        # Load metadata
+        from .config import read_metadata
+        from flit_core.common import Module, make_metadata
+        cfg = read_metadata(src_dir / 'pyproject.toml')
+        norm_name = self.normalize_name_wheel(cfg.metadata['name'])
+        pkg = Module(norm_name, src_dir)
+        metadata = make_metadata(pkg, cfg)
+
+        # Copy the module source files to the temporary folder
+        if not editable:
+            self.copy_pkg_source_to(tmp_build_dir, src_dir, pkg)
+        else:
+            self.write_pth(tmp_build_dir, norm_name, pkg)
+
+        # Create dist-info folder
+        distinfo = tmp_build_dir / '.dist-info'
+        os.makedirs(distinfo, exist_ok=True)
+
+        # Write metadata
+        metadata_path = distinfo / 'METADATA'
+        with open(metadata_path, 'w', **self.fileopt) as f:
+            metadata.write_metadata_file(f)
+
+        # Write or copy license
+        self.write_license_files(cfg.license, src_dir, distinfo)
+
+        # TODO: write entrypoints
+        self.write_entrypoints(cfg)
+
+        # Generate .pyi stubs
+        if cfg.stubgen is not None:
+            self.generate_stubs(tmp_build_dir, pkg, cfg.stubgen)
+
+        # Configure, build and install the CMake project
+        self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake)
+
+        # Create wheel
+        whl_name = self.create_wheel(wheel_directory, tmp_build_dir, norm_name,
+                                     metadata)
+        return whl_name
+
+    def write_pth(self, tmp_build_dir, norm_name, pkg):
+        abs_pkg_prefix = tmp_build_dir / pkg.prefix
+        os.makedirs(abs_pkg_prefix, exist_ok=True)
+        pth_path = abs_pkg_prefix / (norm_name + '.pth')
+        with open(pth_path, 'w', **self.fileopt) as f:
+            f.write(str(pkg.source_dir.resolve()))
+
+    def copy_pkg_source_to(self, tmp_build_dir, srcdir, pkg):
+        for mod_file in pkg.iter_files():
+            rel_path = os.path.relpath(mod_file, srcdir)
+            dst = tmp_build_dir / rel_path
+            os.makedirs(dst.parent, exist_ok=True)
+            shutil.copy2(mod_file, dst, follow_symlinks=False)
+
+    def generate_stubs(self, tmp_build_dir, pkg, cfg: Dict[str, Any]):
+        """Generate stubs (.pyi) using mypy stubgen."""
+        args = ['stubgen'] + cfg.get('args', [])
+        cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
+        for p in cfg['packages']:
+            args += ['-p', p]
+        cfg.setdefault('modules', [pkg.name] if not pkg.is_package else [])
+        for m in cfg['modules']:
+            args += ['-m', m]
+        args += cfg.get('files', [])
+        # Add output folder argument if not already specified in cfg['args']
+        if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
+            args += ['-o', tmp_build_dir]
+        # Call mypy stubgen in a subprocess
+        run(args, cwd=tmp_build_dir, check=True)
+        # Clean up
+        cache_dir = tmp_build_dir / '.mypy_cache'
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
+
+    def run_cmake(self, pkgdir, tmp_build_dir, metadata, cmake_cfg):
+        """Configure, build and install using CMake."""
+        # Source and build folders
+        srcdir = Path(cmake_cfg.get('source_path', pkgdir))
+        builddir = pkgdir / '.py-build-cmake_cache'
+        builddir = Path(cmake_cfg.get('build_path', builddir))
+        # Environment variables
+        cmake_env = os.environ.copy()
+        if (f := 'env') in cmake_cfg:
+            for k, v in cmake_cfg[f].items():
+                cmake_env[k] = Template(v).substitute(cmake_env)
+
+        # Configure
+        configure_cmd = [
+            'cmake', '-B', builddir, '-S', srcdir, '-D',
+            'VERIFY_VERSION=' + metadata.version
+            # , '-D', 'PYTHON_EXECUTABLE:FILEPATH=' + sys.executable
+        ]
+        configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
+        for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
+            configure_cmd += ['-D', k + '=' + v]
+        if (f := 'build_type') in cmake_cfg:  # -D CMAKE_BUILD_TYPE={type}
+            configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + cmake_cfg[f]]
+            cmake_cfg.setdefault('config', cmake_cfg[f])
+        if (f := 'generator') in cmake_cfg:  # -G {generator}
+            configure_cmd += ['-G', cmake_cfg[f]]
+        run(configure_cmd, check=True, env=cmake_env)
+
+        # Build
+        build_cmd = ['cmake', '--build', builddir]
+        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
+        if (f := 'config') in cmake_cfg:  # --config {config}
+            build_cmd += ['--config', cmake_cfg[f]]
+        if (f := 'build_tool_args') in cmake_cfg:
+            build_cmd += ['--'] + cmake_cfg[f]
+        run(build_cmd, check=True, env=cmake_env)
+
+        # Install
+        for component in self.get_install_components(cmake_cfg):
+            install_cmd = [
+                'cmake', '--install', builddir, '--prefix', tmp_build_dir
+            ]
+            install_cmd += cmake_cfg.get('install_args', [])
+            if (f := 'config') in cmake_cfg:  # --config {config}
+                install_cmd += ['--config', cmake_cfg[f]]
+            if component is not None:
+                install_cmd += ['--component', component]
+            print('Installing component', component or 'all')
+            run(install_cmd, check=True, env=cmake_env)
+
+    def get_install_components(
+            self, cmake_cfg: Dict[str, Any]) -> List[Union[str, None]]:
+        """Get the components to install from the configuration file.
+        Configuration ``None`` refers to a normal install without specifying 
+        CMake's ``--component`` argument."""
+        if (f := 'install_extra_components') in cmake_cfg:
+            components = [None] + cmake_cfg[f]
+        elif (f := 'install_components') in cmake_cfg:
+            components = cmake_cfg[f]
+        else:
+            components = [None]
+        return components
+
+    def write_entrypoints(self, cfg: Config):
+        if cfg.entrypoints:
+            print(cfg.entrypoints)
+            raise RuntimeWarning("Entrypoints are not currently supported")
+
+    def create_wheel(self, wheel_directory, tmp_build_dir, norm_name,
+                     metadata):
+        from distlib.wheel import Wheel
+        from distlib.version import NormalizedVersion
+        whl = Wheel()
+        whl.name = norm_name
+        whl.version = str(NormalizedVersion(metadata.version))
+        paths = {'prefix': str(tmp_build_dir), 'platlib': str(tmp_build_dir)}
+        whl.dirname = wheel_directory
+        wheel_path = whl.build(paths, wheel_version=(1, 0))
+        print(wheel_path)
+        whl_name = os.path.relpath(wheel_path, wheel_directory)
+        return whl_name
+
+    def normalize_name_wheel(self, name):
+        """https://www.python.org/dev/peps/pep-0427/#escaping-and-unicode"""
+        return re.sub("[^\w\d.]+", "_", name, re.UNICODE)
+
+    def build_sdist(self, sdist_directory, config_settings=None):
+        """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
+        print("config_settings:")
+        pprint(config_settings)
+        raise NotImplementedError("build_sdist")
+
+    def iter_files(self, stagedir):
+        """Iterate over the files contained in the given folder.
+
+        Yields absolute paths - caller may want to make them relative.
+        Excludes any __pycache__ and *.pyc files."""
+
+        # https://github.com/pypa/flit/blob/a4524758604107bde8c77b5816612edb76a604aa/flit_core/flit_core/common.py#L73
+
+        def _include(path):
+            name = os.path.basename(path)
+            return name != '__pycache__' and not name.endswith('.pyc')
+
+        # Ensure we sort all files and directories so the order is stable
+        for dirpath, dirs, files in os.walk(str(stagedir)):
+            for file in sorted(files):
+                full_path = os.path.join(dirpath, file)
+                if _include(full_path):
+                    yield full_path
+
+            dirs[:] = [d for d in sorted(dirs) if _include(d)]
+
+
+_BACKEND = _BuildBackend()
+get_requires_for_build_wheel = _BACKEND.get_requires_for_build_wheel
+get_requires_for_build_sdist = _BACKEND.get_requires_for_build_sdist
+build_wheel = _BACKEND.build_wheel
+build_sdist = _BACKEND.build_sdist
