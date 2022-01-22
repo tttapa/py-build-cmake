@@ -1,6 +1,6 @@
 [build-system]
 requires = ["pybind11", "pybind11_stubgen", "mypy"]
-build-backend = "py_build_cmake.py_build_cmake"
+build-backend = "py_build_cmake.build"
 backend-path = ["."]
 
 [project]
@@ -51,3 +51,7 @@ install_components = ["python_modules"]
 # modules = ["add_module"]
 # files = []
 args = ["-v"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["test"]
