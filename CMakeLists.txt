@@ -13,7 +13,8 @@ endif()
 
 # Find the Pybind11 headers
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-if (NOT PY_BUILD_CMAKE_PYBIND11_INCLUDE)
+if (NOT PY_BUILD_CMAKE_PYBIND11_INCLUDE
+    OR NOT EXISTS ${PY_BUILD_CMAKE_PYBIND11_INCLUDE})
     execute_process(COMMAND ${Python3_EXECUTABLE}
             -c "import pybind11; print(pybind11.get_include())"
         OUTPUT_VARIABLE PY_BUILD_CMAKE_PYBIND11_INCLUDE
@@ -24,7 +25,7 @@ if (NOT PY_BUILD_CMAKE_PYBIND11_INCLUDE)
     endif()
     message(STATUS "Found pybind11: ${PY_BUILD_CMAKE_PYBIND11_INCLUDE}")
     set(PY_BUILD_CMAKE_PYBIND11_INCLUDE ${PY_BUILD_CMAKE_PYBIND11_INCLUDE}
-        CACHE PATH "Path to the Pybind11 headers.")
+        CACHE PATH "Path to the Pybind11 headers." FORCE)
 endif()
 # Add a Pybind11 target
 add_library(pybind11::pybind11 INTERFACE IMPORTED)

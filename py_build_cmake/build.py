@@ -1,3 +1,4 @@
+import sys
 import os
 from pathlib import Path
 from string import Template
@@ -196,7 +197,7 @@ class _BuildBackend(object):
             'cmake', '-B',
             str(builddir), '-S',
             str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version
-            # , '-D', 'PYTHON_EXECUTABLE:FILEPATH=' + sys.executable
+            ,'-D', 'Python3_ROOT_DIR:PATH=' + sys.prefix,
         ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
