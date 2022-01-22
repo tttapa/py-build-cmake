@@ -182,9 +182,9 @@ class _BuildBackend(object):
     def run_cmake(self, pkgdir, tmp_build_dir, metadata, cmake_cfg):
         """Configure, build and install using CMake."""
         # Source and build folders
-        srcdir = Path(cmake_cfg.get('source_path', pkgdir))
+        srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
         builddir = pkgdir / '.py-build-cmake_cache'
-        builddir = Path(cmake_cfg.get('build_path', builddir))
+        builddir = Path(cmake_cfg.get('build_path', builddir)).resolve()
         # Environment variables
         cmake_env = os.environ.copy()
         if (f := 'env') in cmake_cfg:
@@ -193,8 +193,9 @@ class _BuildBackend(object):
 
         # Configure
         configure_cmd = [
-            'cmake', '-B', builddir, '-S', srcdir, '-D',
-            'VERIFY_VERSION=' + metadata.version
+            'cmake', '-B',
+            str(builddir), '-S',
+            str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version
             # , '-D', 'PYTHON_EXECUTABLE:FILEPATH=' + sys.executable
         ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
@@ -208,7 +209,7 @@ class _BuildBackend(object):
         run(configure_cmd, check=True, env=cmake_env)
 
         # Build
-        build_cmd = ['cmake', '--build', builddir]
+        build_cmd = ['cmake', '--build', str(builddir)]
         build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
         if (f := 'config') in cmake_cfg:  # --config {config}
             build_cmd += ['--config', cmake_cfg[f]]
@@ -219,7 +220,9 @@ class _BuildBackend(object):
         # Install
         for component in self.get_install_components(cmake_cfg):
             install_cmd = [
-                'cmake', '--install', builddir, '--prefix', tmp_build_dir
+                'cmake', '--install',
+                str(builddir), '--prefix',
+                str(tmp_build_dir)
             ]
             install_cmd += cmake_cfg.get('install_args', [])
             if (f := 'config') in cmake_cfg:  # --config {config}
