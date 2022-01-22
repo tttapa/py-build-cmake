@@ -48,6 +48,6 @@ env = { "SOME_VAR" = "$HOME/somefile" }
 
 [tool.py-build-cmake.stubgen]
 # packages = ["py_build_cmake"]
-# modules = []
+# modules = ["add_module"]
 # files = []
 args = ["-v"]

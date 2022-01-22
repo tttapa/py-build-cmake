@@ -4,6 +4,7 @@ from string import Template
 import re
 from pprint import pprint
 import shutil
+import textwrap
 from typing import Any, Dict, List, Union
 import tempfile
 from subprocess import run
@@ -20,6 +21,12 @@ class _BuildBackend(object):
         return [
             'distlib',  # for building wheels and writing metadata
             'flit',  # for reading pyproject.toml[project]
+        ]
+
+    def get_requires_for_build_editable(self, config_settings=None):
+        """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
+        return self.get_requires_for_build_wheel(config_settings) + [
+            'editables'
         ]
 
     def get_requires_for_build_sdist(self, config_settings=None):
@@ -46,6 +53,21 @@ class _BuildBackend(object):
             whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir)
         return whl_name
 
+    def build_editable(self,
+                       wheel_directory,
+                       config_settings=None,
+                       metadata_directory=None):
+        """https://www.python.org/dev/peps/pep-0660/#build-editable"""
+        assert metadata_directory is None
+        print("config_settings:")
+        pprint(config_settings)
+
+        with tempfile.TemporaryDirectory() as tmp_build_dir:
+            whl_name = self.build_wheel_in_dir(wheel_directory,
+                                               tmp_build_dir,
+                                               editable=True)
+        return whl_name
+
     def build_wheel_in_dir(self,
                            wheel_directory,
                            tmp_build_dir,
@@ -66,7 +88,7 @@ class _BuildBackend(object):
         if not editable:
             self.copy_pkg_source_to(tmp_build_dir, src_dir, pkg)
         else:
-            self.write_pth(tmp_build_dir, norm_name, pkg)
+            self.write_editable_wrapper(tmp_build_dir, src_dir, pkg)
 
         # Create dist-info folder
         distinfo = tmp_build_dir / '.dist-info'
@@ -84,7 +106,7 @@ class _BuildBackend(object):
         self.write_entrypoints(cfg)
 
         # Generate .pyi stubs
-        if cfg.stubgen is not None:
+        if cfg.stubgen is not None and not editable:
             self.generate_stubs(tmp_build_dir, pkg, cfg.stubgen)
 
         # Configure, build and install the CMake project
@@ -95,16 +117,43 @@ class _BuildBackend(object):
                                      metadata)
         return whl_name
 
-    def write_pth(self, tmp_build_dir, norm_name, pkg):
-        abs_pkg_prefix = tmp_build_dir / pkg.prefix
-        os.makedirs(abs_pkg_prefix, exist_ok=True)
-        pth_path = abs_pkg_prefix / (norm_name + '.pth')
-        with open(pth_path, 'w', **self.fileopt) as f:
-            f.write(str(pkg.source_dir.resolve()))
+    def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
+        # Write a fake __init__.py file that points to the development folder
+        src_pkg = pkg.path
+        tmp_pkg = tmp_build_dir / pkg.prefix / pkg.name
+        os.makedirs(tmp_pkg, exist_ok=True)
+        special_dunders = [
+            '__builtins__', '__cached__', '__file__', '__loader__', '__name__',
+            '__package__', '__path__', '__spec__'
+        ]
+        content = f"""\
+            # First extend the search path with the development folder
+            __spec__.submodule_search_locations.insert(0, "{src_pkg}")
+            # Now manually import the development __init__.py
+            from importlib import util as _util
+            _spec = _util.spec_from_file_location("py_build_cmake",
+                                                  "{src_pkg}/__init__.py")
+            _mod = _util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            # After importing, add its symbols to our global scope
+            _vars = _mod.__dict__.copy()
+            for _k in ['{"','".join(special_dunders)}']: _vars.pop(_k)
+            globals().update(_vars)
+            del _k
+            del _spec
+            del _mod
+            del _vars
+            del _util
+            """
+        (tmp_pkg / '__init__.py').write_text(textwrap.dedent(content),
+                                             **self.fileopt)
+        py_typed: Path = src_pkg / 'py.typed'
+        if py_typed.exists():
+            shutil.copy2(py_typed, tmp_pkg)
 
-    def copy_pkg_source_to(self, tmp_build_dir, srcdir, pkg):
+    def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
         for mod_file in pkg.iter_files():
-            rel_path = os.path.relpath(mod_file, srcdir)
+            rel_path = os.path.relpath(mod_file, src_dir)
             dst = tmp_build_dir / rel_path
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy2(mod_file, dst, follow_symlinks=False)
@@ -246,5 +295,7 @@ class _BuildBackend(object):
 _BACKEND = _BuildBackend()
 get_requires_for_build_wheel = _BACKEND.get_requires_for_build_wheel
 get_requires_for_build_sdist = _BACKEND.get_requires_for_build_sdist
+get_requires_for_build_editable = _BACKEND.get_requires_for_build_editable
 build_wheel = _BACKEND.build_wheel
 build_sdist = _BACKEND.build_sdist
+build_editable = _BACKEND.build_editable
