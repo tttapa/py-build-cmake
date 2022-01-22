@@ -31,7 +31,7 @@ dynamic = ["version", "description"]
 [tool.py-build-cmake.cmake]
 build_type = "Release"
 # config = "Release"
-generator = "Ninja Multi-Config"
+# generator = "Ninja Multi-Config"
 source_path = "."
 # build_path = ".build"
 options = { "WITH_PY_STUBS:BOOL" = "On" }
@@ -41,7 +41,7 @@ build_tool_args = []
 install_args = []
 install_components = ["python_modules"]
 # install_extra_components = ["python_modules"]
-env = { "SOME_VAR" = "$HOME/somefile" }
+# env = { "SOME_VAR" = "$HOME/somefile" }
 
 # [project.scripts]
 # test_script = "py_build_cmake.test_script:main"
