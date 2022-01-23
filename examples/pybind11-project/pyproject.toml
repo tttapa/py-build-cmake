@@ -1,0 +1,58 @@
+[build-system]
+requires = ["pybind11", "pybind11-stubgen", "mypy"]
+build-backend = "py_build_cmake.build"
+
+[project]
+name = "pybind11-project"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { "file" = "LICENSE" }
+authors = [{ "name" = "Pieter P", "email" = "pieter.p@no-email.com" }]
+keywords = ["addition", "subtraction", "pybind11"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+]
+urls = { "Documentation" = "https://tttapa.github.io/" }
+dependencies = []
+dynamic = ["version", "description"]
+
+[tool.py-build-cmake.sdist]
+include = [
+    "CMakeLists.txt",
+    "cmake/*.cmake",
+    "src/*.cpp",
+    "src/*.hpp",
+]
+exclude = []
+
+[tool.py-build-cmake.cmake]
+build_type = "Release"
+# config = "Release"
+# generator = "Ninja Multi-Config"
+source_path = "."
+# build_path = ".build"
+options = { "WITH_PY_STUBS:BOOL" = "On" }
+args = ["-Wdev"]
+build_args = ["-j"]
+build_tool_args = []
+install_args = []
+install_components = ["python_modules"]
+# install_extra_components = ["python_modules"]
+# env = { "SOME_VAR" = "$HOME/somefile" }
+
+[tool.py-build-cmake.stubgen]
+# packages = ["py_build_cmake"]
+# modules = ["add_module"]
+# files = []
+args = ["-v"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["test"]

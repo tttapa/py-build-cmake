@@ -106,11 +106,12 @@ class _BuildBackend(object):
             self.generate_stubs(tmp_build_dir, pkg, cfg.stubgen)
 
         # Configure, build and install the CMake project
-        self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake)
+        if cfg.cmake is not None:
+            self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake)
 
         # Create wheel
-        whl_name = self.create_wheel(wheel_directory, tmp_build_dir, norm_name,
-                                     metadata.version)
+        whl_name = self.create_wheel(wheel_directory, tmp_build_dir, cfg,
+                                     norm_name, metadata.version)
         return whl_name
 
     def normalize_version(self, version):
@@ -251,13 +252,14 @@ class _BuildBackend(object):
             print(cfg.entrypoints)
             raise RuntimeWarning("Entrypoints are not currently supported")
 
-    def create_wheel(self, wheel_directory, tmp_build_dir, norm_name,
+    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, norm_name,
                      norm_version):
         from distlib.wheel import Wheel
         whl = Wheel()
         whl.name = norm_name
         whl.version = norm_version
-        paths = {'prefix': str(tmp_build_dir), 'platlib': str(tmp_build_dir)}
+        libdir = 'platlib' if cfg.cmake is not None else 'purelib'
+        paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
         wheel_path = whl.build(paths, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)

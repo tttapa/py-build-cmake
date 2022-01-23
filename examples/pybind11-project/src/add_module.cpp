@@ -1,3 +1,8 @@
+/**
+ * @file    Example C++ extension for Python using Pybind11 that adds two
+ *          integers.
+ */
+
 #include <pybind11/pybind11.h>
 using pybind11::operator""_a;
 

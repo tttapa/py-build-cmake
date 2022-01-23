@@ -13,7 +13,7 @@ class Config:
     referenced_files: List[str] = field(default_factory=list)
     sdist: Dict[str, List[str]] = field(default_factory=dict)
     license: Dict[str, str] = field(default_factory=dict)
-    cmake: Dict[str, Any] = field(default_factory=dict)
+    cmake: Optional[Dict[str, Any]] = field(default=None)
     stubgen: Optional[Dict[str, Any]] = field(default=None)
 
 
@@ -69,6 +69,7 @@ def read_metadata(path) -> Config:
         }
         check_unknown_sections(f'{tool_prefix}.{s}', dtool[s], known_keys)
         cfg.cmake = dtool[s]
+        assert cfg.cmake is not None
 
         if (f := 'build_type') in cfg.cmake:
             _check_type(cfg.cmake, f, str)
