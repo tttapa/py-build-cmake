@@ -18,7 +18,6 @@ backend for building Python packages with extensions built using CMake.
 ## Planned features
 
  - Entry point support
- - `sdist` support
  - Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))
  - Doxygen and Sphinx support
  - Windows support

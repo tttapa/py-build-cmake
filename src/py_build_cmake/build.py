@@ -26,13 +26,11 @@ class _BuildBackend(object):
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
-        return self.get_requires_for_build_wheel(config_settings) + [
-            'editables'
-        ]
+        return self.get_requires_for_build_wheel(config_settings)
 
     def get_requires_for_build_sdist(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist"""
-        return []
+        return self.get_requires_for_build_wheel(config_settings)
 
     def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
         if 'text' in license:
@@ -47,8 +45,6 @@ class _BuildBackend(object):
                     metadata_directory=None):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
         assert metadata_directory is None
-        print("config_settings:")
-        pprint(config_settings)
 
         with tempfile.TemporaryDirectory() as tmp_build_dir:
             whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir)
@@ -60,8 +56,6 @@ class _BuildBackend(object):
                        metadata_directory=None):
         """https://www.python.org/dev/peps/pep-0660/#build-editable"""
         assert metadata_directory is None
-        print("config_settings:")
-        pprint(config_settings)
 
         with tempfile.TemporaryDirectory() as tmp_build_dir:
             whl_name = self.build_wheel_in_dir(wheel_directory,
@@ -75,17 +69,16 @@ class _BuildBackend(object):
                            editable=False):
         wheel_directory = Path(wheel_directory)
         tmp_build_dir = Path(tmp_build_dir)
-        src_dir = Path().absolute()
+        src_dir = Path().resolve()
 
         # Load metadata
         from .config import read_metadata
-        from distlib.version import NormalizedVersion
         from flit_core.common import Module, make_metadata
         cfg = read_metadata(src_dir / 'pyproject.toml')
         norm_name = self.normalize_name_wheel(cfg.metadata['name'])
         pkg = Module(norm_name, src_dir)
         metadata = make_metadata(pkg, cfg)
-        norm_version = str(NormalizedVersion(metadata.version))
+        metadata.version = self.normalize_version(metadata.version)
 
         # Copy the module source files to the temporary folder
         if not editable:
@@ -94,7 +87,7 @@ class _BuildBackend(object):
             self.write_editable_wrapper(tmp_build_dir, src_dir, pkg)
 
         # Create dist-info folder
-        distinfo = tmp_build_dir / f'{norm_name}-{norm_version}.dist-info'
+        distinfo = tmp_build_dir / f'{norm_name}-{metadata.version}.dist-info'
         os.makedirs(distinfo, exist_ok=True)
 
         # Write metadata
@@ -117,8 +110,13 @@ class _BuildBackend(object):
 
         # Create wheel
         whl_name = self.create_wheel(wheel_directory, tmp_build_dir, norm_name,
-                                     norm_version)
+                                     metadata.version)
         return whl_name
+
+    def normalize_version(self, version):
+        from distlib.version import NormalizedVersion
+        norm_version = str(NormalizedVersion(version))
+        return norm_version
 
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
         # Write a fake __init__.py file that points to the development folder
@@ -198,8 +196,8 @@ class _BuildBackend(object):
         configure_cmd = [
             'cmake', '-B',
             str(builddir), '-S',
-            str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version
-            ,'-D', 'Python3_ROOT_DIR:PATH=' + sys.prefix,
+            str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version, '-D',
+            'Python3_ROOT_DIR:PATH=' + sys.prefix
         ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
@@ -262,7 +260,6 @@ class _BuildBackend(object):
         paths = {'prefix': str(tmp_build_dir), 'platlib': str(tmp_build_dir)}
         whl.dirname = wheel_directory
         wheel_path = whl.build(paths, wheel_version=(1, 0))
-        print(wheel_path)
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name
 
@@ -272,9 +269,29 @@ class _BuildBackend(object):
 
     def build_sdist(self, sdist_directory, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
-        print("config_settings:")
-        pprint(config_settings)
-        raise NotImplementedError("build_sdist")
+        sdist_directory = Path(sdist_directory)
+        src_dir = Path().resolve()
+
+        # Load metadata
+        from .config import read_metadata
+        from flit_core.common import Module, make_metadata
+        pyproject = src_dir / 'pyproject.toml'
+        cfg = read_metadata(pyproject)
+        norm_name = self.normalize_name_wheel(cfg.metadata['name'])
+        pkg = Module(norm_name, src_dir)
+        metadata = make_metadata(pkg, cfg)
+        metadata.version = self.normalize_version(metadata.version)
+
+        # Export dist
+        from flit_core.sdist import SdistBuilder
+        rel_pyproject = os.path.relpath(pyproject, src_dir)
+        extra_files = [str(rel_pyproject)] + cfg.referenced_files
+        sdist_builder = SdistBuilder(pkg, metadata, src_dir, None,
+                                     cfg.entrypoints, extra_files,
+                                     cfg.sdist.get('include_patterns', []),
+                                     cfg.sdist.get('exclude_patterns', []))
+        sdist_tar = sdist_builder.build(Path(sdist_directory))
+        return os.path.relpath(sdist_tar, sdist_directory)
 
     def iter_files(self, stagedir):
         """Iterate over the files contained in the given folder.

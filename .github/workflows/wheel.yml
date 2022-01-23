@@ -36,7 +36,7 @@ jobs:
     - name: Build
       run: |
         . /tmp/py-venv/bin/activate
-        python -m build . --wheel
+        python -m build .
         LD_LIBRARY_PATH=$VIRTUAL_ENV/lib \
           auditwheel repair --plat manylinux_2_27_x86_64 \
           dist/py_build_cmake-*.whl
@@ -50,11 +50,11 @@ jobs:
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: wheelhouse/py_build_cmake-*manylinux*.whl
-    # - name: Upload source
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: py_build_cmake-src-${{ matrix.python-version }}
-    #     path: dist/py_build_cmake-*.tar.gz
+    - name: Upload source
+      uses: actions/upload-artifact@v2
+      with:
+        name: py_build_cmake-src-${{ matrix.python-version }}
+        path: dist/py-build-cmake-*.tar.gz
 
   test:
     needs: build

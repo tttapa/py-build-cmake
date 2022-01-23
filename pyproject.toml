@@ -24,9 +24,13 @@ urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = ["distlib", "flit"]
 dynamic = ["version", "description"]
 
-# [tool.py-build-cmake.sdist]
-# include = []
-# exclude = ["test"]
+[tool.py-build-cmake.sdist]
+include = [
+    "CMakeLists.txt",
+    "src/*.cpp",
+    "src/*.hpp",
+]
+exclude = []
 
 [tool.py-build-cmake.cmake]
 build_type = "Release"
