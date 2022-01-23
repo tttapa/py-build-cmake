@@ -1,7 +1,7 @@
 [build-system]
 requires = ["pybind11", "pybind11_stubgen", "mypy"]
 build-backend = "py_build_cmake.build"
-backend-path = ["."]
+backend-path = ["src"]
 
 [project]
 name = "py-build-cmake"

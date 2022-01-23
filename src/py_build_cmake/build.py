@@ -157,7 +157,7 @@ class _BuildBackend(object):
 
     def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
         for mod_file in pkg.iter_files():
-            rel_path = os.path.relpath(mod_file, src_dir)
+            rel_path = os.path.relpath(mod_file, pkg.path.parent)
             dst = tmp_build_dir / rel_path
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy2(mod_file, dst, follow_symlinks=False)
@@ -176,7 +176,7 @@ class _BuildBackend(object):
         if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
             args += ['-o', tmp_build_dir]
         # Call mypy stubgen in a subprocess
-        run(args, cwd=tmp_build_dir, check=True)
+        run(args, cwd=pkg.path.parent, check=True)
         # Clean up
         cache_dir = tmp_build_dir / '.mypy_cache'
         if cache_dir.exists():
