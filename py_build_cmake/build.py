@@ -79,11 +79,13 @@ class _BuildBackend(object):
 
         # Load metadata
         from .config import read_metadata
+        from distlib.version import NormalizedVersion
         from flit_core.common import Module, make_metadata
         cfg = read_metadata(src_dir / 'pyproject.toml')
         norm_name = self.normalize_name_wheel(cfg.metadata['name'])
         pkg = Module(norm_name, src_dir)
         metadata = make_metadata(pkg, cfg)
+        norm_version = str(NormalizedVersion(metadata.version))
 
         # Copy the module source files to the temporary folder
         if not editable:
@@ -92,7 +94,7 @@ class _BuildBackend(object):
             self.write_editable_wrapper(tmp_build_dir, src_dir, pkg)
 
         # Create dist-info folder
-        distinfo = tmp_build_dir / '.dist-info'
+        distinfo = tmp_build_dir / f'{norm_name}-{norm_version}.dist-info'
         os.makedirs(distinfo, exist_ok=True)
 
         # Write metadata
@@ -115,7 +117,7 @@ class _BuildBackend(object):
 
         # Create wheel
         whl_name = self.create_wheel(wheel_directory, tmp_build_dir, norm_name,
-                                     metadata)
+                                     norm_version)
         return whl_name
 
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
@@ -252,12 +254,11 @@ class _BuildBackend(object):
             raise RuntimeWarning("Entrypoints are not currently supported")
 
     def create_wheel(self, wheel_directory, tmp_build_dir, norm_name,
-                     metadata):
+                     norm_version):
         from distlib.wheel import Wheel
-        from distlib.version import NormalizedVersion
         whl = Wheel()
         whl.name = norm_name
-        whl.version = str(NormalizedVersion(metadata.version))
+        whl.version = norm_version
         paths = {'prefix': str(tmp_build_dir), 'platlib': str(tmp_build_dir)}
         whl.dirname = wheel_directory
         wheel_path = whl.build(paths, wheel_version=(1, 0))
