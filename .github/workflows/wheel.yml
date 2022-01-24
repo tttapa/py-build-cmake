@@ -69,12 +69,12 @@ jobs:
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: wheelhouse
-    - name: Install py_build_cmake
+    - name: Run Nox
       run: |
-        python -m pip install --find-links=wheelhouse py_build_cmake
-        python -m pip install pytest
-    - name: Run tests
-      run: python -m pytest
+        python -m pip install nox
+        python -m nox
+      env:
+        PY_BUILD_CMAKE_WHEEL_DIR: wheelhouse
 
   # release:
   #   if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}

@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from string import Template
 import re
-from pprint import pprint
 import shutil
 import textwrap
 from typing import Any, Dict, List, Union
@@ -148,8 +147,8 @@ class _BuildBackend(object):
             """
         (tmp_pkg / '__init__.py').write_text(textwrap.dedent(content),
                                              **self.fileopt)
-        # Add the py.typed file if it exists, so mypy picks up the stubs for the
-        # C++ extensions
+        # Add the py.typed file if it exists, so mypy picks up the stubs for
+        # the C++ extensions
         py_typed: Path = pkg.path / 'py.typed'
         if py_typed.exists():
             shutil.copy2(py_typed, tmp_pkg)

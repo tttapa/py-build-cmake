@@ -27,7 +27,3 @@ dynamic = ["version", "description"]
 [tool.py-build-cmake.sdist]
 include = []
 exclude = []
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-testpaths = ["test"]
