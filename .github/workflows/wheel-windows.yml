@@ -18,36 +18,25 @@ jobs:
       name: Install Python
       with: 
         python-version: ${{ matrix.python-version }}
-    - name: Cache Virtual Environment
-      id: cache-venv
-      uses: actions/cache@v2
-      with:
-        path: py-venv
-        key: ${{ runner.os }}-${{ matrix.python-version }}
-    - name: Install Python Dependencies 
-      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Build
       shell: powershell
       run: |
         python -m venv py-venv
         ./py-venv/Scripts/Activate.ps1
-        python -m pip install build cmake ninja
+        python -m pip install build
+        python -m build .
       env:
-        CXXFLAGS: "/bigobj"
-        CFLAGS: "/bigobj"
-    - name: Build
-      shell: powershell
-      run: |
-        ./py-venv/Scripts/Activate.ps1
-        python -m build . --wheel
-      env:
-        CXXFLAGS: "/bigobj"
-        CFLAGS: "/bigobj"
         PYTHONUTF8: 1
-    - name: Upload
+    - name: Upload Wheel
       uses: actions/upload-artifact@v2
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
-        path: dist/py_build_cmake-*win*.whl
+        path: dist/py_build_cmake-*.whl
+    - name: Upload source
+      uses: actions/upload-artifact@v2
+      with:
+        name: py_build_cmake-src-${{ matrix.python-version }}
+        path: dist/py-build-cmake-*.tar.gz
 
   test:
     needs: build

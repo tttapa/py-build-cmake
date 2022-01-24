@@ -15,41 +15,18 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
-    - name: Cache Virtual Environment
-      id: cache-venv
-      uses: actions/cache@v2
-      with:
-        path: "/tmp/py-venv"
-        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('scripts/ci/install-patchelf.sh') }}
-    - name: Install Python Virtual Environment 
-      if: steps.cache-venv.outputs.cache-hit != 'true'
+    - name: Build
+      shell: bash
       run: |
         python3 -m venv /tmp/py-venv
         . /tmp/py-venv/bin/activate
-        bash scripts/ci/install-patchelf.sh
-        python -m pip install build auditwheel cmake ninja
-      env:
-        CXXFLAGS: "-march=skylake -static-libstdc++ -static-libgcc"
-        LDFLAGS: "-static-libstdc++ -static-libgcc"
-        CFLAGS: "-march=skylake -static-libgcc"
-        FC: gfortran
-    - name: Build
-      run: |
-        . /tmp/py-venv/bin/activate
+        python -m pip install build
         python -m build .
-        LD_LIBRARY_PATH=$VIRTUAL_ENV/lib \
-          auditwheel repair --plat manylinux_2_27_x86_64 \
-          dist/py_build_cmake-*.whl
-      env:
-        CXXFLAGS: "-march=skylake -static-libstdc++ -static-libgcc"
-        LDFLAGS: "-static-libstdc++ -static-libgcc"
-        CFLAGS: "-march=skylake -static-libgcc"
-        FC: gfortran
     - name: Upload Wheel
       uses: actions/upload-artifact@v2
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
-        path: wheelhouse/py_build_cmake-*manylinux*.whl
+        path: dist/py_build_cmake-*.whl
     - name: Upload source
       uses: actions/upload-artifact@v2
       with:
@@ -68,13 +45,13 @@ jobs:
     - uses: actions/download-artifact@v2
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
-        path: wheelhouse
+        path: dist
     - name: Run Nox
       run: |
         python -m pip install nox
         python -m nox
       env:
-        PY_BUILD_CMAKE_WHEEL_DIR: wheelhouse
+        PY_BUILD_CMAKE_WHEEL_DIR: dist
 
   # release:
   #   if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
@@ -89,10 +66,10 @@ jobs:
   #   - uses: actions/download-artifact@v2
   #     with:
   #       name: py_build_cmake-whl-${{ matrix.python-version }}
-  #       path: wheelhouse
+  #       path: dist
     
   #   - name: 'Install py_build_cmake'
-  #     run: pip install --find-links=wheelhouse py_build_cmake
+  #     run: pip install --find-links=dist py_build_cmake
   #   - name: 'Check py_build_cmake version'
   #     run: |
   #       [ "${{ github.event.release.tag_name }}" == "$(python -c 'from importlib.metadata import version as v; print(v("py_build_cmake"))')" ]
@@ -100,7 +77,7 @@ jobs:
   #   - name: 'Install Twine'
   #     run: pip install twine
   #   - name: 'Upload Wheel to PyPi'
-  #     run: python -m twine upload wheelhouse/py_build_cmake-*.whl
+  #     run: python -m twine upload dist/py_build_cmake-*.whl
   #     env:
   #       TWINE_USERNAME: __token__
   #       TWINE_PASSWORD: ${{ secrets.PyPI }}
