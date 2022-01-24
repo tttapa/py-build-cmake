@@ -142,7 +142,7 @@ jobs:
         path: dist
     - name: Upload source to PyPI
       if: ${{ matrix.python-version == '3.10' }}
-      run: python -m twine upload dist/py_build_cmake-*.tar.gz
+      run: python -m twine upload dist/py-build-cmake-*.tar.gz
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PyPI }}
