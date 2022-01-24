@@ -10,7 +10,7 @@ def pybind11_project(session: nox.Session):
         session.install(".")
     session.chdir("examples/pybind11-project")
     session.install("build")
-    session.install("pybind11", "pybind11_stubgen", "mypy")
+    session.install("pybind11", "pybind11_stubgen", "mypy", "cmake", "ninja")
     session.run("python", "-m", "build", ".", "-n")
     session.install(".", "--no-build-isolation")
     session.install("pytest")
