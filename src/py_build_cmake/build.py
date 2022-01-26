@@ -197,7 +197,9 @@ class _BuildBackend(object):
             'cmake', '-B',
             str(builddir), '-S',
             str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version, '-D',
-            'Python3_ROOT_DIR:PATH=' + sys.prefix
+            'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
+            'Python3_FIND_REGISTRY=NEVER', '-D',
+            'Python3_FIND_STRATEGY=LOCATION'
         ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
