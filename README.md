@@ -1,5 +1,4 @@
 [![Python Wheel (Linux)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml/badge.svg)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml)
-[![Python Wheel (Windows)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel-windows.yml/badge.svg)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel-windows.yml)
 
 # py-build-cmake
 
