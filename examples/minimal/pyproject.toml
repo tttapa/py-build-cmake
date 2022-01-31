@@ -1,9 +1,9 @@
 [build-system]
-requires = ["pybind11", "pybind11-stubgen", "mypy"]
+requires = ["py-build-cmake", "mypy"]
 build-backend = "py_build_cmake.build"
 
 [project]
-name = "pybind11-project" # Name on PyPI
+name = "minimal"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { "file" = "LICENSE" }
@@ -24,36 +24,18 @@ dependencies = []
 dynamic = ["version", "description"]
 
 [tool.py-build-cmake.module]
-name = "pybind11_project" # Import name
-directory = "python-src"
+directory = "src-python"
 
 [tool.py-build-cmake.sdist]
-include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
-exclude = []
+include = ["CMakeLists.txt", "src/*"]
 
 [tool.py-build-cmake.cmake]
-build_type = "Release"
-# config = "Release"
-# generator = "Unix Makefiles"
-source_path = "." # Containing CMakeLists.txt
-# build_path = ".build"
-options = { "WITH_PY_STUBS:BOOL" = "On" }
-args = ["-Wdev"]
+build_type = "RelWithDebInfo"
+source_path = "src"
 build_args = ["-j"]
-build_tool_args = []
-install_args = ["--verbose"]
 install_components = ["python_modules"]
-env = {}
-
-[tool.py-build-cmake.cmake.linux] # Linux-specific options
-generator = "Ninja Multi-Config" # Overrides
-env = {"CMAKE_PREFIX_PATH" = "${HOME}/.local"} # Appends or updates
 
 [tool.py-build-cmake.stubgen]
-# packages = ["py_build_cmake"]
-# modules = ["add_module"]
-# files = []
-args = ["-v"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
