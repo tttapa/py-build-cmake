@@ -1,3 +1,4 @@
+from pprint import pprint
 import sys
 import os
 from pathlib import Path
@@ -7,7 +8,7 @@ import shutil
 import textwrap
 from typing import Any, Dict, List, Union
 import tempfile
-from subprocess import run
+from subprocess import run as sp_run
 
 from .config import Config
 
@@ -15,6 +16,7 @@ from .config import Config
 class _BuildBackend(object):
 
     fileopt = {'encoding': 'utf-8'}
+    verbose = False
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
@@ -30,13 +32,6 @@ class _BuildBackend(object):
     def get_requires_for_build_sdist(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist"""
         return self.get_requires_for_build_wheel(config_settings)
-
-    def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
-        if 'text' in license:
-            with open(distinfo_dir / 'LICENSE', 'w', encoding='utf-8') as f:
-                f.write(license['text'])
-        elif 'file' in license:
-            shutil.copy2(srcdir / license['file'], distinfo_dir)
 
     def build_wheel(self,
                     wheel_directory,
@@ -62,6 +57,32 @@ class _BuildBackend(object):
                                                editable=True)
         return whl_name
 
+    def build_sdist(self, sdist_directory, config_settings=None):
+        """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
+        sdist_directory = Path(sdist_directory)
+        src_dir = Path().resolve()
+
+        # Load metadata
+        from .config import read_metadata, normalize_name_wheel
+        from flit_core.common import Module, make_metadata
+        pyproject = src_dir / 'pyproject.toml'
+        cfg = read_metadata(pyproject)
+        norm_name = normalize_name_wheel(cfg.metadata['name'])
+        pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
+        metadata = make_metadata(pkg, cfg)
+        metadata.version = self.normalize_version(metadata.version)
+
+        # Export dist
+        from flit_core.sdist import SdistBuilder
+        rel_pyproject = os.path.relpath(pyproject, src_dir)
+        extra_files = [str(rel_pyproject)] + cfg.referenced_files
+        sdist_builder = SdistBuilder(pkg, metadata, src_dir, None,
+                                     cfg.entrypoints, extra_files,
+                                     cfg.sdist.get('include_patterns', []),
+                                     cfg.sdist.get('exclude_patterns', []))
+        sdist_tar = sdist_builder.build(Path(sdist_directory))
+        return os.path.relpath(sdist_tar, sdist_directory)
+
     def build_wheel_in_dir(self,
                            wheel_directory,
                            tmp_build_dir,
@@ -71,11 +92,11 @@ class _BuildBackend(object):
         src_dir = Path().resolve()
 
         # Load metadata
-        from .config import read_metadata
+        from .config import read_metadata, normalize_name_wheel
         from flit_core.common import Module, make_metadata
         cfg = read_metadata(src_dir / 'pyproject.toml')
-        norm_name = self.normalize_name_wheel(cfg.metadata['name'])
-        pkg = Module(norm_name, src_dir)
+        norm_name = normalize_name_wheel(cfg.metadata['name'])
+        pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
         metadata = make_metadata(pkg, cfg)
         metadata.version = self.normalize_version(metadata.version)
 
@@ -118,9 +139,16 @@ class _BuildBackend(object):
         norm_version = str(NormalizedVersion(version))
         return norm_version
 
+    def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
+        if 'text' in license:
+            with open(distinfo_dir / 'LICENSE', 'w', encoding='utf-8') as f:
+                f.write(license['text'])
+        elif 'file' in license:
+            shutil.copy2(srcdir / license['file'], distinfo_dir)
+
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
         # Write a fake __init__.py file that points to the development folder
-        tmp_pkg = tmp_build_dir / pkg.prefix / pkg.name
+        tmp_pkg = tmp_build_dir / pkg.name
         os.makedirs(tmp_pkg, exist_ok=True)
         special_dunders = [
             '__builtins__', '__cached__', '__file__', '__loader__', '__name__',
@@ -160,6 +188,13 @@ class _BuildBackend(object):
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy2(mod_file, dst, follow_symlinks=False)
 
+    def run(self, *args, **kwargs):
+        """Wrapper around subproces.run that optionally prints the command."""
+        if self.verbose:
+            pprint([*args])
+            pprint(kwargs)
+        return sp_run(*args, **kwargs)
+
     def generate_stubs(self, tmp_build_dir, pkg, cfg: Dict[str, Any]):
         """Generate stubs (.pyi) using mypy stubgen."""
         args = ['stubgen'] + cfg.get('args', [])
@@ -174,7 +209,7 @@ class _BuildBackend(object):
         if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
             args += ['-o', tmp_build_dir]
         # Call mypy stubgen in a subprocess
-        run(args, cwd=pkg.path.parent, check=True)
+        self.run(args, cwd=pkg.path.parent, check=True)
         # Clean up
         cache_dir = tmp_build_dir / '.mypy_cache'
         if cache_dir.exists():
@@ -185,7 +220,10 @@ class _BuildBackend(object):
         # Source and build folders
         srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
         builddir = pkgdir / '.py-build-cmake_cache'
-        builddir = Path(cmake_cfg.get('build_path', builddir)).resolve()
+        builddir = Path(cmake_cfg.get('build_path', builddir))
+        if not builddir.is_absolute():
+            builddir = pkgdir / builddir
+        builddir = builddir.resolve()
         # Environment variables
         cmake_env = os.environ.copy()
         if (f := 'env') in cmake_cfg:
@@ -209,7 +247,7 @@ class _BuildBackend(object):
             cmake_cfg.setdefault('config', cmake_cfg[f])
         if (f := 'generator') in cmake_cfg:  # -G {generator}
             configure_cmd += ['-G', cmake_cfg[f]]
-        run(configure_cmd, check=True, env=cmake_env)
+        self.run(configure_cmd, check=True, env=cmake_env)
 
         # Build
         build_cmd = ['cmake', '--build', str(builddir)]
@@ -218,7 +256,7 @@ class _BuildBackend(object):
             build_cmd += ['--config', cmake_cfg[f]]
         if (f := 'build_tool_args') in cmake_cfg:
             build_cmd += ['--'] + cmake_cfg[f]
-        run(build_cmd, check=True, env=cmake_env)
+        self.run(build_cmd, check=True, env=cmake_env)
 
         # Install
         for component in self.get_install_components(cmake_cfg):
@@ -233,7 +271,7 @@ class _BuildBackend(object):
             if component is not None:
                 install_cmd += ['--component', component]
             print('Installing component', component or 'all')
-            run(install_cmd, check=True, env=cmake_env)
+            self.run(install_cmd, check=True, env=cmake_env)
 
     def get_install_components(
             self, cmake_cfg: Dict[str, Any]) -> List[Union[str, None]]:
@@ -265,36 +303,6 @@ class _BuildBackend(object):
         wheel_path = whl.build(paths, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name
-
-    def normalize_name_wheel(self, name):
-        """https://www.python.org/dev/peps/pep-0427/#escaping-and-unicode"""
-        return re.sub("[^\w\d.]+", "_", name, re.UNICODE)
-
-    def build_sdist(self, sdist_directory, config_settings=None):
-        """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
-        sdist_directory = Path(sdist_directory)
-        src_dir = Path().resolve()
-
-        # Load metadata
-        from .config import read_metadata
-        from flit_core.common import Module, make_metadata
-        pyproject = src_dir / 'pyproject.toml'
-        cfg = read_metadata(pyproject)
-        norm_name = self.normalize_name_wheel(cfg.metadata['name'])
-        pkg = Module(norm_name, src_dir)
-        metadata = make_metadata(pkg, cfg)
-        metadata.version = self.normalize_version(metadata.version)
-
-        # Export dist
-        from flit_core.sdist import SdistBuilder
-        rel_pyproject = os.path.relpath(pyproject, src_dir)
-        extra_files = [str(rel_pyproject)] + cfg.referenced_files
-        sdist_builder = SdistBuilder(pkg, metadata, src_dir, None,
-                                     cfg.entrypoints, extra_files,
-                                     cfg.sdist.get('include_patterns', []),
-                                     cfg.sdist.get('exclude_patterns', []))
-        sdist_tar = sdist_builder.build(Path(sdist_directory))
-        return os.path.relpath(sdist_tar, sdist_directory)
 
     def iter_files(self, stagedir):
         """Iterate over the files contained in the given folder.
