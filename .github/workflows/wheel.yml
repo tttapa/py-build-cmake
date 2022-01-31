@@ -51,7 +51,7 @@ jobs:
         python -m pip install nox
         python -m nox
       env:
-        PY_BUILD_CMAKE_WHEEL_DIR: dist
+        PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
   build-windows:
     runs-on: windows-latest
@@ -106,7 +106,7 @@ jobs:
         python -m pip install nox
         python -m nox
       env:
-        PY_BUILD_CMAKE_WHEEL_DIR: dist
+        PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
   release:
     if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
