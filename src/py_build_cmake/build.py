@@ -20,10 +20,7 @@ class _BuildBackend(object):
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        return [
-            'distlib',  # for building wheels and writing metadata
-            'flit',  # for reading pyproject.toml[project]
-        ]
+        return []
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -159,7 +156,7 @@ class _BuildBackend(object):
             __spec__.submodule_search_locations.insert(0, "{pkg.path}")
             # Now manually import the development __init__.py
             from importlib import util as _util
-            _spec = _util.spec_from_file_location("py_build_cmake",
+            _spec = _util.spec_from_file_location("{pkg.name}",
                                                   "{pkg.path}/__init__.py")
             _mod = _util.module_from_spec(_spec)
             _spec.loader.exec_module(_mod)
@@ -180,6 +177,8 @@ class _BuildBackend(object):
         py_typed: Path = pkg.path / 'py.typed'
         if py_typed.exists():
             shutil.copy2(py_typed, tmp_pkg)
+        # Write a path file so IDEs find the correct files as well
+        (tmp_build_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
 
     def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
         for mod_file in pkg.iter_files():

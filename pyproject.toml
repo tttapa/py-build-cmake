@@ -1,5 +1,5 @@
 [build-system]
-requires = []
+requires = ["distlib", "flit"]
 build-backend = "py_build_cmake.build"
 backend-path = ["src"]
 
@@ -20,13 +20,13 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
 ]
-urls = { "Documentation" = "https://tttapa.github.io/py-build-cmake" }
 dependencies = ["distlib", "flit"]
 dynamic = ["version", "description"]
 
-[tool.py-build-cmake.sdist]
-include = []
-exclude = []
+[project.urls]
+Source = "https://github.com/tttapa/py-build-cmake"
+Documentation = "https://tttapa.github.io/py-build-cmake"
+Tracker = "https://github.com/tttapa/py-build-cmake/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

@@ -345,7 +345,9 @@ def read_metadata(pyproject_path) -> Config:
     # Check that the config doesn't contain any unknown sections or keys,
     # set options to their defaults if not specified, and verify their types,
     # make sure that file paths exist and are relative, etc.
-    tool_cfg = pyproject.get('tool', {}).get(tool_name, {})
+    tool_cfg = pyproject.setdefault('tool', {
+        tool_name: {}
+    }).setdefault(tool_name, {})
     tool_cfg.setdefault('module', {})
     tool_opts.check_unknown_sections(pyproject, tool_prefix_str)
     tool_opts.update_defaults(pyproject, tool_prefix_str)
