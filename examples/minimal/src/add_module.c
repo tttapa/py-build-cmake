@@ -1,11 +1,13 @@
-static const char *const docstring =
-    "Simple module that adds integers. "
-    "Based loosely on https://docs.python.org/3/extending/extending.html";
-
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+PyDoc_STRVAR(
+    docstring,
+    "Simple module that adds integers. "
+    "Based loosely on https://docs.python.org/3/extending/extending.html");
+
 static PyObject *add_module_add(PyObject *self, PyObject *args) {
+    (void) self;
     long a, b;
     if (!PyArg_ParseTuple(args, "ll", &a, &b))
         return NULL;
@@ -25,6 +27,10 @@ static struct PyModuleDef add_module = {
     -1,            /* size of per-interpreter state of the module,
                  or -1 if the module keeps state in global variables. */
     AddModuleMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 };
 
 PyMODINIT_FUNC PyInit__add_module(void) { return PyModule_Create(&add_module); }
