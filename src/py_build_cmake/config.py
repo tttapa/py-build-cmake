@@ -9,6 +9,9 @@ from pathlib import Path
 
 from abc import ABC, abstractmethod
 
+NormPrefix_t = Tuple[str, ...]
+Prefix_t = Union[NormPrefix_t, str]
+
 
 class ConfigOption(ABC):
 
@@ -19,7 +22,7 @@ class ConfigOption(ABC):
     NoDefault = _Tag()
 
     def __init__(self,
-                 prefix: Union[Tuple[str, ...], str],
+                 prefix: Prefix_t,
                  name: str,
                  helpstring: str,
                  default: Any = NoDefault):
@@ -29,14 +32,13 @@ class ConfigOption(ABC):
         self.default = default
 
     @staticmethod
-    def normalize_prefix(
-            prefix: Union[Tuple[str, ...], str]) -> Tuple[str, ...]:
+    def normalize_prefix(prefix: Prefix_t) -> NormPrefix_t:
         if isinstance(prefix, str):
             prefix = tuple(prefix.split('.'))
         return prefix
 
     @staticmethod
-    def stringify_prefix(prefix: Union[Tuple[str, ...], str]) -> str:
+    def stringify_prefix(prefix: Prefix_t) -> str:
         if isinstance(prefix, str):
             return prefix
 
@@ -81,7 +83,7 @@ class UncheckedOption(ConfigOption):
 
 class ConfigOptionRef:
 
-    def __init__(self, prefix: Union[Tuple[str, ...], str]):
+    def __init__(self, prefix: Prefix_t):
         self.prefix = ConfigOption.normalize_prefix(prefix)
 
 
@@ -97,7 +99,7 @@ class ConfigOptions:
     def add_option(self, option: ConfigOption):
         self._add_option(option.prefix, option.name, option)
 
-    def _add_option(self, prefix: Tuple[str, ...], name: str,
+    def _add_option(self, prefix: NormPrefix_t, name: str,
                     value: ConfigOption):
         d = self.options
         for key in prefix:
@@ -223,7 +225,7 @@ class StringConfigOption(ConfigOption):
 class PathConfigOption(StringConfigOption):
 
     def __init__(self,
-                 prefix: Union[Tuple[str, ...], str],
+                 prefix: Prefix_t,
                  name: str,
                  helpstring: str,
                  default: Any = None,
@@ -385,7 +387,7 @@ def read_metadata(pyproject_path) -> Config:
     return cfg
 
 
-def get_config_options(pyproject_folder, tool_prefix_str):
+def get_config_options(pyproject_dir, tool_prefix_str):
     tool_opts = ConfigOptions()
 
     mod_prefix_str = tool_prefix_str + '.module'
@@ -424,18 +426,19 @@ def get_config_options(pyproject_folder, tool_prefix_str):
         StringConfigOption(cmake_prefix_str, 'config',
                            "Configuration type passed to the build and install "
                            "steps, as --config <?>, defaults to `build_type`",
-                           default=ConfigOptionRef('build_type')),
+                           default=ConfigOptionRef(
+                               cmake_prefix_str + '.build_type')),
         StringConfigOption(cmake_prefix_str, 'generator',
                            "CMake generator to use, passed to the "
                            "configuration step, as "
                            " -G <?>"),
         PathConfigOption(cmake_prefix_str, 'source_path',
                            "Folder containing CMakeLists.txt",
-                           default=pyproject_folder,
+                           default=".",
                            expected_contents=["CMakeLists.txt"]),
         PathConfigOption(cmake_prefix_str, 'build_path',
                            "CMake build and cache folder",
-                           default=pyproject_folder / '.py-build-cmake_cache',
+                           default='.py-build-cmake_cache',
                            must_exist=False),
         DictOfStringOption(cmake_prefix_str, 'options',
                            "Extra options passed to the configuration step, "
