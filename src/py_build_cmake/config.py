@@ -53,6 +53,11 @@ class ConfigOption(ABC):
         exists, etc."""
         ...
 
+    @abstractmethod
+    def get_typename(self) -> str:
+        """Get the type of this option. Used when printing the help message."""
+        ...
+
     def help(self):
         print(self.name)
         print(self.helpstring)
@@ -79,6 +84,9 @@ class UncheckedOption(ConfigOption):
 
     def verify(self, config: dict):
         pass
+
+    def get_typename(self) -> str:
+        return super().get_typename()
 
 
 class ConfigOptionRef:
@@ -221,6 +229,9 @@ class StringConfigOption(ConfigOption):
     def verify(self, config: dict):
         self.check_type(config, str)
 
+    def get_typename(self) -> str:
+        return "string"
+
 
 class PathConfigOption(StringConfigOption):
 
@@ -251,6 +262,9 @@ class PathConfigOption(StringConfigOption):
         super().verify(config)
         self.check_path(config)
 
+    def get_typename(self) -> str:
+        return "path"
+
 
 class DictOfStringOption(ConfigOption):
 
@@ -267,6 +281,9 @@ class DictOfStringOption(ConfigOption):
         self.verify(overrideconfig)
         config[self.name].update(overrideconfig[self.name])
 
+    def get_typename(self) -> str:
+        return "dict"
+
 
 class OverrideSectionConfigOption(ConfigOption):
 
@@ -274,6 +291,9 @@ class OverrideSectionConfigOption(ConfigOption):
         if not isinstance(config[self.name], dict):
             from flit_core.config import ConfigError
             raise ConfigError(f"The field {self.fullname} should be a section")
+
+    def get_typename(self) -> str:
+        return "section"
 
 
 class ListOfStringOption(ConfigOption):
@@ -289,6 +309,9 @@ class ListOfStringOption(ConfigOption):
     def override(self, config: dict, overrideconfig: dict):
         self.verify(overrideconfig)
         config[self.name] += overrideconfig[self.name]
+
+    def get_typename(self) -> str:
+        return "list"
 
 
 @dataclass
@@ -340,7 +363,7 @@ def read_metadata(pyproject_path) -> Config:
     # Parse the tool-specific sections [tool.py-build-cmake.xxx]
     tool_name = 'py-build-cmake'
     tool_prefix_str = f'tool.{tool_name}'
-    tool_opts = get_config_options(pyproject_folder, tool_prefix_str)
+    tool_opts = get_config_options(tool_prefix_str)
 
     # Check that the config doesn't contain any unknown sections or keys,
     # set options to their defaults if not specified, and verify their types,
@@ -389,18 +412,19 @@ def read_metadata(pyproject_path) -> Config:
     return cfg
 
 
-def get_config_options(pyproject_dir, tool_prefix_str):
+def get_config_options(tool_prefix_str):
     tool_opts = ConfigOptions()
 
     mod_prefix_str = tool_prefix_str + '.module'
     tool_opts.add_options([
         UncheckedOption('project', 'name', ""),
         StringConfigOption(mod_prefix_str, 'name',
-                           "Import name in Python (can be different from name "
-                           "on PyPI, which is defined in the [project] section",
+                           "Import name in Python (can be different from the "
+                           "name on PyPI, which is defined in the [project] "
+                           "section).",
                            default=ConfigOptionRef('project.name')),
         PathConfigOption(mod_prefix_str, 'directory',
-                         "Directory containing the Python package",
+                         "Directory containing the Python package.",
                          default="."),
     ]) # yapf: disable
 
@@ -409,12 +433,12 @@ def get_config_options(pyproject_dir, tool_prefix_str):
         ListOfStringOption(sdist_prefix_str, 'include',
                            "Files and folders to include in the sdist "
                            "distribution. May include the '*' wildcard "
-                           "(but not '**' for recursive patterns)",
+                           "(but not '**' for recursive patterns).",
                            default=[]),
         ListOfStringOption(sdist_prefix_str, 'exclude',
                            "Files and folders to exclude from the sdist "
                            "distribution. May include the '*' wildcard "
-                           "(but not '**' for recursive patterns)",
+                           "(but not '**' for recursive patterns).",
                            default=[]),
     ]) # yapf: disable
 
@@ -422,69 +446,69 @@ def get_config_options(pyproject_dir, tool_prefix_str):
     tool_opts.add_options([
         StringConfigOption(cmake_prefix_str, 'build_type',
                            "Build type passed to the configuration step, as "
-                           "-DCMAKE_BUILD_TYPE=<?>\n"
+                           "-DCMAKE_BUILD_TYPE=<?>.\n"
                            "For example: "
-                           "`build_type = \"RelWithDebInfo\"`"),
+                           "build_type = \"RelWithDebInfo\""),
         StringConfigOption(cmake_prefix_str, 'config',
                            "Configuration type passed to the build and install "
-                           "steps, as --config <?>, defaults to `build_type`",
+                           "steps, as --config <?>.",
                            default=ConfigOptionRef(
                                cmake_prefix_str + '.build_type')),
         StringConfigOption(cmake_prefix_str, 'generator',
                            "CMake generator to use, passed to the "
                            "configuration step, as "
-                           " -G <?>"),
+                           "-G <?>."),
         PathConfigOption(cmake_prefix_str, 'source_path',
-                           "Folder containing CMakeLists.txt",
+                           "Folder containing CMakeLists.txt.",
                            default=".",
                            expected_contents=["CMakeLists.txt"]),
         PathConfigOption(cmake_prefix_str, 'build_path',
-                           "CMake build and cache folder",
+                           "CMake build and cache folder.",
                            default='.py-build-cmake_cache',
                            must_exist=False),
         DictOfStringOption(cmake_prefix_str, 'options',
                            "Extra options passed to the configuration step, "
-                           "as -D<option>=<value>\n"
-                           "For example "
-                           "`options = {\"WITH_FEATURE_X\" = \"On\"}`",
+                           "as -D<option>=<value>.\n"
+                           "For example: "
+                           "options = {\"WITH_FEATURE_X\" = \"On\"}",
                            default={}),
         ListOfStringOption(cmake_prefix_str, 'args',
-                           "Extra arguments passed to the configuration step\n"
+                           "Extra arguments passed to the configuration step.\n"
                            "For example: "
-                           "`args = [\"--debug-find\", \"-Wdev\"]`",
+                           "args = [\"--debug-find\", \"-Wdev\"]",
                            default=[]),
         ListOfStringOption(cmake_prefix_str, 'build_args',
-                           "Extra arguments passed to the build step\n"
+                           "Extra arguments passed to the build step.\n"
                            "For example: "
-                           "`build_args = [\"-j\"]`",
+                           "build_args = [\"-j\"]",
                            default=[]),
         ListOfStringOption(cmake_prefix_str, 'build_tool_args',
-                           "Extra arguments passed to the build tool in the"
-                           "build step (e.g. to Make or Ninja)\n"
+                           "Extra arguments passed to the build tool in the "
+                           "build step (e.g. to Make or Ninja).\n"
                            "For example: "
-                           "`build_tool_args = [\"VERBOSE=1\"]`",
+                           "build_tool_args = [\"VERBOSE=1\"]",
                            default=[]),
         ListOfStringOption(cmake_prefix_str, 'install_args',
-                           "Extra arguments passed to the install step\n"
+                           "Extra arguments passed to the install step.\n"
                            "For example: "
-                           "`install_args = [\"--strip\"]`",
+                           "install_args = [\"--strip\"]",
                            default=[]),
         ListOfStringOption(cmake_prefix_str, "install_components",
                            "List of components to install, the install step "
                            "is executed once for each component, with the "
-                           "option --component <?>\n"
+                           "option --component <?>.\n"
                            "Use an empty string to specify the default "
-                           "component",
+                           "component.",
                            default=[""]),
         DictOfStringOption(cmake_prefix_str, "env",
                            "Environment variables to set when running CMake.",
                            default={}),
-        OverrideSectionConfigOption(cmake_prefix_str, "windows",
-                                    "Override options for Windows"),
         OverrideSectionConfigOption(cmake_prefix_str, "linux",
-                                    "Override options for Linux"),
+                                    "Override options for Linux."),
+        OverrideSectionConfigOption(cmake_prefix_str, "windows",
+                                    "Override options for Windows."),
         OverrideSectionConfigOption(cmake_prefix_str, "mac",
-                                    "Override options for Mac"),
+                                    "Override options for Mac."),
     ]) # yapf: disable
 
     stubgen_prefix_str = tool_prefix_str + '.stubgen'
@@ -492,21 +516,21 @@ def get_config_options(pyproject_dir, tool_prefix_str):
         ListOfStringOption(stubgen_prefix_str,
                            'packages',
                            "List of packages to generate stubs for, passed to "
-                           "stubgen as -p <?>",
+                           "stubgen as -p <?>.",
                            default=[]),
         ListOfStringOption(stubgen_prefix_str,
                            'modules',
                            "List of modules to generate stubs for, passed to "
-                           "stubgen as -m <?>",
+                           "stubgen as -m <?>.",
                            default=[]),
         ListOfStringOption(stubgen_prefix_str,
                            'files',
                            "List of files to generate stubs for, passed to "
-                           "stubgen without any flags",
+                           "stubgen without any flags.",
                            default=[]),
         ListOfStringOption(stubgen_prefix_str,
                            'args',
-                           "List of extra arguments passed to stubgen",
+                           "List of extra arguments passed to stubgen.",
                            default=[]),
     ])
     # yapf: disable

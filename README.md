@@ -36,7 +36,8 @@ pip install py-build-cmake
 ## Usage
 
 Add a `pyproject.toml` configuration file
-(see [`examples/minimal`](examples/minimal) for detailed instructions), and use
+(see [`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal)
+for detailed instructions), and use
 [`pip`](https://github.com/pypa/pip), [`build`](https://github.com/pypa/build)
 or another PEP 517 compatible frontend to install and/or build the package.
 
@@ -55,5 +56,15 @@ pip install -e . # editable installation
 
 ## Examples
 
-For example usage, see the [`examples/minimal`](examples/minimal) and
-[`examples/pybind11-project`](examples/pybind11-project) example projects.
+For example usage, see the [`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal)
+and [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project)
+example projects.
+
+## Documentation
+
+Use the following command to get the documentation for all supported options:
+```sh
+python -m py_build_cmake.help
+```
+Alternatively, have look at
+[Config.md](https://github.com/tttapa/py-build-cmake/blob/main/Config.md).
