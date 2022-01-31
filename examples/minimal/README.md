@@ -34,8 +34,11 @@ will be shown on your PyPI project page.
 
 ### pyproject.toml
 
-This file defines how the project is built and contains all the important
-metadata for your package.
+Defines how the project is built and contains all the important metadata for
+your package. Specifies CMake options, which files to include in the package,
+as well as options for other tools. This file is covered in much more detail
+below, because it is the main way you will interact with py-build-cmake's build
+process.
 
 ### LICENSE
 
@@ -72,17 +75,17 @@ stubs automatically, as demonstrated in the
 
 The Python source files of your package.
 
-### src-python/\_\_init\_\_.py
+### src-python/minimal/\_\_init\_\_.py
 
 Makes this a Python package. Also contains the brief description and the version
 number that will be read by py-build-cmake and included in the package metadata.
 
-### src-python/add\_module.py
+### src-python/minimal/add\_module.py
 
 Python module that just wraps the C extension module and imports all its
 contents.
 
-### src-python/py.typed
+### src-python/minimal/py.typed
 
 Tells [mypy](https://github.com/python/mypy) to provide type checking for your
 package, and to look at the stub files.
