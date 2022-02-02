@@ -8,14 +8,14 @@ def example_projects(session: nox.Session):
         session.install("--find-links=" + dist_dir, "py-build-cmake")
     else:
         session.install(".")
-    session.install("build", "pytest")
-    with session.chdir("examples/pybind11-project"):
-        session.install("pybind11", "pybind11_stubgen", "mypy", "cmake", "ninja")
+    session.install("build", "pytest", "cmake", "ninja")
+    with session.chdir("examples/minimal"):
+        session.install("mypy")
         session.run("python", "-m", "build", ".", "-n")
         session.install(".", "--no-build-isolation")
         session.run("pytest")
-    with session.chdir("examples/minimal"):
-        session.install("mypy")
+    with session.chdir("examples/pybind11-project"):
+        session.install("pybind11", "pybind11_stubgen", "mypy")
         session.run("python", "-m", "build", ".", "-n")
         session.install(".", "--no-build-isolation")
         session.run("pytest")

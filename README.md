@@ -62,9 +62,11 @@ example projects.
 
 ## Documentation
 
-Use the following command to get the documentation for all supported options:
+The format of the configuration file is explained in 
+[Config.md](https://github.com/tttapa/py-build-cmake/blob/main/Config.md).
+
+Alternatively, use the following command to get the documentation for all
+supported options:
 ```sh
 python -m py_build_cmake.help
 ```
-Alternatively, have look at
-[Config.md](https://github.com/tttapa/py-build-cmake/blob/main/Config.md).
