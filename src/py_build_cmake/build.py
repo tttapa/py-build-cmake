@@ -6,7 +6,7 @@ from string import Template
 import re
 import shutil
 import textwrap
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 import tempfile
 from subprocess import run as sp_run
 
@@ -15,8 +15,10 @@ from .config import Config
 
 class _BuildBackend(object):
 
+    def __init__(self) -> None:
+        self.verbose = False
+
     fileopt = {'encoding': 'utf-8'}
-    verbose = False
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
@@ -37,6 +39,10 @@ class _BuildBackend(object):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
         assert metadata_directory is None
 
+        # Parse options
+        self.parse_config_settings(config_settings)
+
+        # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
             whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir)
         return whl_name
@@ -48,6 +54,10 @@ class _BuildBackend(object):
         """https://www.python.org/dev/peps/pep-0660/#build-editable"""
         assert metadata_directory is None
 
+        # Parse options
+        self.parse_config_settings(config_settings)
+
+        # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
             whl_name = self.build_wheel_in_dir(wheel_directory,
                                                tmp_build_dir,
@@ -59,11 +69,14 @@ class _BuildBackend(object):
         sdist_directory = Path(sdist_directory)
         src_dir = Path().resolve()
 
+        # Parse options
+        self.parse_config_settings(config_settings)
+
         # Load metadata
-        from .config import read_metadata, normalize_name_wheel
+        from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
         pyproject = src_dir / 'pyproject.toml'
-        cfg = read_metadata(pyproject)
+        cfg = self.read_metadata(pyproject)
         norm_name = normalize_name_wheel(cfg.metadata['name'])
         pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
         metadata = make_metadata(pkg, cfg)
@@ -80,6 +93,29 @@ class _BuildBackend(object):
         sdist_tar = sdist_builder.build(Path(sdist_directory))
         return os.path.relpath(sdist_tar, sdist_directory)
 
+    def parse_config_settings(self, config_settings: Optional[Dict]):
+        if config_settings is None:
+            return
+        if config_settings.keys() & {'verbose', 'v'}:
+            self.verbose = True
+
+    def read_metadata(self, pyproject):
+        from .config import read_metadata
+        cfg = read_metadata(pyproject)
+        if self.verbose:
+            print("\npy-build-cmake options")
+            print("======================")
+            print("module:")
+            pprint(cfg.module)
+            print("sdist:")
+            pprint(cfg.sdist)
+            print("cmake:")
+            pprint(cfg.cmake)
+            print("stubgen: ")
+            pprint(cfg.stubgen)
+            print("======================\n")
+        return cfg
+
     def build_wheel_in_dir(self,
                            wheel_directory,
                            tmp_build_dir,
@@ -89,9 +125,9 @@ class _BuildBackend(object):
         src_dir = Path().resolve()
 
         # Load metadata
-        from .config import read_metadata, normalize_name_wheel
+        from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
-        cfg = read_metadata(src_dir / 'pyproject.toml')
+        cfg = self.read_metadata(src_dir / 'pyproject.toml')
         norm_name = normalize_name_wheel(cfg.metadata['name'])
         pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
         metadata = make_metadata(pkg, cfg)
@@ -258,7 +294,7 @@ class _BuildBackend(object):
         self.run(build_cmd, check=True, env=cmake_env)
 
         # Install
-        for component in self.get_install_components(cmake_cfg):
+        for component in cmake_cfg['install_components']:
             install_cmd = [
                 'cmake', '--install',
                 str(builddir), '--prefix',
@@ -267,23 +303,10 @@ class _BuildBackend(object):
             install_cmd += cmake_cfg.get('install_args', [])
             if (f := 'config') in cmake_cfg:  # --config {config}
                 install_cmd += ['--config', cmake_cfg[f]]
-            if component is not None:
+            if component:
                 install_cmd += ['--component', component]
             print('Installing component', component or 'all')
             self.run(install_cmd, check=True, env=cmake_env)
-
-    def get_install_components(
-            self, cmake_cfg: Dict[str, Any]) -> List[Union[str, None]]:
-        """Get the components to install from the configuration file.
-        Configuration ``None`` refers to a normal install without specifying 
-        CMake's ``--component`` argument."""
-        if (f := 'install_extra_components') in cmake_cfg:
-            components = [None] + cmake_cfg[f]
-        elif (f := 'install_components') in cmake_cfg:
-            components = cmake_cfg[f]
-        else:
-            components = [None]
-        return components
 
     def write_entrypoints(self, cfg: Config):
         if cfg.entrypoints:
