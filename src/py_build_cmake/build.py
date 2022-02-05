@@ -123,6 +123,7 @@ class _BuildBackend(object):
                            editable=False):
         wheel_directory = Path(wheel_directory)
         tmp_build_dir = Path(tmp_build_dir)
+        staging_dir = tmp_build_dir / 'staging'
         src_dir = Path().resolve()
 
         # Load metadata
@@ -136,12 +137,12 @@ class _BuildBackend(object):
 
         # Copy the module source files to the temporary folder
         if not editable:
-            self.copy_pkg_source_to(tmp_build_dir, src_dir, pkg)
+            self.copy_pkg_source_to(staging_dir, src_dir, pkg)
         else:
-            self.write_editable_wrapper(tmp_build_dir, src_dir, pkg)
+            self.write_editable_wrapper(staging_dir, src_dir, pkg)
 
         # Create dist-info folder
-        distinfo = tmp_build_dir / f'{norm_name}-{metadata.version}.dist-info'
+        distinfo = staging_dir / f'{norm_name}-{metadata.version}.dist-info'
         os.makedirs(distinfo, exist_ok=True)
 
         # Write metadata
@@ -157,20 +158,20 @@ class _BuildBackend(object):
 
         # Generate .pyi stubs
         if cfg.stubgen is not None and not editable:
-            self.generate_stubs(tmp_build_dir, pkg, cfg.stubgen)
+            self.generate_stubs(tmp_build_dir, staging_dir, pkg, cfg.stubgen)
 
         # Configure, build and install the CMake project
         if cfg.cmake is not None:
-            self.do_native_cross_cmake_build(tmp_build_dir, src_dir, cfg,
-                                             metadata)
+            self.do_native_cross_cmake_build(tmp_build_dir, staging_dir,
+                                             src_dir, cfg, metadata)
 
         # Create wheel
-        whl_name = self.create_wheel(wheel_directory, tmp_build_dir, cfg,
+        whl_name = self.create_wheel(wheel_directory, staging_dir, cfg,
                                      norm_name, metadata.version)
         return whl_name
 
-    def do_native_cross_cmake_build(self, tmp_build_dir, src_dir, cfg,
-                                    metadata):
+    def do_native_cross_cmake_build(self, tmp_build_dir, staging_dir, src_dir,
+                                    cfg, metadata):
         """If not cross-compiling, just do a regular CMake build+install.
         When cross-compiling, do a cross-build+install (using the provided 
         CMake toolchain file).
@@ -187,11 +188,11 @@ class _BuildBackend(object):
             self.run_cmake(src_dir, native_install_dir, metadata, cfg.cmake,
                            None, native_install_dir)
         # Then do the actual build
-        self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake, cfg.cross,
+        self.run_cmake(src_dir, staging_dir, metadata, cfg.cmake, cfg.cross,
                        native_install_dir)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
-            self.copy_native_install(tmp_build_dir, native_install_dir,
+            self.copy_native_install(staging_dir, native_install_dir,
                                      cfg.cross[cfnb])
 
     def copy_native_install(self, staging_dir, native_install_dir,
@@ -276,7 +277,8 @@ class _BuildBackend(object):
             pprint(kwargs)
         return sp_run(*args, **kwargs)
 
-    def generate_stubs(self, tmp_build_dir, pkg, cfg: Dict[str, Any]):
+    def generate_stubs(self, tmp_build_dir, staging_dir, pkg, cfg: Dict[str,
+                                                                        Any]):
         """Generate stubs (.pyi) using mypy stubgen."""
         args = ['stubgen'] + cfg.get('args', [])
         cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
@@ -288,13 +290,11 @@ class _BuildBackend(object):
         args += cfg.get('files', [])
         # Add output folder argument if not already specified in cfg['args']
         if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
-            args += ['-o', tmp_build_dir]
+            args += ['-o', staging_dir]
+        env = os.environ.copy()
+        env.setdefault('MYPY_CACHE_DIR', str(tmp_build_dir))
         # Call mypy stubgen in a subprocess
-        self.run(args, cwd=pkg.path.parent, check=True)
-        # Clean up
-        cache_dir = tmp_build_dir / '.mypy_cache'
-        if cache_dir.exists():
-            shutil.rmtree(cache_dir)
+        self.run(args, cwd=pkg.path.parent, check=True, env=env)
 
     def run_cmake(self,
                   pkgdir,
