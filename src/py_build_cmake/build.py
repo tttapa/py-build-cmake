@@ -9,6 +9,7 @@ import textwrap
 from typing import Any, Dict, List, Optional, Union
 import tempfile
 from subprocess import run as sp_run
+from glob import glob
 
 from .config import Config
 
@@ -160,13 +161,57 @@ class _BuildBackend(object):
 
         # Configure, build and install the CMake project
         if cfg.cmake is not None:
-            self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake,
-                           cfg.cross)
+            self.do_native_cross_cmake_build(tmp_build_dir, src_dir, cfg,
+                                             metadata)
 
         # Create wheel
         whl_name = self.create_wheel(wheel_directory, tmp_build_dir, cfg,
                                      norm_name, metadata.version)
         return whl_name
+
+    def do_native_cross_cmake_build(self, tmp_build_dir, src_dir, cfg,
+                                    metadata):
+        """If not cross-compiling, just do a regular CMake build+install.
+        When cross-compiling, do a cross-build+install (using the provided 
+        CMake toolchain file).
+        If cfg.cross['copy_from_native_build'] is set, before cross-compiling, 
+        first a normal build+install is performed to a separate directory, then
+        the cross-build+install is performed, and finally the installed files
+        from the native build that match the patterns in
+        cfg.cross['copy_from_native_build'] are copied to the installation
+        directory of the cross-build for packaging."""
+        # When cross-compiling, optionally do a native build first
+        native_install_dir = None
+        if cfg.cross and (cfnb := 'copy_from_native_build') in cfg.cross:
+            native_install_dir = tmp_build_dir / 'native-install'
+            self.run_cmake(src_dir, native_install_dir, metadata, cfg.cmake,
+                           None, native_install_dir)
+        # Then do the actual build
+        self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake, cfg.cross,
+                       native_install_dir)
+        # Finally, move the files from the native build to the staging area
+        if native_install_dir:
+            self.copy_native_install(tmp_build_dir, native_install_dir,
+                                     cfg.cross[cfnb])
+
+    def copy_native_install(self, staging_dir, native_install_dir,
+                            native_install_patterns):
+        """Copy the files that match the patterns from the native installation
+        directory to the wheel staging directory."""
+        for pattern in native_install_patterns:
+            matches = sorted(glob(str(native_install_dir / pattern)))
+            for path in matches:
+                path = Path(path)
+                rel = path.relative_to(native_install_dir)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                print('-- Moving:', path, '->', staging_dir / rel.parent)
+                shutil.move(path, staging_dir / rel.parent)
+                # TODO: what if the folder already exists?
+            if not matches:
+                raise RuntimeError(
+                    "Native build installed no files that matched the "
+                    "pattern '" + pattern + "'")
+        shutil.rmtree(native_install_dir)
 
     def normalize_version(self, version):
         from distlib.version import NormalizedVersion
@@ -251,7 +296,13 @@ class _BuildBackend(object):
         if cache_dir.exists():
             shutil.rmtree(cache_dir)
 
-    def run_cmake(self, pkgdir, tmp_build_dir, metadata, cmake_cfg, cross_cfg):
+    def run_cmake(self,
+                  pkgdir,
+                  install_dir,
+                  metadata,
+                  cmake_cfg,
+                  cross_cfg,
+                  native_install_dir=None):
         """Configure, build and install using CMake."""
         # Source and build folders
         srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
@@ -289,6 +340,11 @@ class _BuildBackend(object):
                 'Python3_FIND_REGISTRY=NEVER', '-D',
                 'Python3_FIND_STRATEGY=LOCATION'
             ]
+        if native_install_dir:
+            configure_cmd += [
+                '-D', 'PY_BUILD_CMAKE_NATIVE_INSTALL_DIR:PATH=' +
+                str(native_install_dir)
+            ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
             configure_cmd += ['-D', k + '=' + v]
@@ -313,7 +369,7 @@ class _BuildBackend(object):
             install_cmd = [
                 'cmake', '--install',
                 str(builddir), '--prefix',
-                str(tmp_build_dir)
+                str(install_dir)
             ]
             install_cmd += cmake_cfg.get('install_args', [])
             if (f := 'config') in cmake_cfg:  # --config {config}
@@ -347,12 +403,9 @@ class _BuildBackend(object):
         libdir = 'platlib' if cfg.cmake is not None else 'purelib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
-        print("create_wheel")
-        print(cfg.cross)
         tags = None
         if cfg.cross:
             tags = self.get_cross_tags(cfg.cross)
-        print(tags)
         wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name

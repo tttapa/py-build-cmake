@@ -58,10 +58,6 @@ class ConfigOption(ABC):
         """Get the type of this option. Used when printing the help message."""
         ...
 
-    def help(self):
-        print(self.name)
-        print(self.helpstring)
-
     @property
     def fullname(self):
         return '.'.join(self.prefix) + '.' + self.name
@@ -318,7 +314,8 @@ class ListOfStringOption(ConfigOption):
 
     def override(self, config: dict, overrideconfig: dict):
         self.verify(overrideconfig)
-        config[self.name] += overrideconfig[self.name]
+        old = config.setdefault(self.name, [])
+        old += overrideconfig[self.name]
 
     def get_typename(self) -> str:
         return "list"
@@ -424,8 +421,8 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
     # Parse the cross compilation configuration
     if (s := 'cross') in tool_cfg:
         cfg.cross = tool_cfg[s]
-
-    print(cfg.cross)
+        if (f := 'copy_from_native_build') in cfg.cross:
+            cfg.cross[f] = _check_glob_patterns(cfg.cross[f], f'cross.{f}')
 
     return cfg
 
@@ -500,8 +497,6 @@ def check_tool_opts(tool_name, pyproject, localcfg, crosscfg):
         wrap_config_error(e, 'Final configuration is invalid: ')
         raise
 
-    from pprint import pprint
-    pprint(tool_cfg)
     return tool_cfg
 
 
@@ -643,7 +638,7 @@ def get_config_options(tool_prefix_str):
                            "For example: implementation = 'cp' # CPython",
                            default=ConfigOption.Required),
         StringConfigOption(cross_prefix_str, 'version',
-                           "Python version.\n"
+                           "Python version, major and minor, without dots.\n"
                            "For example: version = '310' # 3.10",
                            default=ConfigOption.Required),
         StringConfigOption(cross_prefix_str, 'abi',
@@ -651,12 +646,26 @@ def get_config_options(tool_prefix_str):
                            "For example: abi = 'cp310'",
                            default=ConfigOption.Required),
         StringConfigOption(cross_prefix_str, 'arch',
-                           "Operating system and architecture.\n"
+                           "Operating system and architecture (not dots or "
+                           "dashes, only underscores, all lowercase).\n"
                            "For example: arch = 'linux_x86_64'",
                            default=ConfigOption.Required),
         PathConfigOption(cross_prefix_str, 'toolchain_file',
                          "CMake toolchain file to use.",
                          default=ConfigOption.Required),
+        ListOfStringOption(cross_prefix_str, 'copy_from_native_build',
+                           "If set, this will cause a native version of the "
+                           "CMake project to be built and installed in a "
+                           "temporary directory first, and the files in this "
+                           "list will be copied to the final cross-compiled "
+                           "package. This is useful if you need binary "
+                           "utilities that run on the build system while "
+                           "cross-compiling, or for things like stubs for "
+                           "extension modules that cannot be generated while "
+                           "cross-compiling.\n"
+                           "May include the '*' wildcard "
+                           "(but not '**' for recursive patterns).",
+                           default=ConfigOption.NoDefault)
     ]) # yapf: disable
     return tool_opts
 
