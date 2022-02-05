@@ -42,7 +42,8 @@ These options go in the `[tool.py-build-cmake]` section.
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `implementation` | Identifier for the Python implementation.<br/>For example: implementation = &#x27;cp&#x27; # CPython | string | `required` |
-| `version` | Python version.<br/>For example: version = &#x27;310&#x27; # 3.10 | string | `required` |
+| `version` | Python version, major and minor, without dots.<br/>For example: version = &#x27;310&#x27; # 3.10 | string | `required` |
 | `abi` | Python ABI.<br/>For example: abi = &#x27;cp310&#x27; | string | `required` |
-| `arch` | Operating system and architecture.<br/>For example: arch = &#x27;linux_x86_64&#x27; | string | `required` |
+| `arch` | Operating system and architecture (not dots or dashes, only underscores, all lowercase).<br/>For example: arch = &#x27;linux_x86_64&#x27; | string | `required` |
 | `toolchain_file` | CMake toolchain file to use. | path | `required` |
+| `copy_from_native_build` | If set, this will cause a native version of the CMake project to be built and installed in a temporary directory first, and the files in this list will be copied to the final cross-compiled package. This is useful if you need binary utilities that run on the build system while cross-compiling, or for things like stubs for extension modules that cannot be generated while cross-compiling.<br/>May include the &#x27;*&#x27; wildcard (but not &#x27;**&#x27; for recursive patterns). | list | `none` |
