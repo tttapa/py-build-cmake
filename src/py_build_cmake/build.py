@@ -160,7 +160,8 @@ class _BuildBackend(object):
 
         # Configure, build and install the CMake project
         if cfg.cmake is not None:
-            self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake)
+            self.run_cmake(src_dir, tmp_build_dir, metadata, cfg.cmake,
+                           cfg.cross)
 
         # Create wheel
         whl_name = self.create_wheel(wheel_directory, tmp_build_dir, cfg,
@@ -250,7 +251,7 @@ class _BuildBackend(object):
         if cache_dir.exists():
             shutil.rmtree(cache_dir)
 
-    def run_cmake(self, pkgdir, tmp_build_dir, metadata, cmake_cfg):
+    def run_cmake(self, pkgdir, tmp_build_dir, metadata, cmake_cfg, cross_cfg):
         """Configure, build and install using CMake."""
         # Source and build folders
         srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
@@ -258,6 +259,8 @@ class _BuildBackend(object):
         builddir = Path(cmake_cfg.get('build_path', builddir))
         if not builddir.is_absolute():
             builddir = pkgdir / builddir
+        buildconfig = self.get_build_config_name(cross_cfg)
+        builddir = builddir / buildconfig
         builddir = builddir.resolve()
         # Environment variables
         cmake_env = os.environ.copy()
@@ -267,13 +270,25 @@ class _BuildBackend(object):
 
         # Configure
         configure_cmd = [
-            'cmake', '-B',
-            str(builddir), '-S',
-            str(srcdir), '-D', 'VERIFY_VERSION=' + metadata.version, '-D',
-            'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
-            'Python3_FIND_REGISTRY=NEVER', '-D',
-            'Python3_FIND_STRATEGY=LOCATION'
+            'cmake',
+            '-B',
+            str(builddir),
+            '-S',
+            str(srcdir),
+            '-D',
+            'VERIFY_VERSION=' + metadata.version,
         ]
+        if cross_cfg:
+            toolchain = (pkgdir / cross_cfg['toolchain_file']).resolve()
+            configure_cmd += [
+                '-D', 'CMAKE_TOOLCHAIN_FILE:FILEPATH=' + str(toolchain)
+            ]
+        else:
+            configure_cmd += [
+                '-D', 'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
+                'Python3_FIND_REGISTRY=NEVER', '-D',
+                'Python3_FIND_STRATEGY=LOCATION'
+            ]
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
             configure_cmd += ['-D', k + '=' + v]
@@ -308,6 +323,16 @@ class _BuildBackend(object):
             print('Installing component', component or 'all')
             self.run(install_cmd, check=True, env=cmake_env)
 
+    @staticmethod
+    def get_build_config_name(cross_cfg):
+        from distlib.wheel import IMPVER, ABI, ARCH
+        buildconfig = '-'.join([IMPVER, ABI, ARCH])
+        if cross_cfg:
+            buildconfig = '-'.join(
+                map(lambda x: x[0],
+                    _BuildBackend.get_cross_tags(cross_cfg).values()))
+        return buildconfig
+
     def write_entrypoints(self, cfg: Config):
         if cfg.entrypoints:
             print(cfg.entrypoints)
@@ -322,9 +347,23 @@ class _BuildBackend(object):
         libdir = 'platlib' if cfg.cmake is not None else 'purelib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
-        wheel_path = whl.build(paths, wheel_version=(1, 0))
+        print("create_wheel")
+        print(cfg.cross)
+        tags = None
+        if cfg.cross:
+            tags = self.get_cross_tags(cfg.cross)
+        print(tags)
+        wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name
+
+    @staticmethod
+    def get_cross_tags(crosscfg):
+        return {
+            'pyver': [crosscfg['implementation'] + crosscfg['version']],
+            'abi': [crosscfg['abi']],
+            'arch': [crosscfg['arch']],
+        }
 
     def iter_files(self, stagedir):
         """Iterate over the files contained in the given folder.

@@ -34,7 +34,15 @@ These options go in the `[tool.py-build-cmake]` section.
 ## stubgen
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `packages` | List of packages to generate stubs for, passed to stubgen as -p &lt;?&gt;. | list | `[]` |
-| `modules` | List of modules to generate stubs for, passed to stubgen as -m &lt;?&gt;. | list | `[]` |
-| `files` | List of files to generate stubs for, passed to stubgen without any flags. | list | `[]` |
+| `packages` | List of packages to generate stubs for, passed to stubgen as -p &lt;?&gt;. | list | `none` |
+| `modules` | List of modules to generate stubs for, passed to stubgen as -m &lt;?&gt;. | list | `none` |
+| `files` | List of files to generate stubs for, passed to stubgen without any flags. | list | `none` |
 | `args` | List of extra arguments passed to stubgen. | list | `[]` |
+## cross
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| `implementation` | Identifier for the Python implementation.<br/>For example: implementation = &#x27;cp&#x27; # CPython | string | `required` |
+| `version` | Python version.<br/>For example: version = &#x27;310&#x27; # 3.10 | string | `required` |
+| `abi` | Python ABI.<br/>For example: abi = &#x27;cp310&#x27; | string | `required` |
+| `arch` | Operating system and architecture.<br/>For example: arch = &#x27;linux_x86_64&#x27; | string | `required` |
+| `toolchain_file` | CMake toolchain file to use. | path | `required` |

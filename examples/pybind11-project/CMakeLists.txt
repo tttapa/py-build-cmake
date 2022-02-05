@@ -35,7 +35,7 @@ install(TARGETS _add_module
 # Generate stubs for the Python module
 option(WITH_PY_STUBS
     "Generate Python stub files (.pyi) for the Python module." On)
-if (WITH_PY_STUBS)
+if (WITH_PY_STUBS AND NOT CMAKE_CROSSCOMPILING)
     include(cmake/Pybind11Stubgen.cmake)
     pybind11_stubgen(_add_module)
     pybind11_stubgen_install(_add_module pybind11_project)

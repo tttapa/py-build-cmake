@@ -188,40 +188,50 @@ class ConfigOptions:
             elif name in cfgs:
                 opt.verify(cfgs)
 
-    def override(self, cfg: Dict, prefix, overridecfg: Dict):
+    def override(self, cfg: Dict, prefix, overridecfg: Dict, cfgprefix=None):
         prefix = ConfigOption.normalize_prefix(prefix)
+        if cfgprefix is None:
+            cfgprefix = prefix
+        else:
+            cfgprefix = ConfigOption.normalize_prefix(cfgprefix)
         opts = self.index_with_prefix(self.options, prefix)
-        cfgs = self.index_with_prefix(cfg, prefix)
+        cfgs = self.index_with_prefix(cfg, cfgprefix)
         for name, opt in opts.items():
             if isinstance(opt, dict):
                 if name in overridecfg:
                     cfgs.setdefault(name, {})
-                    self.override(cfg, prefix + (name, ), overridecfg[name])
+                    self.override(cfg, prefix + (name, ), overridecfg[name],
+                                  cfgprefix + (name, ))
             elif name in overridecfg:
                 opt.override(cfgs, overridecfg)
 
-    def check_unknown_sections(self, cfg: Dict, prefix):
+    def check_unknown_sections(self, cfg: Dict, prefix, cfgprefix=None):
         """
         Raise a ConfigError if ``d`` contains any keys not in ``known_sections``.
         Keys starting with ``x-`` are ignored.
         """
         prefix_str = ConfigOption.stringify_prefix(prefix)
         prefix = ConfigOption.normalize_prefix(prefix)
+        if cfgprefix is None:
+            cfgprefix = prefix
+        else:
+            cfgprefix = ConfigOption.normalize_prefix(cfgprefix)
         opts = self.index_with_prefix(self.options, prefix)
-        cfgs = self.index_with_prefix(cfg, prefix)
+        cfgs = self.index_with_prefix(cfg, cfgprefix)
 
         ignored = lambda s: s.lower().startswith('x-')
         unknown_sections = {s for s in set(cfgs) - set(opts) if not ignored(s)}
         if unknown_sections:
             from flit_core.config import ConfigError
-            raise ConfigError('Unexpected tables or keys in pyproject.toml: ' +
+            raise ConfigError('Unexpected tables or keys: ' +
                               ', '.join('[{}.{}]'.format(prefix_str, s)
                                         for s in unknown_sections))
 
         for name, opt in opts.items():
             if isinstance(opt, dict):
                 if name in cfgs:
-                    self.check_unknown_sections(cfg, prefix + (name, ))
+                    self.check_unknown_sections(cfg, prefix + (name, ),
+                                                cfgprefix + (name, ))
 
 
 class StringConfigOption(ConfigOption):
@@ -325,12 +335,11 @@ class Config:
     license: Dict[str, str] = field(default_factory=dict)
     cmake: Optional[Dict[str, Any]] = field(default=None)
     stubgen: Optional[Dict[str, Any]] = field(default=None)
+    cross: Optional[Dict[str, Any]] = field(default=None)
 
 
 def read_metadata(pyproject_path) -> Config:
-    from flit_core.config import read_pep621_metadata, ConfigError
-    from flit_core.config import _check_glob_patterns
-    from flit_core.config import _check_type, _check_list_of_str
+    from flit_core.config import ConfigError
     import tomli
 
     # Load the pyproject.toml file
@@ -339,6 +348,29 @@ def read_metadata(pyproject_path) -> Config:
     pyproject = tomli.loads(pyproject_path.read_text('utf-8'))
     if 'project' not in pyproject:
         raise ConfigError('Missing [project] table')
+
+    # Load local override
+    localconfig_fname = 'py-build-cmake.local.toml'
+    localconfig_path = pyproject_folder / localconfig_fname
+    localconfig = None
+    if localconfig_path.exists():
+        localconfig = tomli.loads(localconfig_path.read_text('utf-8'))
+
+    # Load override for cross-compilation
+    crossconfig_fname = 'py-build-cmake.cross.toml'
+    crossconfig_path = pyproject_folder / crossconfig_fname
+    crossconfig = None
+    if crossconfig_path.exists():
+        crossconfig = tomli.loads(crossconfig_path.read_text('utf-8'))
+
+    return check_config(pyproject_path, pyproject,
+                        (localconfig_fname, localconfig),
+                        (crossconfig_fname, crossconfig))
+
+
+def check_config(pyproject_path, pyproject, localcfg, crosscfg):
+    from flit_core.config import read_pep621_metadata, ConfigError
+    from flit_core.config import _check_glob_patterns
 
     # Check the package/module name and normalize it
     from distlib.util import normalize_name
@@ -358,23 +390,11 @@ def read_metadata(pyproject_path) -> Config:
     cfg.entrypoints = flit_cfg.entrypoints
     cfg.metadata = flit_cfg.metadata
     cfg.referenced_files = flit_cfg.referenced_files
-    cfg.license = pyproject['project'].get('license', {})
+    cfg.license = pyproject['project'].setdefault('license', {})
 
     # Parse the tool-specific sections [tool.py-build-cmake.xxx]
     tool_name = 'py-build-cmake'
-    tool_prefix_str = f'tool.{tool_name}'
-    tool_opts = get_config_options(tool_prefix_str)
-
-    # Check that the config doesn't contain any unknown sections or keys,
-    # set options to their defaults if not specified, and verify their types,
-    # make sure that file paths exist and are relative, etc.
-    tool_cfg = pyproject.setdefault('tool', {
-        tool_name: {}
-    }).setdefault(tool_name, {})
-    tool_cfg.setdefault('module', {})
-    tool_opts.check_unknown_sections(pyproject, tool_prefix_str)
-    tool_opts.update_defaults(pyproject, tool_prefix_str)
-    tool_opts.verify(pyproject, tool_prefix_str)
+    tool_cfg = check_tool_opts(tool_name, pyproject, localcfg, crosscfg)
 
     # Parse module configuration
     if (s := 'module') in tool_cfg:
@@ -395,21 +415,103 @@ def read_metadata(pyproject_path) -> Config:
 
     # Parse the CMake configuration
     if (s := 'cmake') in tool_cfg:
-        systemname = {
-            "Linux": "linux",
-            "Windows": "windows",
-            "Darwin": "mac",  # TODO: untested
-        }[platform.system()]
-        if systemname in tool_cfg[s]:
-            tool_opts.override(pyproject, tool_prefix_str + '.cmake',
-                               tool_cfg[s][systemname])
         cfg.cmake = tool_cfg[s]
 
     # Parse stubgen configuration
     if (s := 'stubgen') in tool_cfg:
         cfg.stubgen = tool_cfg[s]
 
+    # Parse the cross compilation configuration
+    if (s := 'cross') in tool_cfg:
+        cfg.cross = tool_cfg[s]
+
+    print(cfg.cross)
+
     return cfg
+
+
+def check_tool_opts(tool_name, pyproject, localcfg, crosscfg):
+    from flit_core.config import ConfigError
+
+    localconfig_fname, localconfig = localcfg
+    crossconfig_fname, crossconfig = crosscfg
+
+    tool_prefix_str = f'tool.{tool_name}'
+    tool_opts = get_config_options(tool_prefix_str)
+
+    # Check that the config doesn't contain any unknown sections or keys,
+    # set options to their defaults if not specified, and verify their types,
+    # make sure that file paths exist and are relative, etc.
+    tool_cfg = pyproject.setdefault('tool', {
+        tool_name: {}
+    }).setdefault(tool_name, {})
+    tool_cfg.setdefault('module', {})
+    try:
+        tool_opts.check_unknown_sections(pyproject, tool_prefix_str)
+    except ConfigError as e:
+        wrap_config_error(e, 'In pyproject.toml: ')
+
+    # Override for cross-compilation
+    if crossconfig:
+        s = 'cross'
+        cross_pfx = tool_prefix_str + '.' + s
+        try:
+            tool_crosscfg = tool_cfg.setdefault(s, {})
+            tool_opts.check_unknown_sections(crossconfig, cross_pfx, ())
+            tool_opts.override(tool_crosscfg, cross_pfx, crossconfig, ())
+        except ConfigError as e:
+            wrap_config_error_override(e, crossconfig_fname)
+            raise
+
+    crosscompiling = ('cross' in tool_cfg) or (localconfig
+                                               and 'cross' in localconfig)
+
+    # Override the CMake configuration
+    if (s := 'cmake') in tool_cfg and not crosscompiling:
+        systemname = {
+            "Linux": "linux",
+            "Windows": "windows",
+            "Darwin": "mac",  # TODO: untested
+        }[platform.system()]
+        if systemname in tool_cfg[s]:
+            cmake_pfx = tool_prefix_str + '.' + s
+            sys_cfg = tool_cfg[s][systemname]
+            try:
+                tool_opts.check_unknown_sections(sys_cfg, cmake_pfx, ())
+                tool_opts.override(pyproject, cmake_pfx, sys_cfg)
+            except ConfigError as e:
+                wrap_config_error_override(e, f'{cmake_pfx}.{systemname}')
+                raise
+
+    # Override by local config
+    if localconfig:
+        try:
+            tool_opts.check_unknown_sections(localconfig, tool_prefix_str, ())
+            tool_opts.override(pyproject, tool_prefix_str, localconfig)
+        except ConfigError as e:
+            wrap_config_error_override(e, localconfig_fname)
+            raise
+
+    # Apply defaults
+    try:
+        tool_opts.update_defaults(pyproject, tool_prefix_str)
+        tool_opts.verify(pyproject, tool_prefix_str)
+    except ConfigError as e:
+        wrap_config_error(e, 'Final configuration is invalid: ')
+        raise
+
+    from pprint import pprint
+    pprint(tool_cfg)
+    return tool_cfg
+
+
+def wrap_config_error_override(e, message):
+    msg = f'During override by {message}: '
+    wrap_config_error(e, msg)
+
+
+def wrap_config_error(e, msg):
+    e.args = (msg + e.args[0], ) + e.args[1:]
 
 
 def get_config_options(tool_prefix_str):
@@ -517,23 +619,45 @@ def get_config_options(tool_prefix_str):
                            'packages',
                            "List of packages to generate stubs for, passed to "
                            "stubgen as -p <?>.",
-                           default=[]),
+                           default=ConfigOption.NoDefault),
         ListOfStringOption(stubgen_prefix_str,
                            'modules',
                            "List of modules to generate stubs for, passed to "
                            "stubgen as -m <?>.",
-                           default=[]),
+                           default=ConfigOption.NoDefault),
         ListOfStringOption(stubgen_prefix_str,
                            'files',
                            "List of files to generate stubs for, passed to "
                            "stubgen without any flags.",
-                           default=[]),
+                           default=ConfigOption.NoDefault),
         ListOfStringOption(stubgen_prefix_str,
                            'args',
                            "List of extra arguments passed to stubgen.",
                            default=[]),
-    ])
-    # yapf: disable
+    ]) # yapf: disable
+
+    cross_prefix_str = tool_prefix_str + '.cross'
+    tool_opts.add_options([
+        StringConfigOption(cross_prefix_str, 'implementation',
+                           "Identifier for the Python implementation.\n"
+                           "For example: implementation = 'cp' # CPython",
+                           default=ConfigOption.Required),
+        StringConfigOption(cross_prefix_str, 'version',
+                           "Python version.\n"
+                           "For example: version = '310' # 3.10",
+                           default=ConfigOption.Required),
+        StringConfigOption(cross_prefix_str, 'abi',
+                           "Python ABI.\n"
+                           "For example: abi = 'cp310'",
+                           default=ConfigOption.Required),
+        StringConfigOption(cross_prefix_str, 'arch',
+                           "Operating system and architecture.\n"
+                           "For example: arch = 'linux_x86_64'",
+                           default=ConfigOption.Required),
+        PathConfigOption(cross_prefix_str, 'toolchain_file',
+                         "CMake toolchain file to use.",
+                         default=ConfigOption.Required),
+    ]) # yapf: disable
     return tool_opts
 
 
