@@ -362,15 +362,14 @@ class _BuildBackend(object):
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
             configure_cmd += ['-D', k + '=' + v]
-        if (f := 'build_type') in cmake_cfg:  # -D CMAKE_BUILD_TYPE={type}
-            configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + cmake_cfg[f]]
-            cmake_cfg.setdefault('config', cmake_cfg[f])
-        if (f := 'generator') in cmake_cfg:  # -G {generator}
-            configure_cmd += ['-G', cmake_cfg[f]]
+        if btype := cmake_cfg.get('build_type'): # -D CMAKE_BUILD_TYPE={type}
+            configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + btype]
+        if gen := cmake_cfg.get('generator'):  # -G {generator}
+            configure_cmd += ['-G', gen]
         self.run(configure_cmd, check=True, env=cmake_env)
 
         # Build and install
-        if not 'config' in cmake_cfg or not cmake_cfg['config']:
+        if not cmake_cfg.get('config', False):
             self.build_install_cmake(cmake_cfg, builddir, cmake_env,
                                      install_dir, None)
         else:

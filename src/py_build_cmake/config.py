@@ -121,9 +121,9 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
         for os in ("linux", "windows", "mac")
     }
     if (s := 'cross') in tool_cfg:
-        cfg.sdist |= {
+        cfg.sdist.update({
             'cross': get_sdist_cludes(tool_cfg[s]),
-        }
+        })
 
     # Store the CMake configuration
     cfg.cmake = {
@@ -141,9 +141,9 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
         cfg.cross = tool_cfg[s]
         if (f := 'copy_from_native_build') in cfg.cross:
             cfg.cross[f] = _check_glob_patterns(cfg.cross[f], f'cross.{f}')
-        cfg.cmake |= {
+        cfg.cmake.update({
             'cross': cfg.cross.pop('cmake', {}),
-        }
+        })
 
     return cfg
 

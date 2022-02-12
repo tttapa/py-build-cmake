@@ -588,7 +588,7 @@ class DictOfStrConfigOption(ConfigOption):
                 selfcfg.sub = {}
             assert isinstance(selfcfg.sub, dict)
             assert isinstance(overridecfg.sub, dict)
-            selfcfg.sub |= deepcopy(overridecfg.sub)
+            selfcfg.sub.update(deepcopy(overridecfg.sub))
 
     def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                cfgpath: ConfPath):
