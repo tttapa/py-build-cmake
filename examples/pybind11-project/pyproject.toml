@@ -32,9 +32,8 @@ include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
 exclude = []
 
 [tool.py-build-cmake.cmake]
-build_type = "Release"
-# config = "Release"
-# generator = "Unix Makefiles"
+generator = "Ninja Multi-Config"
+config = ["Debug", "Release"]
 source_path = "." # Containing CMakeLists.txt
 # build_path = ".build"
 options = { "WITH_PY_STUBS:BOOL" = "On" }
@@ -46,8 +45,10 @@ install_components = ["python_modules"]
 env = {}
 
 [tool.py-build-cmake.linux.cmake] # Linux-specific options
-generator = "Ninja Multi-Config" # Overrides
 env = {"CMAKE_PREFIX_PATH" = "${HOME}/.local"} # Appends or updates
+
+[tool.py-build-cmake.windows.cmake] # Windows-specific options
+generator = "" # Overrides
 
 [tool.py-build-cmake.stubgen]
 # packages = ["py_build_cmake"]
