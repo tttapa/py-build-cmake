@@ -35,22 +35,18 @@ def read_metadata(pyproject_path) -> Config:
     localconfig_fname = 'py-build-cmake.local.toml'
     localconfig_path = pyproject_folder / localconfig_fname
     localconfig = None
-    print(localconfig_path)
     if localconfig_path.exists():
         localconfig = tomli.loads(localconfig_path.read_text('utf-8'))
-        localconfig = localconfig or None
-    pprint(localconfig)
+        # treat empty local override as no local override
+        localconfig = localconfig or None 
 
     # Load override for cross-compilation
     crossconfig_fname = 'py-build-cmake.cross.toml'
     crossconfig_path = pyproject_folder / crossconfig_fname
     crossconfig = None
-    os.system("ls \"" + str(pyproject_folder) + "\"")
-    print(crossconfig_path)
     if crossconfig_path.exists():
         crossconfig = tomli.loads(crossconfig_path.read_text('utf-8'))
         crossconfig = crossconfig or None
-    pprint(crossconfig)
 
     return check_config(pyproject_path, pyproject,
                         (localconfig_fname, localconfig),
@@ -93,37 +89,32 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
         crossconfig_fname: crossconfig,
     }
     treecfg = ConfigNode.from_dict(rawcfg)
-    print("=== verify ===")
     opts.verify_all(treecfg)
-    print("=== override ===")
     opts.override_all(treecfg)
-    pprint(treecfg.to_dict())
-    print("=== inherit ===")
     opts.inherit_all(treecfg)
-    pprint(treecfg.to_dict())
-    print("=== default ===")
     opts.update_default_all(treecfg)
     dictcfg = treecfg.to_dict()
-    pprint(dictcfg)
     tool_cfg = dictcfg['pyproject.toml']['tool']['py-build-cmake']
 
-    # Parse module configuration
+    # Store the module configuration
     if (s := 'module') in tool_cfg:
+        # Normalize the import and wheel name of the package
         normname = normalize_name_wheel(tool_cfg[s]['name'])
         if tool_cfg[s]['name'] != normname:
             print(f"Name changed from {tool_cfg[s]['name']} to {normname}")
+            # TODO: use logging instead of print
         tool_cfg[s]['name'] = normname
         cfg.module = tool_cfg[s]
     else:
         assert False, "Missing [tools.py-build-cmake.module] section"
 
+    # Store the sdist folders (this is based on flit)
     def get_sdist_cludes(cfg):
         return {
             cl + '_patterns': _check_glob_patterns(cfg['sdist'][cl], cl)
             for cl in ('include', 'exclude')
         }
 
-    # Parse the sdist folders (this is based on flit)
     cfg.sdist = {
         os: get_sdist_cludes(tool_cfg[os])
         for os in ("linux", "windows", "mac")
@@ -133,18 +124,18 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
             'cross': get_sdist_cludes(tool_cfg[s]),
         }
 
-    # Parse the CMake configuration
+    # Store the CMake configuration
     cfg.cmake = {
         os: tool_cfg[os]['cmake']
         for os in ("linux", "windows", "mac")
         if os in tool_cfg and 'cmake' in tool_cfg[os]
     }
 
-    # Parse stubgen configuration
+    # Store stubgen configuration
     if (s := 'stubgen') in tool_cfg:
         cfg.stubgen = tool_cfg[s]
 
-    # Parse the cross compilation configuration
+    # Store the cross compilation configuration
     if (s := 'cross') in tool_cfg:
         cfg.cross = tool_cfg[s]
         if (f := 'copy_from_native_build') in cfg.cross:

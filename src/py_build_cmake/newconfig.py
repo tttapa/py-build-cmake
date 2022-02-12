@@ -258,14 +258,10 @@ class ConfigOption:
 
     def inherit(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                 selfpth: ConfPath):
-        print('--', pth2str(selfpth))
         superpth = self.inherit_from
         if superpth is not None:
-            print("🎱", pth2str(selfpth), '<:', pth2str(superpth))
-
             # If the super option is not set, there's nothing to inherit
             if (supercfg := cfg.get(superpth)) is None:
-                print("  -> nothing overridden (superconfig does not exist)")
                 return
 
             # If this option is not set, but the super option is,
@@ -275,7 +271,6 @@ class ConfigOption:
             selfcfg = self.create_parent_config_for_inheritance(
                 rootopts, cfg, selfpth)
             if selfcfg is None:
-                print("  -> nothing overridden (parent does not exist)")
                 return
 
             # Find the option we inherit from and make sure it exists
@@ -287,7 +282,6 @@ class ConfigOption:
             supercfg = deepcopy(supercfg)
             superopt.explicit_override(self, supercfg, superpth, selfcfg,
                                        selfpth)
-            print(selfcfg.to_dict(), "<=", supercfg.to_dict())
             selfcfg.sub = supercfg.sub
         if self.sub:
             for name, sub in self.sub.items():
@@ -308,17 +302,13 @@ class ConfigOption:
         p: ConfPath = ()
         opt = rootopts
         create_paths: List[ConfPath] = []
-        print("🃏", pth2str(selfpth))
         for s in selfpth:
             p += s,
             opt = opt[s]
             if (selfcfg := cfg.get(p)) is None:
-                print("-", pth2str(p))
                 if not opt.create_if_inheritance_target_exists:
                     return None
-                print("+", pth2str(p))
                 create_paths.append(p)
-        print("create_paths:", create_paths)
         for p in create_paths:
             selfcfg = cfg.setdefault(p, ConfigNode(sub={}))
         return selfcfg
@@ -342,14 +332,9 @@ class ConfigOption:
             subopt.explicit_override(rootopts, subselfcfg, subpath,
                                      suboverridecfg, suboverridepath)
         if self.inherit_from is not None:
-            print("📀", pth2str(selfpth), '->', pth2str(self.inherit_from))
-            print("selfcfg    "); pprint(selfcfg.to_dict())
-            print("overridecfg"); pprint(overridecfg.to_dict())
             superopt = rootopts[self.inherit_from]
             superopt.explicit_override(rootopts, selfcfg, selfpth, overridecfg,
                                        overridepath)
-            print("selfcfg    "); pprint(selfcfg.to_dict())
-            print("overridecfg"); pprint(overridecfg.to_dict())
 
     def override(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                  selfpath: ConfPath):
@@ -359,7 +344,6 @@ class ConfigOption:
 
     def verify_impl(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                     cfgpath: ConfPath):
-        print("✅", pth2str(cfgpath))
         assert cfg.contains(cfgpath)
         selfcfg = cfg[cfgpath]
         # Check if there are any unknown options in the config
@@ -369,12 +353,9 @@ class ConfigOption:
                                   ', '.join(unkwn))
         # Recursively verify the sub-options
         if selfcfg.sub:
-            print("📍", selfcfg.sub.keys())
             for name, sub in selfcfg.sub.items():
                 if name in self.sub:
                     self.sub[name].verify(rootopts, cfg, cfgpath + (name, ))
-        else:
-            print("📌", cfgpath)
 
     def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                cfgpath: ConfPath):
@@ -429,7 +410,6 @@ class ConfigOption:
                 raise ValueError(f"Inheritance {pth2str(selfpath)} targets "
                                  f"nonexisting option "
                                  f"{pth2str(self.inherit_from)}")
-            print("🌻", pth2str(selfpath), '<:', pth2str(self.inherit_from))
             for p, opt in targetopt.iter_dfs():
                 if opt.inherit_from is not None:
                     # TODO: this might be too restrictive, but we need to break
@@ -437,15 +417,12 @@ class ConfigOption:
                     continue
                 optpth = joinpth(self.inherit_from, p)
                 newcfgpth = joinpth(cfgpath, p)
-                print("🌳", "p:", pth2str(p), 'optpth:', pth2str(optpth),
-                      'newcfgpth:', pth2str(newcfgpth))
                 opt.update_default(rootopts, cfg, newcfgpth, optpth)
 
         return result
 
     def update_default_all(self, cfg: ConfigNode):
         for p, opt in self.iter_dfs():
-            print('🌿', pth2str(p))
             if hasparent(p) and cfg.contains(parent(p)):
                 opt.update_default(self, cfg, p)
 
@@ -610,11 +587,9 @@ class OverrideConfigOption(ConfigOption):
     @staticmethod
     def create_parent_config(cfg: ConfigNode, path: ConfPath):
         parentcfg = cfg
-        print("🐦")
         for s in path:
-            print("->", s)
+            assert parentcfg.sub is not None
             parentcfg = parentcfg.sub.setdefault(s, ConfigNode(sub={}))
-        pprint(cfg.to_dict())
 
 
 def get_options(config_path: Optional[Path] = None):

@@ -113,7 +113,7 @@ class _BuildBackend(object):
     def read_metadata(self, pyproject):
         from .config import read_metadata
         cfg = read_metadata(pyproject)
-        if self.verbose or 1:
+        if self.verbose:
             print("\npy-build-cmake options")
             print("======================")
             print("module:")
