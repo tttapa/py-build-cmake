@@ -12,13 +12,13 @@ def example_projects(session: nox.Session):
     session.install("build", "pytest", "cmake", "ninja")
     with session.chdir("examples/minimal"):
         session.install("mypy")
-        shutil.rmtree('.py-build-cmake_cache')
+        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         session.run("python", "-m", "build", ".", "-n")
         session.install(".", "--no-build-isolation")
         session.run("pytest")
     with session.chdir("examples/pybind11-project"):
         session.install("pybind11", "pybind11_stubgen", "mypy")
-        shutil.rmtree('.py-build-cmake_cache')
+        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         session.run("python", "-m", "build", ".", "-n")
         session.install(".", "--no-build-isolation")
         session.run("pytest")
