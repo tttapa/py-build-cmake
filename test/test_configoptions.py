@@ -678,7 +678,7 @@ def test_real_config_inherit_cross_cmake():
                     },
                     "cmake": {
                         "build_type": "Release",
-                        "config": "Release",
+                        "config": ["Release"],
                         "generator": "Ninja",
                         "source_path": "src",
                         "build_path": ".py-build-cmake_cache",
@@ -704,7 +704,7 @@ def test_real_config_inherit_cross_cmake():
                         },
                         "cmake": {
                             "build_type": "RelWithDebInfo",
-                            "config": "RelWithDebInfo",
+                            "config": ["RelWithDebInfo"],
                             "generator": "Unix Makefiles",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -727,7 +727,7 @@ def test_real_config_inherit_cross_cmake():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -749,7 +749,7 @@ def test_real_config_inherit_cross_cmake():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -771,7 +771,7 @@ def test_real_config_inherit_cross_cmake():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -849,7 +849,7 @@ def test_real_config_no_cross():
                     },
                     "cmake": {
                         "build_type": "Release",
-                        "config": "Release",
+                        "config": ["Release"],
                         "generator": "Ninja",
                         "source_path": "src",
                         "build_path": ".py-build-cmake_cache",
@@ -870,7 +870,7 @@ def test_real_config_no_cross():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -892,7 +892,7 @@ def test_real_config_no_cross():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",
@@ -914,7 +914,7 @@ def test_real_config_no_cross():
                         },
                         "cmake": {
                             "build_type": "Release",
-                            "config": "Release",
+                            "config": ["Release"],
                             "generator": "Ninja",
                             "source_path": "src",
                             "build_path": ".py-build-cmake_cache",

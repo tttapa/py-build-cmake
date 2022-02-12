@@ -153,7 +153,6 @@ class NoDefaultValue(DefaultValue):
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
         return None
 
-
     def get_name(self):
         return 'none'
 
@@ -429,6 +428,8 @@ class ConfigOption:
             if default is not None and cfg.contains(parent(cfgpath)):
                 cfgval = cfg.setdefault(cfgpath, ConfigNode())
                 cfgval.value = default.value
+                if cfgval.value is not None:
+                    self.verify(rootopts, cfg, cfgpath)
             result = default
 
         if self.inherit_from is not None:
@@ -526,9 +527,20 @@ class PathConfigOption(StrConfigOption):
 
 class ListOfStrConfigOption(ConfigOption):
 
+    def __init__(self,
+                 name: str,
+                 description: str = '',
+                 example: str = '',
+                 default: DefaultValue = NoDefaultValue(),
+                 inherit_from: Optional[ConfPath] = None,
+                 create_if_inheritance_target_exists: bool = False,
+                 convert_str_to_singleton=False) -> None:
+        super().__init__(name, description, example, default, inherit_from,
+                         create_if_inheritance_target_exists)
+        self.convert_str_to_singleton = convert_str_to_singleton
+
     def get_typename(self):
         return 'list'
-
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
                           selfpth: ConfPath, overridecfg: ConfigNode,
@@ -549,8 +561,12 @@ class ListOfStrConfigOption(ConfigOption):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{list}, not {dict}')
         elif not isinstance(cfg[cfgpath].value, list):
-            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
-                              f'{list}, not {type(cfg[cfgpath].value)}')
+            if self.convert_str_to_singleton and \
+                    isinstance(cfg[cfgpath].value, str):
+                cfg[cfgpath].value = [cfg[cfgpath].value]
+            else:
+                raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                                  f'{list}, not {type(cfg[cfgpath].value)}')
         elif not all(isinstance(el, str) for el in cfg[cfgpath].value):
             raise ConfigError(f'Type of elements in {pth2str(cfgpath)} should '
                               f'be {str}')
@@ -560,7 +576,6 @@ class DictOfStrConfigOption(ConfigOption):
 
     def get_typename(self):
         return 'dict'
-
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
                           selfpth: ConfPath, overridecfg: ConfigNode,
@@ -577,11 +592,16 @@ class DictOfStrConfigOption(ConfigOption):
 
     def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                cfgpath: ConfPath):
+        if cfg[cfgpath].value is not None:
+            if isinstance(cfg[cfgpath].value, dict):
+                newcfg = ConfigNode.from_dict(cfg[cfgpath].value)
+                cfg[cfgpath].value = newcfg.value
+                cfg[cfgpath].sub = newcfg.sub
+            else:
+                raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                                  f'{dict}, not {type(cfg[cfgpath].value)}')
         valdict = cfg[cfgpath].sub
-        if cfg[cfgpath].value:
-            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
-                              f'{dict}, not {type(cfg[cfgpath].value)}')
-        elif not isinstance(valdict, dict):
+        if not isinstance(valdict, dict):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{dict}, not {type(valdict)}')
         elif not all(isinstance(el, str) for el in valdict.keys()):
@@ -632,4 +652,3 @@ class OverrideConfigOption(ConfigOption):
         for s in path:
             assert parentcfg.sub is not None
             parentcfg = parentcfg.sub.setdefault(s, ConfigNode(sub={}))
-

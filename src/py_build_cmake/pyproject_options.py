@@ -57,10 +57,12 @@ def get_options(config_path: Optional[Path] = None):
                         "Build type passed to the configuration step, as "
                         "-DCMAKE_BUILD_TYPE=<?>.",
                         "build_type = \"RelWithDebInfo\""),
-        StrConfigOption('config',
-                        "Configuration type passed to the build and install "
-                        "steps, as --config <?>.",
-                        default=RefDefaultValue(pth('build_type'), relative=True)),
+        ListOfStrConfigOption('config',
+                              "Configuration type passed to the build and "
+                              "install steps, as --config <?>.",
+                              default=RefDefaultValue(pth('build_type'), 
+                                                        relative=True),
+                              convert_str_to_singleton=True),
         StrConfigOption('generator',
                         "CMake generator to use, passed to the "
                         "configuration step, as "

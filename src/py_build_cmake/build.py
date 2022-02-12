@@ -369,16 +369,22 @@ class _BuildBackend(object):
             configure_cmd += ['-G', cmake_cfg[f]]
         self.run(configure_cmd, check=True, env=cmake_env)
 
-        # Build
-        build_cmd = ['cmake', '--build', str(builddir)]
-        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
-        if (f := 'config') in cmake_cfg:  # --config {config}
-            build_cmd += ['--config', cmake_cfg[f]]
-        if (f := 'build_tool_args') in cmake_cfg:
-            build_cmd += ['--'] + cmake_cfg[f]
-        self.run(build_cmd, check=True, env=cmake_env)
+        # Build and install
+        if not 'config' in cmake_cfg or not cmake_cfg['config']:
+            self.build_install_cmake(cmake_cfg, builddir, cmake_env,
+                                     install_dir, None)
+        else:
+            for config in cmake_cfg['config']:
+                self.build_install_cmake(cmake_cfg, builddir, cmake_env,
+                                         install_dir, config)
 
-        # Install
+    def build_install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
+                            config):
+        self.build_cmake(cmake_cfg, builddir, cmake_env, config)
+        self.install_cmake(cmake_cfg, builddir, cmake_env, install_dir, config)
+
+    def install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
+                      config):
         for component in cmake_cfg['install_components']:
             install_cmd = [
                 'cmake', '--install',
@@ -386,12 +392,21 @@ class _BuildBackend(object):
                 str(install_dir)
             ]
             install_cmd += cmake_cfg.get('install_args', [])
-            if (f := 'config') in cmake_cfg:  # --config {config}
-                install_cmd += ['--config', cmake_cfg[f]]
+            if config:  # --config {config}
+                install_cmd += ['--config', config]
             if component:
                 install_cmd += ['--component', component]
             print('Installing component', component or 'all')
             self.run(install_cmd, check=True, env=cmake_env)
+
+    def build_cmake(self, cmake_cfg, builddir, cmake_env, config):
+        build_cmd = ['cmake', '--build', str(builddir)]
+        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
+        if config:  # --config {config}
+            build_cmd += ['--config', config]
+        if (f := 'build_tool_args') in cmake_cfg:
+            build_cmd += ['--'] + cmake_cfg[f]
+        self.run(build_cmd, check=True, env=cmake_env)
 
     @staticmethod
     def get_build_config_name(cross_cfg):
