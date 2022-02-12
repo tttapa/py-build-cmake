@@ -1,3 +1,4 @@
+import platform
 from pprint import pprint
 import sys
 import os
@@ -87,12 +88,21 @@ class _BuildBackend(object):
         from flit_core.sdist import SdistBuilder
         rel_pyproject = os.path.relpath(pyproject, src_dir)
         extra_files = [str(rel_pyproject)] + cfg.referenced_files
+        sdist_cfg = cfg.sdist[self.get_os_name()]
         sdist_builder = SdistBuilder(pkg, metadata, src_dir, None,
                                      cfg.entrypoints, extra_files,
-                                     cfg.sdist.get('include_patterns', []),
-                                     cfg.sdist.get('exclude_patterns', []))
+                                     sdist_cfg.get('include_patterns', []),
+                                     sdist_cfg.get('exclude_patterns', []))
         sdist_tar = sdist_builder.build(Path(sdist_directory))
         return os.path.relpath(sdist_tar, sdist_directory)
+
+    @staticmethod
+    def get_os_name():
+        return {
+            "Linux": "linux",
+            "Windows": "windows",
+            "Darwin": "mac",  # TODO: untested
+        }[platform.system()]
 
     def parse_config_settings(self, config_settings: Optional[Dict]):
         if config_settings is None:
@@ -103,7 +113,7 @@ class _BuildBackend(object):
     def read_metadata(self, pyproject):
         from .config import read_metadata
         cfg = read_metadata(pyproject)
-        if self.verbose:
+        if self.verbose or 1:
             print("\npy-build-cmake options")
             print("======================")
             print("module:")
@@ -112,8 +122,10 @@ class _BuildBackend(object):
             pprint(cfg.sdist)
             print("cmake:")
             pprint(cfg.cmake)
-            print("stubgen: ")
+            print("stubgen:")
             pprint(cfg.stubgen)
+            print("cross:")
+            pprint(cfg.cross)
             print("======================\n")
         return cfg
 
@@ -161,7 +173,7 @@ class _BuildBackend(object):
             self.generate_stubs(tmp_build_dir, staging_dir, pkg, cfg.stubgen)
 
         # Configure, build and install the CMake project
-        if cfg.cmake is not None:
+        if cfg.cmake:
             self.do_native_cross_cmake_build(tmp_build_dir, staging_dir,
                                              src_dir, cfg, metadata)
 
@@ -183,12 +195,14 @@ class _BuildBackend(object):
         directory of the cross-build for packaging."""
         # When cross-compiling, optionally do a native build first
         native_install_dir = None
+        native_cmake_cfg = cfg.cmake[self.get_os_name()]
         if cfg.cross and (cfnb := 'copy_from_native_build') in cfg.cross:
             native_install_dir = tmp_build_dir / 'native-install'
-            self.run_cmake(src_dir, native_install_dir, metadata, cfg.cmake,
-                           None, native_install_dir)
+            self.run_cmake(src_dir, native_install_dir, metadata,
+                           native_cmake_cfg, None, native_install_dir)
         # Then do the actual build
-        self.run_cmake(src_dir, staging_dir, metadata, cfg.cmake, cfg.cross,
+        cmake_cfg = cfg.cmake['cross'] if cfg.cross else native_cmake_cfg
+        self.run_cmake(src_dir, staging_dir, metadata, cmake_cfg, cfg.cross,
                        native_install_dir)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:

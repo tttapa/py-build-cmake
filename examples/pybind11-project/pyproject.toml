@@ -45,7 +45,7 @@ install_args = ["--verbose"]
 install_components = ["python_modules"]
 env = {}
 
-[tool.py-build-cmake.cmake.linux] # Linux-specific options
+[tool.py-build-cmake.linux.cmake] # Linux-specific options
 generator = "Ninja Multi-Config" # Overrides
 env = {"CMAKE_PREFIX_PATH" = "${HOME}/.local"} # Appends or updates
 

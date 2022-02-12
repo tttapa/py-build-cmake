@@ -261,10 +261,11 @@ class ConfigOption:
         print('--', pth2str(selfpth))
         superpth = self.inherit_from
         if superpth is not None:
-            print(pth2str(selfpth), '<:', pth2str(superpth))
+            print("🎱", pth2str(selfpth), '<:', pth2str(superpth))
 
             # If the super option is not set, there's nothing to inherit
             if (supercfg := cfg.get(superpth)) is None:
+                print("  -> nothing overridden (superconfig does not exist)")
                 return
 
             # If this option is not set, but the super option is,
@@ -274,6 +275,7 @@ class ConfigOption:
             selfcfg = self.create_parent_config_for_inheritance(
                 rootopts, cfg, selfpth)
             if selfcfg is None:
+                print("  -> nothing overridden (parent does not exist)")
                 return
 
             # Find the option we inherit from and make sure it exists
@@ -285,6 +287,7 @@ class ConfigOption:
             supercfg = deepcopy(supercfg)
             superopt.explicit_override(self, supercfg, superpth, selfcfg,
                                        selfpth)
+            print(selfcfg.to_dict(), "<=", supercfg.to_dict())
             selfcfg.sub = supercfg.sub
         if self.sub:
             for name, sub in self.sub.items():
@@ -305,15 +308,17 @@ class ConfigOption:
         p: ConfPath = ()
         opt = rootopts
         create_paths: List[ConfPath] = []
+        print("🃏", pth2str(selfpth))
         for s in selfpth:
             p += s,
             opt = opt[s]
-            if opt.create_if_inheritance_target_exists:
+            if (selfcfg := cfg.get(p)) is None:
+                print("-", pth2str(p))
+                if not opt.create_if_inheritance_target_exists:
+                    return None
                 print("+", pth2str(p))
                 create_paths.append(p)
-            elif (selfcfg := cfg.get(p)) is None:
-                print("-", pth2str(p))
-                return None
+        print("create_paths:", create_paths)
         for p in create_paths:
             selfcfg = cfg.setdefault(p, ConfigNode(sub={}))
         return selfcfg
@@ -338,9 +343,13 @@ class ConfigOption:
                                      suboverridecfg, suboverridepath)
         if self.inherit_from is not None:
             print("📀", pth2str(selfpth), '->', pth2str(self.inherit_from))
+            print("selfcfg    "); pprint(selfcfg.to_dict())
+            print("overridecfg"); pprint(overridecfg.to_dict())
             superopt = rootopts[self.inherit_from]
             superopt.explicit_override(rootopts, selfcfg, selfpth, overridecfg,
                                        overridepath)
+            print("selfcfg    "); pprint(selfcfg.to_dict())
+            print("overridecfg"); pprint(overridecfg.to_dict())
 
     def override(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                  selfpath: ConfPath):
@@ -585,23 +594,40 @@ class OverrideConfigOption(ConfigOption):
 
     def override(self, rootopts: ConfigOption, cfg: ConfigNode,
                  cfgpath: ConfPath):
+        if (selfcfg := cfg.get(cfgpath, None)) is None:
+            return
+        elif selfcfg.value is None and selfcfg.sub is None:
+            return
         super().override(rootopts, cfg, cfgpath)
         curropt = rootopts[self.targetpath]
+        self.create_parent_config(cfg, self.targetpath)
         currcfg = cfg[self.targetpath]
         overridecfg = cfg[cfgpath]
         # Override the config at those paths by our own config
         curropt.explicit_override(rootopts, currcfg, self.targetpath,
                                   overridecfg, cfgpath)
 
+    @staticmethod
+    def create_parent_config(cfg: ConfigNode, path: ConfPath):
+        parentcfg = cfg
+        print("🐦")
+        for s in path:
+            print("->", s)
+            parentcfg = parentcfg.sub.setdefault(s, ConfigNode(sub={}))
+        pprint(cfg.to_dict())
+
 
 def get_options(config_path: Optional[Path] = None):
     root = ConfigOption("root")
-    pyproject = root.insert(ConfigOption("pyproject.toml"))
+    pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
     project = pyproject.insert(UncheckedConfigOption('project'))
     project.insert(UncheckedConfigOption('name', default=RequiredValue()))
     name_pth = pth('pyproject.toml/project/name')
     tool = pyproject.insert(UncheckedConfigOption("tool"))
-    pbc = tool.insert(ConfigOption("py-build-cmake"))
+    pbc = tool.insert(
+        ConfigOption("py-build-cmake",
+                     default=DefaultValueValue({}),
+                     create_if_inheritance_target_exists=True))
 
     # [tool.py-build-cmake.module]
     module = pbc.insert(ConfigOption("module", default=DefaultValueValue({})))
