@@ -3,6 +3,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import reduce
 import os
+from pathlib import Path
 from pprint import pprint
 from this import d
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
@@ -120,7 +121,7 @@ class DefaultValue(ABC):
 
     @abstractmethod
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
-                    cfg: ConfigNode,
+                    cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
         ...
 
@@ -131,7 +132,7 @@ class DefaultValueValue(DefaultValue):
         self.value: ConfValue = value
 
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
-                    cfg: ConfigNode,
+                    cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
         return DefaultValueWrapper(self.value)
 
@@ -139,18 +140,21 @@ class DefaultValueValue(DefaultValue):
 class NoDefaultValue(DefaultValue):
 
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
-                    cfg: ConfigNode,
+                    cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
         return None
+
+
+class MissingDefaultError(ConfigError):
+    pass
 
 
 class RequiredValue(DefaultValue):
 
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
-                    cfg: ConfigNode,
+                    cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
-        raise ConfigError(f'{pth2str(optpath)} requires a value')
-        # TODO: print full path
+        raise MissingDefaultError(f'{pth2str(cfgpath)} requires a value')
 
 
 class RefDefaultValue(DefaultValue):
@@ -161,26 +165,35 @@ class RefDefaultValue(DefaultValue):
         self.relative = relative
 
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
-                    cfg: ConfigNode,
+                    cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
-        abspath = self.path
+        abscfgpath = absoptpath = self.path
         if self.relative:
-            abspath = joinpth(optpath, ('^', ) + abspath)
-        return rootopts.update_default(cfg, abspath)
+            absoptpath = joinpth(optpath, ('^', ) + absoptpath)
+            abscfgpath = joinpth(cfgpath, ('^', ) + abscfgpath)
+        opt = rootopts.get(absoptpath)
+        if opt is None:
+            raise ValueError("DefaultValue: reference to nonexisting option "
+                             f"{pth2str(absoptpath)}")
+        return opt.update_default(rootopts, cfg, abscfgpath, absoptpath)
 
 
 class ConfigOption:
+
+    allow_unknown_keys = False
 
     def __init__(self,
                  name: str,
                  description: str = '',
                  default: DefaultValue = NoDefaultValue(),
-                 inherit_from: Optional[ConfPath] = None) -> None:
+                 inherit_from: Optional[ConfPath] = None,
+                 create_if_inheritance_target_exists: bool = False) -> None:
         self.name = name
         self.description = description
         self.sub: Dict[str, 'ConfigOption'] = {}
         self.default: DefaultValue = default
         self.inherit_from: Optional[ConfPath] = inherit_from
+        self.create_if_inheritance_target_exists = create_if_inheritance_target_exists
 
     def insert(self, opt: 'ConfigOption'):
         assert opt.name not in self.sub
@@ -213,7 +226,7 @@ class ConfigOption:
             for y in sub.iter_dfs(path + (name, )):
                 yield y
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> 'ConfigOption':
         if isinstance(key, str):
             return self.sub[key]
         elif isinstance(key, tuple):
@@ -249,33 +262,61 @@ class ConfigOption:
         superpth = self.inherit_from
         if superpth is not None:
             print(pth2str(selfpth), '<:', pth2str(superpth))
-            # If this options is not set, don't do anything
-            selfcfg = cfg.get(selfpth)
+
+            # If the super option is not set, there's nothing to inherit
+            if (supercfg := cfg.get(superpth)) is None:
+                return
+
+            # If this option is not set, but the super option is,
+            # create our own config as well, including all of its parents,
+            # but only if create_if_inheritance_target_exists is set on those
+            # options
+            selfcfg = self.create_parent_config_for_inheritance(
+                rootopts, cfg, selfpth)
             if selfcfg is None:
                 return
-            # Find the option we inherit from
-            if rootopts.get(selfpth) is None:
-                raise AssertionError(
-                    f'{pth2str(selfpth)} is not a valid option')
-            supercfg = cfg.get(superpth)
-            if supercfg is None:
-                raise ConfigError(f'{pth2str(selfpth)} inherits from '
-                                  f'{pth2str(superpth)}, '
-                                  f'which is not set')
+
+            # Find the option we inherit from and make sure it exists
+            if (superopt := rootopts.get(superpth)) is None:
+                raise ValueError(f'{pth2str(superpth)} is not a valid option')
+
+            # Create a copy of the config of our super-option and override it
+            # with our own config
             supercfg = deepcopy(supercfg)
-            print("supercfg")
-            for p, c in supercfg.iter_dfs():
-                print(p, c)
-            print("---")
-            print('override', superpth, 'with', selfpth)
-            print('override', supercfg.sub, 'with', selfcfg.sub)
-            superopt = rootopts[superpth]
             superopt.explicit_override(self, supercfg, superpth, selfcfg,
                                        selfpth)
             selfcfg.sub = supercfg.sub
         if self.sub:
             for name, sub in self.sub.items():
                 sub.inherit(rootopts, cfg, selfpth + (name, ))
+
+    @staticmethod
+    def create_parent_config_for_inheritance(rootopts: 'ConfigOption',
+                                             cfg: ConfigNode,
+                                             selfpth: ConfPath):
+        """
+        Loop over all parent options of selfpth in rootopts and default-
+        initialize their configuration in cfg to empty ConfigNodes if the 
+        option's create_if_inheritance_target_exists is set to True.
+        Returns cfg[selfpth] or None if parents were not created because of
+        create_if_inheritance_target_exists.
+        """
+        selfcfg = None
+        p: ConfPath = ()
+        opt = rootopts
+        create_paths: List[ConfPath] = []
+        for s in selfpth:
+            p += s,
+            opt = opt[s]
+            if opt.create_if_inheritance_target_exists:
+                print("+", pth2str(p))
+                create_paths.append(p)
+            elif (selfcfg := cfg.get(p)) is None:
+                print("-", pth2str(p))
+                return None
+        for p in create_paths:
+            selfcfg = cfg.setdefault(p, ConfigNode(sub={}))
+        return selfcfg
 
     def explicit_override(self, rootopts: 'ConfigOption', selfcfg: ConfigNode,
                           selfpth: ConfPath, overridecfg: ConfigNode,
@@ -295,75 +336,114 @@ class ConfigOption:
             suboverridecfg = overridecfg.sub[name]
             subopt.explicit_override(rootopts, subselfcfg, subpath,
                                      suboverridecfg, suboverridepath)
+        if self.inherit_from is not None:
+            print("📀", pth2str(selfpth), '->', pth2str(self.inherit_from))
+            superopt = rootopts[self.inherit_from]
+            superopt.explicit_override(rootopts, selfcfg, selfpth, overridecfg,
+                                       overridepath)
 
-    def override(self, rootopts: 'ConfigOption', selfpath: ConfPath,
-                 cfg: ConfigNode):
+    def override(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+                 selfpath: ConfPath):
         """Override other options with this option if appropriate. This is a 
         no-op in most cases and only does something in OverrideConfigOption."""
         assert cfg.contains(selfpath)
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
+    def verify_impl(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+                    cfgpath: ConfPath):
+        print("✅", pth2str(cfgpath))
         assert cfg.contains(cfgpath)
         selfcfg = cfg[cfgpath]
-        if (unkwn := set(selfcfg.sub or ()) - set(self.sub or ())):
-            raise ConfigError(f'Unkown options in {pth2str(cfgpath)}: ' +
-                              ', '.join(unkwn))
+        # Check if there are any unknown options in the config
+        if not self.allow_unknown_keys:
+            if (unkwn := set(selfcfg.sub or ()) - set(self.sub or ())):
+                raise ConfigError(f'Unkown options in {pth2str(cfgpath)}: ' +
+                                  ', '.join(unkwn))
+        # Recursively verify the sub-options
         if selfcfg.sub:
+            print("📍", selfcfg.sub.keys())
             for name, sub in selfcfg.sub.items():
-                self.sub[name].verify(rootopts, cfgpath + (name, ), cfg)
+                if name in self.sub:
+                    self.sub[name].verify(rootopts, cfg, cfgpath + (name, ))
+        else:
+            print("📌", cfgpath)
+
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        if self.inherit_from is None:
+            return self.verify_impl(rootopts, cfg, cfgpath)
+        else:
+            return rootopts[self.inherit_from].verify_impl(
+                rootopts, cfg, cfgpath)
 
     def override_all(self, cfg: ConfigNode):
         # This is just me being lazy, we probably don't need to iterate over
         # all nodes ...
         for p, opt in self.iter_dfs():
             if cfg.contains(p):
-                opt.override(self, p, cfg)
+                opt.override(self, cfg, p)
 
     def verify_all(self, cfg: ConfigNode):
-        self.verify(self, (), cfg)
+        self.verify(self, cfg, ())
 
     def inherit_all(self, cfg: ConfigNode):
         self.inherit(self, cfg, ())
 
-    def update_default(self, cfg: ConfigNode,
-                       path: ConfPath) -> Optional[DefaultValueWrapper]:
+    def update_default(
+            self,
+            rootopts: 'ConfigOption',
+            cfg: ConfigNode,
+            cfgpath: ConfPath,
+            selfpath: Optional[ConfPath] = None
+    ) -> Optional[DefaultValueWrapper]:
+        if selfpath is None:
+            selfpath = cfgpath
+
+        result = None
         # If the entire path exists in cfg, simply return that value
-        if (cfgval := cfg.get(path)) is not None:
-            return cfgval
+        if (cfgval := cfg.get(cfgpath)) is not None:
+            result = cfgval
         # If the path is not yet in cfg
         else:
-            opt = self[path]
-            assert opt.name == basename(path)
+            assert self is rootopts[selfpath]
             # Find the default value for this option
-            default = opt.default.get_default(self, opt, cfg, path)
-            # Then create all parent paths, inserting default values as
-            # necessary:
-            if hasparent(path):
-                self.update_default(cfg, parent(path))
-            # And once the parent has been created, insert the default
-            # value if the parent is set
-            if default is not None and cfg.contains(parent(path)):
-                cfgval = cfg.setdefault(path, ConfigNode())
+            default = self.default.get_default(rootopts, self, cfg, cfgpath,
+                                               selfpath)
+            # If the parent is set in the config, set this value as well
+            if default is not None and cfg.contains(parent(cfgpath)):
+                cfgval = cfg.setdefault(cfgpath, ConfigNode())
                 cfgval.value = default.value
-            return default
+            result = default
+
+        if self.inherit_from is not None:
+            targetopt = rootopts.get(self.inherit_from)
+            if targetopt is None:
+                raise ValueError(f"Inheritance {pth2str(selfpath)} targets "
+                                 f"nonexisting option "
+                                 f"{pth2str(self.inherit_from)}")
+            print("🌻", pth2str(selfpath), '<:', pth2str(self.inherit_from))
+            for p, opt in targetopt.iter_dfs():
+                if opt.inherit_from is not None:
+                    # TODO: this might be too restrictive, but we need to break
+                    # the recursion somehow ...
+                    continue
+                optpth = joinpth(self.inherit_from, p)
+                newcfgpth = joinpth(cfgpath, p)
+                print("🌳", "p:", pth2str(p), 'optpth:', pth2str(optpth),
+                      'newcfgpth:', pth2str(newcfgpth))
+                opt.update_default(rootopts, cfg, newcfgpth, optpth)
+
+        return result
 
     def update_default_all(self, cfg: ConfigNode):
-        for p in self.iter_leaf_opt_paths():
+        for p, opt in self.iter_dfs():
             print('🌿', pth2str(p))
-            self.update_default(cfg, p)
+            if hasparent(p) and cfg.contains(parent(p)):
+                opt.update_default(self, cfg, p)
 
 
 class UncheckedConfigOption(ConfigOption):
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
-        assert isinstance(self.default, NoDefaultValue)
-        assert self.inherit_from is None
-
-    def override(self, rootopts: 'ConfigOption', selfpath: ConfPath,
-                 cfg: ConfigNode):
-        pass
+    allow_unknown_keys = True
 
 
 class StrConfigOption(ConfigOption):
@@ -376,8 +456,8 @@ class StrConfigOption(ConfigOption):
         assert not overridecfg.sub
         selfcfg.value = deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
         if cfg[cfgpath].sub:
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{str}, not {dict}')
@@ -393,29 +473,34 @@ class PathConfigOption(StrConfigOption):
                  description: str,
                  default: DefaultValue = NoDefaultValue(),
                  must_exist: bool = True,
-                 expected_contents: List[str] = []):
+                 expected_contents: List[str] = [],
+                 base_path: Optional[Path] = None):
         super().__init__(name, description, default)
         self.must_exist = must_exist
         self.expected_contents = expected_contents
+        self.base_path = base_path
 
     def check_path(self, cfg: ConfigNode, cfgpath):
         path = cfg[cfgpath].value = os.path.normpath(cfg[cfgpath].value)
         if os.path.isabs(path):
             raise ConfigError(f'{pth2str(cfgpath)} must be a relative path')
-        if self.must_exist and not os.path.exists(path):
-            raise ConfigError(f'{pth2str(cfgpath)} does not exist')
-        missing = [
-            sub for sub in self.expected_contents
-            if not os.path.exists(os.path.join(path, sub))
-        ]
-        if missing:
-            missingstr = '", "'.join(missing)
-            raise ConfigError(f'{pth2str(cfgpath)} does not contain required '
-                              f'files or folders "{missingstr}"')
+        if self.base_path is not None:
+            abspath = self.base_path / path
+            if self.must_exist and not os.path.exists(abspath):
+                raise ConfigError(f'{pth2str(cfgpath)}: {str(abspath)} '
+                                  f'does not exist')
+            missing = [
+                sub for sub in self.expected_contents
+                if not os.path.exists(os.path.join(abspath, sub))
+            ]
+            if missing:
+                missingstr = '", "'.join(missing)
+                raise ConfigError(f'{pth2str(cfgpath)} does not contain '
+                                  f'required files or folders "{missingstr}"')
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
-        super().verify(rootopts, cfgpath, cfg)
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        super().verify(rootopts, cfg, cfgpath)
         self.check_path(cfg, cfgpath)
 
 
@@ -427,12 +512,15 @@ class ListOfStrConfigOption(ConfigOption):
         assert not self.sub
         assert not selfcfg.sub
         assert not overridecfg.sub
-        assert isinstance(selfcfg.value, list)
-        assert isinstance(overridecfg.value, list)
-        selfcfg.value += deepcopy(overridecfg.value)
+        if overridecfg.value is not None:
+            if selfcfg.value is None:
+                selfcfg.value = []
+            assert isinstance(selfcfg.value, list)
+            assert isinstance(overridecfg.value, list)
+            selfcfg.value += deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
         if cfg[cfgpath].sub:
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{list}, not {dict}')
@@ -452,22 +540,26 @@ class DictOfStrConfigOption(ConfigOption):
         assert not self.sub
         assert not selfcfg.value
         assert not overridecfg.value
-        assert isinstance(selfcfg.sub, dict)
-        assert isinstance(overridecfg.sub, dict)
-        selfcfg.sub |= deepcopy(overridecfg.sub)
+        if overridecfg.sub is not None:
+            if selfcfg.sub is None:
+                selfcfg.sub = {}
+            assert isinstance(selfcfg.sub, dict)
+            assert isinstance(overridecfg.sub, dict)
+            selfcfg.sub |= deepcopy(overridecfg.sub)
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        valdict = cfg[cfgpath].sub
         if cfg[cfgpath].value:
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{dict}, not {type(cfg[cfgpath].value)}')
-        elif not isinstance(cfg[cfgpath].sub, dict):
+        elif not isinstance(valdict, dict):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
-                              f'{dict}, not {type(cfg[cfgpath].sub)}')
-        elif not all(isinstance(el, str) for el in cfg[cfgpath].sub.keys()):
+                              f'{dict}, not {type(valdict)}')
+        elif not all(isinstance(el, str) for el in valdict.keys()):
             raise ConfigError(f'Type of keys in {pth2str(cfgpath)} should '
                               f'be {str}')
-        elif not all(isinstance(el, str) for el in cfg[cfgpath].sub.values()):
+        elif not all(isinstance(el.value, str) for el in valdict.values()):
             raise ConfigError(f'Type of values in {pth2str(cfgpath)} should '
                               f'be {str}')
 
@@ -483,32 +575,36 @@ class OverrideConfigOption(ConfigOption):
         super().__init__(name, description, default)
         self.targetpath = targetpath
 
-    def verify(self, rootopts: 'ConfigOption', cfgpath: ConfPath,
-               cfg: ConfigNode):
-        rootopts[self.targetpath].verify(rootopts, cfgpath, cfg)
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        rootopts[self.targetpath].verify(rootopts, cfg, cfgpath)
 
-    def override(self, rootopts: ConfigOption, selfpath: ConfPath,
-                 cfg: ConfigNode):
-        super().override(rootopts, selfpath, cfg)
+    def inherit(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+                selfpth: ConfPath):
+        pass
+
+    def override(self, rootopts: ConfigOption, cfg: ConfigNode,
+                 cfgpath: ConfPath):
+        super().override(rootopts, cfg, cfgpath)
         curropt = rootopts[self.targetpath]
         currcfg = cfg[self.targetpath]
-        overridecfg = cfg[selfpath]
+        overridecfg = cfg[cfgpath]
         # Override the config at those paths by our own config
         curropt.explicit_override(rootopts, currcfg, self.targetpath,
-                                  overridecfg, selfpath)
+                                  overridecfg, cfgpath)
 
 
-def get_options():
+def get_options(config_path: Optional[Path] = None):
     root = ConfigOption("root")
     pyproject = root.insert(ConfigOption("pyproject.toml"))
     project = pyproject.insert(UncheckedConfigOption('project'))
-    project.insert(UncheckedConfigOption('name'))
+    project.insert(UncheckedConfigOption('name', default=RequiredValue()))
     name_pth = pth('pyproject.toml/project/name')
     tool = pyproject.insert(UncheckedConfigOption("tool"))
     pbc = tool.insert(ConfigOption("py-build-cmake"))
 
     # [tool.py-build-cmake.module]
-    module = pbc.insert(ConfigOption("module"))
+    module = pbc.insert(ConfigOption("module", default=DefaultValueValue({})))
     pbc_pth = pth('pyproject.toml/tool/py-build-cmake')
     module.insert_multiple([
         StrConfigOption('name',
@@ -518,11 +614,18 @@ def get_options():
                         default=RefDefaultValue(name_pth)),
         PathConfigOption('directory',
                          "Directory containing the Python package.",
-                         default=DefaultValueValue(".")),
+                         default=DefaultValueValue("."),
+                         base_path=config_path),
     ])
 
-    # [tool.py-build-cmake.module]
-    sdist = pbc.insert(ConfigOption("sdist"))
+    # [tool.py-build-cmake.sdist]
+    sdist = pbc.insert(
+        ConfigOption(
+            "sdist",
+            default=DefaultValueValue({}),
+            create_if_inheritance_target_exists=True,
+        ))
+    sdist_pth = pth('pyproject.toml/tool/py-build-cmake/sdist')
     sdist.insert_multiple([
         ListOfStrConfigOption('include',
                               "Files and folders to include in the sdist "
@@ -556,7 +659,8 @@ def get_options():
         PathConfigOption('source_path',
                          "Folder containing CMakeLists.txt.",
                          default=DefaultValueValue("."),
-                         expected_contents=["CMakeLists.txt"]),
+                         expected_contents=["CMakeLists.txt"],
+                         base_path=config_path),
         PathConfigOption('build_path',
                          "CMake build and cache folder.",
                          default=DefaultValueValue('.py-build-cmake_cache'),
@@ -600,15 +704,6 @@ def get_options():
                               "Environment variables to set when running "
                               "CMake.",
                               default=DefaultValueValue({})),
-        ConfigOption("linux",
-                     "Override options for Linux. ",
-                     inherit_from=cmake_pth),
-        ConfigOption("windows",
-                     "Override options for Windows. ",
-                     inherit_from=cmake_pth),
-        ConfigOption("mac",
-                     "Override options for Mac. ",
-                     inherit_from=cmake_pth),
     ])# yapf: disable
 
     # [tool.py-build-cmake.stubgen]
@@ -627,6 +722,27 @@ def get_options():
                               "List of extra arguments passed to stubgen.",
                               default=DefaultValueValue([])),
     ]) # yapf: disable
+
+    # [tool.py-build-cmake.{linux,windows,mac}]
+    for system in ["Linux", "Windows", "Mac"]:
+        name = system.lower()
+        opt = pbc.insert(
+            ConfigOption(
+                name,
+                f"Override options for {system}.",
+                create_if_inheritance_target_exists=True,
+                default=DefaultValueValue({}),
+            ))
+        opt.insert_multiple([
+            ConfigOption("sdist",
+                         f"{system}-specific sdist options.",
+                         inherit_from=sdist_pth,
+                         create_if_inheritance_target_exists=True),
+            ConfigOption("cmake",
+                         f"{system}-specific CMake options.",
+                         inherit_from=cmake_pth,
+                         create_if_inheritance_target_exists=True),
+        ])
 
     # [tool.py-build-cmake.cross]
     cross = pbc.insert(ConfigOption("cross"))
@@ -651,7 +767,8 @@ def get_options():
                         default=RequiredValue()),
         PathConfigOption('toolchain_file',
                          "CMake toolchain file to use.",
-                         default=RequiredValue()),
+                         default=RequiredValue(),
+                         base_path=config_path),
         ListOfStrConfigOption('copy_from_native_build',
                               "If set, this will cause a native version of the "
                               "CMake project to be built and installed in a "
@@ -664,6 +781,9 @@ def get_options():
                               "cross-compiling.\n"
                               "May include the '*' wildcard "
                               "(but not '**' for recursive patterns)."),
+        ConfigOption("sdist",
+                     "Override sdist options when cross-compiling.",
+                     inherit_from=sdist_pth),
         ConfigOption("cmake",
                      "Override CMake options when cross-compiling.",
                      inherit_from=cmake_pth),

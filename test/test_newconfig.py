@@ -64,20 +64,26 @@ def test_update_defaults():
 
     cfg = nc.ConfigNode.from_dict({})
     trunk.default = nc.DefaultValueValue({})
-    res = opts.update_default(cfg, nc.pth('trunk'))
+    res = trunk.update_default(opts, cfg, nc.pth('trunk'))
     assert res is not None and res.value == {}
+    assert cfg.to_dict() == {"trunk": {}}
+    opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {}}
 
     cfg = nc.ConfigNode.from_dict({})
     leaf12.default = nc.DefaultValueValue("d12")
-    res = opts.update_default(cfg, nc.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, nc.pth('trunk/mid1/leaf12'))
     assert res is not None and res.value == "d12"
+    assert cfg.to_dict() == {}
+    opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {}}
 
     cfg = nc.ConfigNode.from_dict({})
     mid1.default = nc.DefaultValueValue({})
-    res = opts.update_default(cfg, nc.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, nc.pth('trunk/mid1/leaf12'))
     assert res is not None and res.value == "d12"
+    assert cfg.to_dict() == {}
+    opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {"mid1": {"leaf12": "d12"}}}
 
     cfg = nc.ConfigNode.from_dict({})
@@ -85,11 +91,13 @@ def test_update_defaults():
     print(cfg.value)
     print(cfg.sub)
     trunk.default = nc.NoDefaultValue()
-    res = opts.update_default(cfg, nc.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, nc.pth('trunk/mid1/leaf12'))
     assert res is not None and res.value == "d12"
+    assert cfg.to_dict() == {}
     print(cfg)
     print(cfg.value)
     print(cfg.sub)
+    opts.update_default_all(cfg)
     assert cfg.to_dict() == {}
 
 
@@ -526,15 +534,20 @@ def test_real_config_inherit_cross_cmake():
     opts = nc.get_options()
     d = {
         "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
             "tool": {
+                "some-other-tool": {},
                 "py-build-cmake": {
                     "cmake": {
                         "build_type": "Release",
                         "generator": "Ninja",
+                        "source_path": "src",
                         "env": {
                             "foo": "bar"
                         },
-                        "args": ["arg1", "arg2"]
+                        "args": ["arg1", "arg2"],
                     },
                     "cross": {
                         "implementation": "cp",
@@ -544,12 +557,23 @@ def test_real_config_inherit_cross_cmake():
                         "toolchain_file": "aarch64-linux-gnu.cmake",
                         "cmake": {
                             "generator": "Unix Makefiles",
+                            "build_type": "RelWithDebInfo",
                             "env": {
                                 "crosscompiling": "true"
                             },
-                            "args": ["arg3", "arg4"]
+                            "args": ["arg3", "arg4"],
                         },
                     },
+                    "linux": {
+                        "cmake": {
+                            "install_components": ["linux_install"],
+                        }
+                    },
+                    "windows": {
+                        "cmake": {
+                            "install_components": ["win_install"],
+                        }
+                    }
                 }
             }
         }
@@ -561,15 +585,20 @@ def test_real_config_inherit_cross_cmake():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
             "tool": {
+                "some-other-tool": {},
                 "py-build-cmake": {
                     "cmake": {
                         "build_type": "Release",
                         "generator": "Ninja",
+                        "source_path": "src",
+                        "args": ["arg1", "arg2"],
                         "env": {
                             "foo": "bar"
                         },
-                        "args": ["arg1", "arg2"]
                     },
                     "cross": {
                         "implementation": "cp",
@@ -578,14 +607,50 @@ def test_real_config_inherit_cross_cmake():
                         "arch": "linux_aarch64",
                         "toolchain_file": "aarch64-linux-gnu.cmake",
                         "cmake": {
-                            "build_type": "Release",
+                            "build_type": "RelWithDebInfo",
                             "generator": "Unix Makefiles",
+                            "source_path": "src",
+                            "args": ["arg1", "arg2", "arg3", "arg4"],
                             "env": {
                                 "foo": "bar",
                                 "crosscompiling": "true",
                             },
-                            "args": ["arg1", "arg2", "arg3", "arg4"]
                         },
+                    },
+                    "linux": {
+                        "cmake": {
+                            "build_type": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "args": ["arg1", "arg2"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                            "install_components": ["linux_install"]
+                        }
+                    },
+                    "windows": {
+                        "cmake": {
+                            "build_type": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "args": ["arg1", "arg2"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                            "install_components": ["win_install"]
+                        }
+                    },
+                    "mac": {
+                        "cmake": {
+                            "build_type": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "args": ["arg1", "arg2"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        }
                     },
                 }
             }
@@ -593,6 +658,486 @@ def test_real_config_inherit_cross_cmake():
     }
 
     opts.update_default_all(cfg)
-    # TODO: inherit default values as well 
-    #       (but handle relative defaults correctly)
     pprint(cfg.to_dict())
+    assert cfg.to_dict() == {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "module": {
+                        "name": "foobar",
+                        "directory": ".",
+                    },
+                    "sdist": {
+                        "include": [],
+                        "exclude": [],
+                    },
+                    "cmake": {
+                        "build_type": "Release",
+                        "config": "Release",
+                        "generator": "Ninja",
+                        "source_path": "src",
+                        "build_path": ".py-build-cmake_cache",
+                        "options": {},
+                        "args": ["arg1", "arg2"],
+                        "build_args": [],
+                        "build_tool_args": [],
+                        "install_args": [],
+                        "install_components": [""],
+                        "env": {
+                            "foo": "bar"
+                        },
+                    },
+                    "cross": {
+                        "implementation": "cp",
+                        "version": "310",
+                        "abi": "cp310",
+                        "arch": "linux_aarch64",
+                        "toolchain_file": "aarch64-linux-gnu.cmake",
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "RelWithDebInfo",
+                            "config": "RelWithDebInfo",
+                            "generator": "Unix Makefiles",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2", "arg3", "arg4"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": [""],
+                            "env": {
+                                "foo": "bar",
+                                "crosscompiling": "true",
+                            },
+                        },
+                    },
+                    "linux": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": ["linux_install"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        },
+                    },
+                    "windows": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": ["win_install"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        }
+                    },
+                    "mac": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": [""],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+def test_real_config_no_cross():
+    opts = nc.get_options()
+    d = {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "cmake": {
+                        "build_type": "Release",
+                        "generator": "Ninja",
+                        "source_path": "src",
+                        "env": {
+                            "foo": "bar"
+                        },
+                        "args": ["arg1", "arg2"],
+                    },
+                    "linux": {
+                        "cmake": {
+                            "install_components": ["linux_install"],
+                        }
+                    },
+                    "windows": {
+                        "cmake": {
+                            "install_components": ["win_install"],
+                        }
+                    }
+                }
+            }
+        }
+    }
+    cfg = nc.ConfigNode.from_dict(d)
+    opts.verify_all(cfg)
+    opts.inherit_all(cfg)
+    pprint(cfg.to_dict())
+    opts.update_default_all(cfg)
+    pprint(cfg.to_dict())
+    assert cfg.to_dict() == {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "module": {
+                        "name": "foobar",
+                        "directory": ".",
+                    },
+                    "sdist": {
+                        "include": [],
+                        "exclude": [],
+                    },
+                    "cmake": {
+                        "build_type": "Release",
+                        "config": "Release",
+                        "generator": "Ninja",
+                        "source_path": "src",
+                        "build_path": ".py-build-cmake_cache",
+                        "options": {},
+                        "args": ["arg1", "arg2"],
+                        "build_args": [],
+                        "build_tool_args": [],
+                        "install_args": [],
+                        "install_components": [""],
+                        "env": {
+                            "foo": "bar"
+                        },
+                    },
+                    "linux": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": ["linux_install"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        },
+                    },
+                    "windows": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": ["win_install"],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        }
+                    },
+                    "mac": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                        "cmake": {
+                            "build_type": "Release",
+                            "config": "Release",
+                            "generator": "Ninja",
+                            "source_path": "src",
+                            "build_path": ".py-build-cmake_cache",
+                            "options": {},
+                            "args": ["arg1", "arg2"],
+                            "build_args": [],
+                            "build_tool_args": [],
+                            "install_args": [],
+                            "install_components": [""],
+                            "env": {
+                                "foo": "bar"
+                            },
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+def test_real_config_no_cmake():
+    opts = nc.get_options()
+    d = {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {}
+            }
+        }
+    }
+    cfg = nc.ConfigNode.from_dict(d)
+    opts.verify_all(cfg)
+    opts.inherit_all(cfg)
+    pprint(cfg.to_dict())
+    opts.update_default_all(cfg)
+    pprint(cfg.to_dict())
+    assert cfg.to_dict() == {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "module": {
+                        "name": "foobar",
+                        "directory": ".",
+                    },
+                    "sdist": {
+                        "include": [],
+                        "exclude": [],
+                    },
+                    "linux": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                    },
+                    "windows": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                    },
+                    "mac": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                    },
+                }
+            }
+        }
+    }
+
+
+def test_real_config_local_override():
+    opts = nc.get_options()
+    d = {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {}
+            }
+        },
+        "py-build-cmake.local.toml": {
+            "sdist": {
+                "include": ["somefile*"]
+            }
+        }
+    }
+    cfg = nc.ConfigNode.from_dict(d)
+    opts.verify_all(cfg)
+    opts.override_all(cfg)
+    opts.inherit_all(cfg)
+    pprint(cfg.to_dict())
+    opts.update_default_all(cfg)
+    pprint(cfg.to_dict())
+    assert cfg.to_dict() == {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "module": {
+                        "name": "foobar",
+                        "directory": ".",
+                    },
+                    "sdist": {
+                        "include": ["somefile*"],
+                        "exclude": [],
+                    },
+                    "linux": {
+                        "sdist": {
+                            "include": ["somefile*"],
+                            "exclude": [],
+                        },
+                    },
+                    "windows": {
+                        "sdist": {
+                            "include": ["somefile*"],
+                            "exclude": [],
+                        },
+                    },
+                    "mac": {
+                        "sdist": {
+                            "include": ["somefile*"],
+                            "exclude": [],
+                        },
+                    },
+                }
+            }
+        },
+        "py-build-cmake.local.toml": {
+            "sdist": {
+                "include": ["somefile*"]
+            }
+        }
+    }
+
+
+def test_real_config_local_override_windows():
+    opts = nc.get_options()
+    d = {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    # "sdist":{},
+                }
+            }
+        },
+        "py-build-cmake.local.toml": {
+            "windows": {
+                "sdist": {
+                    "include": ["somefile*"]
+                },
+            }
+        }
+    }
+    cfg = nc.ConfigNode.from_dict(d)
+    opts.verify_all(cfg)
+    opts.override_all(cfg)
+    opts.inherit_all(cfg)
+    pprint(cfg.to_dict())
+    opts.update_default_all(cfg)
+    pprint(cfg.to_dict())
+    assert cfg.to_dict() == {
+        "pyproject.toml": {
+            "project": {
+                "name": "foobar"
+            },
+            "tool": {
+                "some-other-tool": {},
+                "py-build-cmake": {
+                    "module": {
+                        "name": "foobar",
+                        "directory": ".",
+                    },
+                    "sdist": {
+                        "include": [],
+                        "exclude": [],
+                    },
+                    "linux": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                    },
+                    "windows": {
+                        "sdist": {
+                            "include": ["somefile*"],
+                            "exclude": [],
+                        },
+                    },
+                    "mac": {
+                        "sdist": {
+                            "include": [],
+                            "exclude": [],
+                        },
+                    },
+                }
+            }
+        },
+        "py-build-cmake.local.toml": {
+            "windows": {
+                "sdist": {
+                    "include": ["somefile*"]
+                }
+            }
+        }
+    }
+
+
+if __name__ == '__main__':
+    test_real_config_inherit_cross_cmake()
