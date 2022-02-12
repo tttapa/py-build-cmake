@@ -77,7 +77,8 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
     cfg.referenced_files = flit_cfg.referenced_files
     cfg.license = pyproject['project'].setdefault('license', {})
 
-    from .newconfig import get_options, ConfigNode
+    from .config_options import ConfigNode
+    from .pyproject_options import get_options
     opts = get_options(pyproject_path.parent)
 
     localconfig_fname, localconfig = localcfg

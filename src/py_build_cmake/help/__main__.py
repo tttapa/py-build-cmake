@@ -3,8 +3,9 @@ import itertools
 import shutil
 import sys
 import textwrap
-from py_build_cmake.config import ConfigOption, ConfigOptionRef, get_config_options
 
+from py_build_cmake.config_options import ConfigOption, NoDefaultValue, RefDefaultValue, RequiredValue, pth, pth2str
+from py_build_cmake.pyproject_options import get_options
 
 def _print_wrapped(text, indent, width=None):
     """Print the given string with the given indentation, wrapping it to the
@@ -22,53 +23,60 @@ def _print_wrapped(text, indent, width=None):
 
 def get_default_str(opt: ConfigOption):
     """Get a string representation of the default value for the given option."""
-    default = None
-    if opt.default is ConfigOption.Required:
-        default = 'required'
-    if opt.default is ConfigOption.NoDefault:
-        default = 'none'
-    elif isinstance(opt.default, ConfigOptionRef):
-        default = ConfigOption.stringify_prefix(opt.default.prefix)
-    elif opt.default is not ConfigOption.Required:
-        default = repr(opt.default)
-    return default
+    return opt.default.get_name()
 
 
-def help_print_md(pbc_opts):
+def help_print_md(pbc_opts: ConfigOption):
     """
     Prints the top-level options in `pbc_opts` as MarkDown tables.
     """
-    for k, v in pbc_opts.items():
+    for k, v in pbc_opts.sub.items():
         print('##', k)
         print('| Option | Description | Type | Default |')
         print('|--------|-------------|------|---------|')
-        for kk, vv in v.items():
-            if not issubclass(type(vv), ConfigOption):
-                continue
+        for kk, vv in v.sub.items() or {}:
             print('|', f'`{kk}`', '|',
-                  html.escape(vv.helpstring).replace('\n', '<br/>'), '|',
-                  vv.get_typename(), '|', f'`{get_default_str(vv)}`', '|')
+                  _get_full_description(vv), '|',
+                  vv.get_typename() or '', '|', f'`{get_default_str(vv)}`', '|')
+
+def _get_full_description(vv: ConfigOption):
+    descr = html.escape(vv.description)
+    descr = descr.replace('\n', '<br/>')
+    descr = descr.replace('*', '\\*')
+    descr = descr.replace('_', '\\_')
+    if vv.inherit_from:
+        descr += '<br/>Inherits from: `/' + pth2str(vv.inherit_from) + '`'
+    if vv.example:
+        descr += '<br/>For example: `' + vv.example + '`'
+    return descr
 
 
-def recursive_help_print(opt, level=0):
+def recursive_help_print(opt: ConfigOption, level=0):
     """Recursively prints the help messages for the options in `opt`."""
-    for k, v in opt.items():
+    for k, v in opt.sub.items():
         if k == 'project':
             continue
         indent = 4 * level * ' '
         header = '\n' + k
-        if isinstance(v, dict):
+        if v.sub:
             header += ':'
             print(textwrap.indent(header, indent))
             recursive_help_print(v, level + 1)
         else:
-            header += f' ({v.get_typename()}'
-            if v.default is ConfigOption.Required:
-                header += ', required'
-            header += ')'
+            headerfields = []
+            if (typename:= v.get_typename()) is not None:
+                headerfields += [typename]
+            if isinstance(v.default, RequiredValue):
+                headerfields += ['required']
+            if v.inherit_from:
+                headerfields += ['inherits from /' + pth2str(v.inherit_from)]
+            if headerfields:
+                header += ' (' + ', '.join(headerfields) + ')'
             print(textwrap.indent(header, indent))
-            _print_wrapped(v.helpstring, indent + '  ')
-            default = get_default_str(v)
+            _print_wrapped(v.description, indent + '  ')
+            if v.example:
+                _print_wrapped('For example: ' + v.example, indent + '  ')
+            default = v.default.get_name()
             if default is not None:
                 print(textwrap.indent('Default: ' + default, indent + '  '))
 
@@ -87,14 +95,31 @@ def _print_usage():
     """))
 
 if __name__ == '__main__':
-    opts = get_config_options('tool.py-build-cmake')
+    opts = get_options()
+    help_pth = pth('pyproject.toml/tool/py-build-cmake')
     help_opt = {'-h', '-?', '--help', 'h', 'help', '?'}
-    if len(sys.argv) > 1 and sys.argv[1] == 'md':
-        pbc_opts = opts.get_option('tool.py-build-cmake')
+    if len(sys.argv) == 2 and sys.argv[1] == 'md':
+        pbc_opts = opts[help_pth]
+        print("# py-build-cmake configuration options\n")
+        print("These options go in the `[tool.py-build-cmake]` section of "
+              "the `pyproject.toml` configuration file.\n")
         help_print_md(pbc_opts)
+        print("# Local overrides\n")
+        print("Additionally, two extra configuration files can be placed in "
+              "the same directory as `pyproject.toml` to override some "
+              "options for your specific use case:\n\n"
+              "- `py-build-cmake.local.toml`: the options in this file "
+              "override the values in the `tool.py-build-cmake` section of "
+              "`pyproject.toml`.<br/>This is useful if you need specific "
+              "arguments or CMake options to compile the package on your "
+              "system.\n"
+              "- `py-build-cmake.cross.toml`: the options in this file "
+              "override the values in the `tool.py-build-cmake.cross` section "
+              "of `pyproject.toml`.<br/>Useful for cross-compiling the "
+              "package without having to edit the main configuration file.\n")
     elif len(sys.argv) > 1 or set(map(str.lower, sys.argv[1:])) & help_opt:
         _print_usage()
     else:
-        print("List of py-build-cmake pyproject.toml options.")
-        recursive_help_print(opts.options)
+        print("List of py-build-cmake pyproject.toml options:")
+        recursive_help_print(opts[help_pth])
         print()
