@@ -82,13 +82,13 @@ class ConfigNode:
     def __getitem__(self, key):
         if isinstance(key, str):
             if self.sub is None:
-                raise KeyError
+                raise KeyError()
             return self.sub[key]
         elif isinstance(key, tuple):
             if len(key) == 0:
                 return self
             elif self.sub is None:
-                raise KeyError
+                raise KeyError()
             else:
                 return self.sub[key[0]][key[1:]]
         else:
