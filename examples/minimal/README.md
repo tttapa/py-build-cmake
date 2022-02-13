@@ -34,7 +34,7 @@ will be shown on your PyPI project page.
 
 ### pyproject.toml
 
-Defines how the project is built and contains all the important metadata for
+Defines how the project is built and contains all the necessary metadata for
 your package. Specifies CMake options, which files to include in the package,
 as well as options for other tools. This file is covered in much more detail
 below, because it is the main way you will interact with py-build-cmake's build

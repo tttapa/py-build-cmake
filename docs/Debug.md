@@ -101,7 +101,7 @@ Next, define the debug configuration in `.vscode/launch.json`:
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) Launch Python",
             "type": "cppdbg",
             "request": "launch",
             "program": "${command:python.interpreterPath}",

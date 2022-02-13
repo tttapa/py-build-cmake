@@ -192,7 +192,7 @@ def get_options(config_path: Optional[Path] = None):
                         "abi = 'cp310'",
                         default=RequiredValue()),
         StrConfigOption('arch',
-                        "Operating system and architecture (not dots or "
+                        "Operating system and architecture (no dots or "
                         "dashes, only underscores, all lowercase).",
                         "arch = 'linux_x86_64'",
                         default=RequiredValue()),
