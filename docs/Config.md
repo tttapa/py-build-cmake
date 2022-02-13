@@ -1,3 +1,5 @@
+<small>[Index](index.html)</small>
+
 # py-build-cmake configuration options
 
 These options go in the `[tool.py-build-cmake]` section of the `pyproject.toml` configuration file.

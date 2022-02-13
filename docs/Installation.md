@@ -1,3 +1,5 @@
+<small>[Index](index.html)</small>
+
 # Installation
 
 ## PyPI

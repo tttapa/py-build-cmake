@@ -1,3 +1,5 @@
+<small>[Index](index.html)</small>
+
 # Cross-compilation
 
 Cross-compiling Python extension modules is supported out of the box through 

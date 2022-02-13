@@ -1,3 +1,5 @@
+<small>[Index](index.html)</small>
+
 # Debugging
 
 You'll most likely end up in a situation where you'd like to debug your C++
