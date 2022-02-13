@@ -49,8 +49,21 @@ Note that `py-build-cmake` does not check the Python version, im ABI when
 cross-compiling, so make sure that your CMakeLists.txt scripts find the correct
 Python installation (on that matches the version, implementation, ABI, operating
 system and architecture specified in the `py-build-cmake.cross.toml` file),
-e.g. by setting the `-D Python3_ROOT_DIR:PATH="..."` CMake option (see
-<https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>).
+e.g. by setting the appropriate hints and artifacts variables:
+
+- <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>
+- <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>
+
+You can either specify these in your toolchain file, or in the
+`py-build-cmake.cross.toml` configuration, for example:
+
+```toml
+[cmake.options]
+Python3_LIBRARY = "/path-to-sysroot/usr/lib/aarch64-linux-gnu/libpython3.9.so"
+Python3_INCLUDE_DIR = "/path-to-sysroot/usr/include/python3.9"
+```
+
+You can find a full example in [examples/pybind11-project/py-build-cmake.cross.example.toml](https://github.com/tttapa/py-build-cmake/blob/main/examples/pybind11-project/py-build-cmake.cross.example.toml)
 
 ## Advanced cross-builds
 

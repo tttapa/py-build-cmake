@@ -1,0 +1,6 @@
+py-build-cmake.cross.toml
+.*cache
+build
+dist
+__pycache__
+*.pyc
