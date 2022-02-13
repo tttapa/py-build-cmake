@@ -10,11 +10,13 @@ backend for building Python packages with extensions built using CMake.
  - Build C, C++ or Fortran extensions for Python using CMake
  - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/)), compatible with
    [flit](https://github.com/pypa/flit)
+ - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
  - Compatible with [pybind11](https://github.com/pybind/pybind11)
  - Generate stubs for type checking and suggestions
  - Customizable CMake configuration, build and installation options
- - Support for multiple installation configurations
- - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
+ - Support for multiple installation configurations and components
+ - Platform-specific CMake options
+ - Cross-compilation support
  - No dependency on [setuptools](https://github.com/pypa/setuptools)
 
 ## Planned features
@@ -62,8 +64,10 @@ example projects.
 
 ## Documentation
 
+The documentation can be found on <https://tttapa.github.io/py-build-cmake>.
+
 The format of the configuration file is explained in 
-[Config.md](https://github.com/tttapa/py-build-cmake/blob/main/Config.md).
+[Config.md](https://tttapa.github.io/py-build-cmake/Config.html).
 
 Alternatively, use the following command to get the documentation for all
 supported options:
