@@ -429,7 +429,7 @@ class _BuildBackend(object):
         whl = Wheel()
         whl.name = norm_name
         whl.version = norm_version
-        libdir = 'platlib' if cfg.cmake is not None else 'purelib'
+        libdir = 'platlib' if cfg.cmake else 'purelib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
         tags = None
