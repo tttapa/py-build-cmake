@@ -32,10 +32,8 @@ include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
 exclude = []
 
 [tool.py-build-cmake.cmake]
-generator = "Ninja Multi-Config"
-config = ["Debug", "Release"]
+build_type = "Release"
 source_path = "." # Containing CMakeLists.txt
-# build_path = ".build"
 options = { "WITH_PY_STUBS:BOOL" = "On" }
 args = ["-Wdev"]
 build_args = ["-j"]
@@ -45,15 +43,12 @@ install_components = ["python_modules"]
 env = {}
 
 [tool.py-build-cmake.linux.cmake] # Linux-specific options
-env = {"CMAKE_PREFIX_PATH" = "${HOME}/.local"} # Appends or updates
-
-[tool.py-build-cmake.windows.cmake] # Windows-specific options
-generator = "" # Overrides
+generator = "Ninja Multi-Config"
+config = ["Debug", "Release"]
+options = { "CMAKE_DEBUG_POSTFIX:STRING" = "_d" }
+env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }
 
 [tool.py-build-cmake.stubgen]
-# packages = ["py_build_cmake"]
-# modules = ["add_module"]
-# files = []
 args = ["-v"]
 
 [tool.pytest.ini_options]

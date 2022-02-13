@@ -15,9 +15,6 @@ endif()
 include(cmake/QueryPythonForPybind11.cmake)
 find_pybind11_python_first()
 
-# Debug options
-set(CMAKE_DEBUG_POSTFIX "_d")
-
 # Compile the example Python module
 Python3_add_library(_add_module MODULE "src/add_module.cpp")
 target_link_libraries(_add_module PRIVATE pybind11::pybind11)
