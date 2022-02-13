@@ -7,6 +7,7 @@ import textwrap
 from py_build_cmake.config_options import ConfigOption, NoDefaultValue, RefDefaultValue, RequiredValue, pth, pth2str
 from py_build_cmake.pyproject_options import get_options
 
+
 def _print_wrapped(text, indent, width=None):
     """Print the given string with the given indentation, wrapping it to the
     desired width, preserving line endings. If `width` is None, use the width 
@@ -32,22 +33,30 @@ def help_print_md(pbc_opts: ConfigOption):
     """
     for k, v in pbc_opts.sub.items():
         print('##', k)
+        print(_get_full_description(v), '\n')
         print('| Option | Description | Type | Default |')
         print('|--------|-------------|------|---------|')
         for kk, vv in v.sub.items() or {}:
-            print('|', f'`{kk}`', '|',
-                  _get_full_description(vv), '|',
-                  vv.get_typename() or '', '|', f'`{get_default_str(vv)}`', '|')
+            print('|', f'`{kk}`', '|', _get_full_description(vv), '|',
+                  vv.get_typename() or '', '|', f'`{get_default_str(vv)}`',
+                  '|')
+        print()
+
 
 def _get_full_description(vv: ConfigOption):
-    descr = html.escape(vv.description)
-    descr = descr.replace('\n', '<br/>')
-    descr = descr.replace('*', '\\*')
-    descr = descr.replace('_', '\\_')
+    descr = _md_escape(vv.description)
     if vv.inherit_from:
         descr += '<br/>Inherits from: `/' + pth2str(vv.inherit_from) + '`'
     if vv.example:
         descr += '<br/>For example: `' + vv.example + '`'
+    return descr
+
+
+def _md_escape(descr):
+    descr = html.escape(descr)
+    descr = descr.replace('\n', '<br/>')
+    descr = descr.replace('*', '\\*')
+    descr = descr.replace('_', '\\_')
     return descr
 
 
@@ -61,10 +70,12 @@ def recursive_help_print(opt: ConfigOption, level=0):
         if v.sub:
             header += ':'
             print(textwrap.indent(header, indent))
+            if v.description:
+                _print_wrapped(v.description, indent + '  ')
             recursive_help_print(v, level + 1)
         else:
             headerfields = []
-            if (typename:= v.get_typename()) is not None:
+            if (typename := v.get_typename()) is not None:
                 headerfields += [typename]
             if isinstance(v.default, RequiredValue):
                 headerfields += ['required']
@@ -72,7 +83,7 @@ def recursive_help_print(opt: ConfigOption, level=0):
                 headerfields += ['inherits from /' + pth2str(v.inherit_from)]
             if headerfields:
                 header += ' (' + ', '.join(headerfields) + ')'
-            print(textwrap.indent(header, indent))
+            print(textwrap.indent(header + ':', indent))
             _print_wrapped(v.description, indent + '  ')
             if v.example:
                 _print_wrapped('For example: ' + v.example, indent + '  ')
@@ -80,8 +91,10 @@ def recursive_help_print(opt: ConfigOption, level=0):
             if default is not None:
                 print(textwrap.indent('Default: ' + default, indent + '  '))
 
+
 def _print_usage():
-    print(textwrap.dedent("""\
+    print(
+        textwrap.dedent("""\
     Print the documentation for the pyproject.toml configuration options for the
     py-build-cmake build backend.
 
@@ -89,10 +102,12 @@ def _print_usage():
     """))
     name = __loader__.name.rsplit(sep='.', maxsplit=1)[0]
     print("   ", sys.executable, "-m", name, "[md]")
-    print(textwrap.dedent("""
+    print(
+        textwrap.dedent("""
     Use the 'md' option to print the options as a MarkDown table instead of a
     plain-text list.
     """))
+
 
 if __name__ == '__main__':
     opts = get_options()

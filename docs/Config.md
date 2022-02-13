@@ -3,20 +3,28 @@
 These options go in the `[tool.py-build-cmake]` section of the `pyproject.toml` configuration file.
 
 ## module
+Defines the name and the directory of the module to package. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `name` | Import name in Python (can be different from the name on PyPI, which is defined in the [project] section). | string | `/pyproject.toml/project/name` |
 | `directory` | Directory containing the Python package. | path | `'.'` |
+
 ## sdist
+Defines the files that should be included in the source distribution for this package. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `include` | Files and folders to include in the sdist distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
-| `exclude` | Files and folders to exclude from the sdist distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
+| `include` | Files and folders to include in the source distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
+| `exclude` | Files and folders to exclude from the source distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
+
 ## cmake
+Defines how to build the project to package. If omitted, py-build-cmake will produce a pure Python package. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `build_type` | Build type passed to the configuration step, as -DCMAKE\_BUILD\_TYPE=&lt;?&gt;.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
-| `config` | Configuration type passed to the build and install steps, as --config &lt;?&gt;. | string | `build_type` |
+| `config` | Configuration type passed to the build and install steps, as --config &lt;?&gt;. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package. | list | `build_type` |
 | `generator` | CMake generator to use, passed to the configuration step, as -G &lt;?&gt;. | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt. | path | `'.'` |
 | `build_path` | CMake build and cache folder. | path | `'.py-build-cmake_cache'` |
@@ -27,29 +35,44 @@ These options go in the `[tool.py-build-cmake]` section of the `pyproject.toml` 
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list | `[]` |
 | `install_components` | List of components to install, the install step is executed once for each component, with the option --component &lt;?&gt;.<br/>Use an empty string to specify the default component. | list | `['']` |
 | `env` | Environment variables to set when running CMake. | dict | `{}` |
+
 ## stubgen
+If specified, mypy&#x27;s stubgen utility will be used to generate typed stubs for the Python files in the package. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `packages` | List of packages to generate stubs for, passed to stubgen as -p &lt;?&gt;. | list | `none` |
 | `modules` | List of modules to generate stubs for, passed to stubgen as -m &lt;?&gt;. | list | `none` |
 | `files` | List of files to generate stubs for, passed to stubgen without any flags. | list | `none` |
 | `args` | List of extra arguments passed to stubgen. | list | `[]` |
+
 ## linux
+Override options for Linux. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `sdist` | Linux-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Linux-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+
 ## windows
+Override options for Windows. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `sdist` | Windows-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Windows-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+
 ## mac
+Override options for Mac. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `sdist` | Mac-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Mac-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+
 ## cross
+Causes py-build-cmake to cross-compile the project. 
+
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `implementation` | Identifier for the Python implementation.<br/>For example: `implementation = 'cp' # CPython` | string | `required` |
@@ -60,6 +83,7 @@ These options go in the `[tool.py-build-cmake]` section of the `pyproject.toml` 
 | `copy_from_native_build` | If set, this will cause a native version of the CMake project to be built and installed in a temporary directory first, and the files in this list will be copied to the final cross-compiled package. This is useful if you need binary utilities that run on the build system while cross-compiling, or for things like stubs for extension modules that cannot be generated while cross-compiling.<br/>May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `none` |
 | `sdist` | Override sdist options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Override CMake options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+
 # Local overrides
 
 Additionally, two extra configuration files can be placed in the same directory as `pyproject.toml` to override some options for your specific use case:

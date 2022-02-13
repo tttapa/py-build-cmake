@@ -14,7 +14,12 @@ def get_options(config_path: Optional[Path] = None):
                      create_if_inheritance_target_exists=True))
 
     # [tool.py-build-cmake.module]
-    module = pbc.insert(ConfigOption("module", default=DefaultValueValue({})))
+    module = pbc.insert(
+        ConfigOption(
+            "module",
+            "Defines the name and the directory of the module to package.",
+            default=DefaultValueValue({}),
+        ))
     pbc_pth = pth('pyproject.toml/tool/py-build-cmake')
     module.insert_multiple([
         StrConfigOption('name',
@@ -32,25 +37,32 @@ def get_options(config_path: Optional[Path] = None):
     sdist = pbc.insert(
         ConfigOption(
             "sdist",
+            "Defines the files that should be included in the source "
+            "distribution for this package.",
             default=DefaultValueValue({}),
             create_if_inheritance_target_exists=True,
         ))
     sdist_pth = pth('pyproject.toml/tool/py-build-cmake/sdist')
     sdist.insert_multiple([
         ListOfStrConfigOption('include',
-                              "Files and folders to include in the sdist "
+                              "Files and folders to include in the source "
                               "distribution. May include the '*' wildcard "
                               "(but not '**' for recursive patterns).",
                               default=DefaultValueValue([])),
         ListOfStrConfigOption('exclude',
-                              "Files and folders to exclude from the sdist "
+                              "Files and folders to exclude from the source "
                               "distribution. May include the '*' wildcard "
                               "(but not '**' for recursive patterns).",
                               default=DefaultValueValue([])),
     ])  # yapf: disable
 
     # [tool.py-build-cmake.cmake]
-    cmake = pbc.insert(ConfigOption("cmake"))
+    cmake = pbc.insert(
+        ConfigOption(
+            "cmake",
+            "Defines how to build the project to package. If omitted, "
+            "py-build-cmake will produce a pure Python package.",
+        ))
     cmake_pth = pth('pyproject.toml/tool/py-build-cmake/cmake')
     cmake.insert_multiple([
         StrConfigOption('build_type',
@@ -59,9 +71,13 @@ def get_options(config_path: Optional[Path] = None):
                         "build_type = \"RelWithDebInfo\""),
         ListOfStrConfigOption('config',
                               "Configuration type passed to the build and "
-                              "install steps, as --config <?>.",
-                              default=RefDefaultValue(pth('build_type'), 
-                                                        relative=True),
+                              "install steps, as --config <?>. You can "
+                              "specify either a single string, or a list of "
+                              "strings. If a multi-config generator is used, "
+                              "all configurations in this list will be "
+                              "included in the package.",
+                              default=RefDefaultValue(pth('build_type'),
+                                                      relative=True),
                               convert_str_to_singleton=True),
         StrConfigOption('generator',
                         "CMake generator to use, passed to the "
@@ -113,7 +129,12 @@ def get_options(config_path: Optional[Path] = None):
     ])# yapf: disable
 
     # [tool.py-build-cmake.stubgen]
-    stubgen = pbc.insert(ConfigOption("stubgen"))
+    stubgen = pbc.insert(
+        ConfigOption(
+            "stubgen",
+            "If specified, mypy's stubgen utility will be used to generate "
+            "typed stubs for the Python files in the package.",
+        ))
     stubgen.insert_multiple([
         ListOfStrConfigOption('packages',
                               "List of packages to generate stubs for, passed "
@@ -151,7 +172,11 @@ def get_options(config_path: Optional[Path] = None):
         ])
 
     # [tool.py-build-cmake.cross]
-    cross = pbc.insert(ConfigOption("cross"))
+    cross = pbc.insert(
+        ConfigOption(
+            "cross",
+            "Causes py-build-cmake to cross-compile the project.",
+        ))
     cross_pth = pth('pyproject.toml/tool/py-build-cmake/cross')
     cross.insert_multiple([
         StrConfigOption('implementation',
