@@ -350,7 +350,8 @@ class _BuildBackend(object):
             ]
         else:
             configure_cmd += [
-                '-D', 'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
+                '-D', 'Python3_EXECUTABLE:FILEPATH=' + sys.executable, '-D',
+                'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
                 'Python3_FIND_REGISTRY=NEVER', '-D',
                 'Python3_FIND_STRATEGY=LOCATION'
             ]
@@ -362,7 +363,7 @@ class _BuildBackend(object):
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
             configure_cmd += ['-D', k + '=' + v]
-        if btype := cmake_cfg.get('build_type'): # -D CMAKE_BUILD_TYPE={type}
+        if btype := cmake_cfg.get('build_type'):  # -D CMAKE_BUILD_TYPE={type}
             configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + btype]
         if gen := cmake_cfg.get('generator'):  # -G {generator}
             configure_cmd += ['-G', gen]
