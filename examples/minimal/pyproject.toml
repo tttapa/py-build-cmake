@@ -1,7 +1,3 @@
-[build-system]
-requires = ["py-build-cmake", "mypy"]
-build-backend = "py_build_cmake.build"
-
 [project]
 name = "minimal"
 readme = "README.md"
@@ -22,6 +18,10 @@ classifiers = [
 urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 dynamic = ["version", "description"]
+
+[build-system]
+requires = ["py-build-cmake", "mypy"]
+build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
 directory = "src-python"
