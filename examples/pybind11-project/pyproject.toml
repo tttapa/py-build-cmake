@@ -45,7 +45,7 @@ env = {}
 [tool.py-build-cmake.linux.cmake] # Linux-specific options
 generator = "Ninja Multi-Config"
 config = ["Debug", "Release"]
-options = { "CMAKE_DEBUG_POSTFIX:STRING" = "_d" }
+options = { "CMAKE_DEBUG_POSTFIX" = "_d" }
 env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }
 
 [tool.py-build-cmake.stubgen]

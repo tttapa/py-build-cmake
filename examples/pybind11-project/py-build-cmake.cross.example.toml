@@ -28,4 +28,4 @@ config = ["Debug", "Release"]
 [cmake.options]
 Python3_LIBRARY = "/path-to-sysroot/usr/lib/aarch64-linux-gnu/libpython3.9.so"
 Python3_INCLUDE_DIR = "/path-to-sysroot/usr/include/python3.9"
-'CMAKE_DEBUG_POSTFIX:STRING' = '_d'
+CMAKE_DEBUG_POSTFIX = '_d'
