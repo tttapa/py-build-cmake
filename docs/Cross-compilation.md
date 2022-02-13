@@ -47,7 +47,7 @@ example toolchain files, see <https://tttapa.github.io/Pages/Raspberry-Pi/C++-De
 
 ### Caveats
 
-Note that `py-build-cmake` does not check the Python version, im ABI when
+Note that `py-build-cmake` does not check the Python version when
 cross-compiling, so make sure that your CMakeLists.txt scripts find the correct
 Python installation (on that matches the version, implementation, ABI, operating
 system and architecture specified in the `py-build-cmake.cross.toml` file),
