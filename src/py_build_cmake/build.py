@@ -346,7 +346,8 @@ class _BuildBackend(object):
         if cross_cfg:
             toolchain = (pkgdir / cross_cfg['toolchain_file']).resolve()
             configure_cmd += [
-                '-D', 'CMAKE_TOOLCHAIN_FILE:FILEPATH=' + str(toolchain)
+                '-D', 'CMAKE_TOOLCHAIN_FILE:FILEPATH=' + str(toolchain), '-D',
+                'Python3_EXECUTABLE:FILEPATH=' + sys.executable
             ]
         else:
             configure_cmd += [
