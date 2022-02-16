@@ -1,7 +1,3 @@
-[build-system]
-requires = ["pybind11", "pybind11-stubgen", "mypy"]
-build-backend = "py_build_cmake.build"
-
 [project]
 name = "pybind11-project" # Name on PyPI
 readme = "README.md"
@@ -22,6 +18,10 @@ classifiers = [
 urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 dynamic = ["version", "description"]
+
+[build-system]
+requires = ["py-build-cmake", "pybind11", "pybind11-stubgen", "mypy"]
+build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
 name = "pybind11_project" # Import name
