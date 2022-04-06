@@ -89,10 +89,17 @@ class _BuildBackend(object):
         rel_pyproject = os.path.relpath(pyproject, src_dir)
         extra_files = [str(rel_pyproject)] + cfg.referenced_files
         sdist_cfg = cfg.sdist[self.get_os_name()]
-        sdist_builder = SdistBuilder(pkg, metadata, src_dir, None,
-                                     cfg.entrypoints, extra_files,
-                                     sdist_cfg.get('include_patterns', []),
-                                     sdist_cfg.get('exclude_patterns', []))
+        sdist_builder = SdistBuilder(
+            pkg,
+            metadata=metadata,
+            cfgdir=src_dir,
+            reqs_by_extra=None,
+            entrypoints=cfg.entrypoints,
+            extra_files=extra_files,
+            data_directory=None,
+            include_patterns=sdist_cfg.get('include_patterns', []),
+            exclude_patterns=sdist_cfg.get('exclude_patterns', []),
+        )
         sdist_tar = sdist_builder.build(Path(sdist_directory))
         return os.path.relpath(sdist_tar, sdist_directory)
 

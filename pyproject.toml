@@ -20,7 +20,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
 ]
-dependencies = ["distlib", "flit"]
+dependencies = ["distlib~=0.3", "flit~=3.7"]
 dynamic = ["version", "description"]
 
 [project.urls]
