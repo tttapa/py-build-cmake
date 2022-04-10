@@ -79,8 +79,8 @@ class _BuildBackend(object):
         from flit_core.common import Module, make_metadata
         pyproject = src_dir / 'pyproject.toml'
         cfg = self.read_metadata(pyproject)
-        norm_name = normalize_name_wheel(cfg.metadata['name'])
-        pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
+        import_name = cfg.module['name']
+        pkg = Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
         metadata.version = self.normalize_version(metadata.version)
 
@@ -150,7 +150,8 @@ class _BuildBackend(object):
         from flit_core.common import Module, make_metadata
         cfg = self.read_metadata(src_dir / 'pyproject.toml')
         norm_name = normalize_name_wheel(cfg.metadata['name'])
-        pkg = Module(norm_name, src_dir / cfg.module.get('directory', '.'))
+        import_name = cfg.module['name']
+        pkg = Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
         metadata.version = self.normalize_version(metadata.version)
 
