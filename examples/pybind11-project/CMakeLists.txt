@@ -22,7 +22,7 @@ target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
 )
-if (NOT WIN32)
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_options(_add_module PRIVATE "LINKER:--exclude-libs,ALL")
 endif()
 

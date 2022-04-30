@@ -107,4 +107,4 @@ example projects.
  - [x] ~~Entry point support~~
  - [ ] Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))
  - [ ] Doxygen and Sphinx support
- - [ ] OSX support
+ - [x] macOS support

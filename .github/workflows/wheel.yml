@@ -108,9 +108,61 @@ jobs:
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Install Python
+      with: 
+        python-version: ${{ matrix.python-version }}
+    - name: Build
+      run: |
+        python -m venv py-venv
+        . ./py-venv/bin/activate
+        python -m pip install build
+        python -m build .
+    - name: Upload Wheel
+      uses: actions/upload-artifact@v2
+      with:
+        name: py_build_cmake-whl-mac-${{ matrix.python-version }}
+        path: dist/py_build_cmake-*.whl
+    - name: Upload source
+      uses: actions/upload-artifact@v2
+      with:
+        name: py_build_cmake-src-${{ matrix.python-version }}
+        path: dist/py-build-cmake-*.tar.gz
+
+  test-macos:
+    needs: build-macos
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v2
+      name: Install Python
+      with: 
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/download-artifact@v2
+      with:
+        name: py_build_cmake-whl-mac-${{ matrix.python-version }}
+        path: dist
+    - name: Run Nox
+      run: |
+        python -m pip install nox
+        python -m nox
+      env:
+        PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
+
   release:
     if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
-    needs: [test, test-windows]
+    needs: [test, test-windows, test-macos]
     runs-on: ubuntu-latest
     container: python:${{ matrix.python-version }}-bullseye
     strategy:
