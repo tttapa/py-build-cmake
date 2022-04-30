@@ -104,7 +104,7 @@ example projects.
 
 ## Planned features
 
- - Entry point support
- - Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))
- - Doxygen and Sphinx support
- - OSX support
+ - [x] ~~Entry point support~~
+ - [ ] Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))
+ - [ ] Doxygen and Sphinx support
+ - [ ] OSX support

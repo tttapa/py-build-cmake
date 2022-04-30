@@ -19,6 +19,9 @@ urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 dynamic = ["version", "description"]
 
+[project.scripts]
+add = "pybind11_project.add:main"
+
 [build-system]
 requires = ["py-build-cmake", "pybind11", "pybind11-stubgen", "mypy"]
 build-backend = "py_build_cmake.build"

@@ -20,8 +20,6 @@ class _BuildBackend(object):
     def __init__(self) -> None:
         self.verbose = False
 
-    fileopt = {'encoding': 'utf-8'}
-
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
         return []
@@ -167,14 +165,14 @@ class _BuildBackend(object):
 
         # Write metadata
         metadata_path = distinfo / 'METADATA'
-        with open(metadata_path, 'w', **self.fileopt) as f:
+        with open(metadata_path, 'w', encoding='utf-8') as f:
             metadata.write_metadata_file(f)
 
         # Write or copy license
         self.write_license_files(cfg.license, src_dir, distinfo)
 
-        # TODO: write entrypoints
-        self.write_entrypoints(cfg)
+        # Write entrypoints
+        self.write_entrypoints(distinfo, cfg)
 
         # Generate .pyi stubs
         if cfg.stubgen is not None and not editable:
@@ -243,14 +241,14 @@ class _BuildBackend(object):
 
     def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
         if 'text' in license:
-            with open(distinfo_dir / 'LICENSE', 'w', encoding='utf-8') as f:
+            with (distinfo_dir / 'LICENSE').open('w', encoding='utf-8') as f:
                 f.write(license['text'])
         elif 'file' in license:
             shutil.copy2(srcdir / license['file'], distinfo_dir)
 
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
         # Write a fake __init__.py file that points to the development folder
-        tmp_pkg = tmp_build_dir / pkg.name
+        tmp_pkg: Path = tmp_build_dir / pkg.name
         os.makedirs(tmp_pkg, exist_ok=True)
         special_dunders = [
             '__builtins__', '__cached__', '__file__', '__loader__', '__name__',
@@ -276,7 +274,7 @@ class _BuildBackend(object):
             del _util
             """
         (tmp_pkg / '__init__.py').write_text(textwrap.dedent(content),
-                                             **self.fileopt)
+                                             encoding='utf-8')
         # Add the py.typed file if it exists, so mypy picks up the stubs for
         # the C++ extensions
         py_typed: Path = pkg.path / 'py.typed'
@@ -427,10 +425,10 @@ class _BuildBackend(object):
                     _BuildBackend.get_cross_tags(cross_cfg).values()))
         return buildconfig
 
-    def write_entrypoints(self, cfg: Config):
-        if cfg.entrypoints:
-            print(cfg.entrypoints)
-            raise RuntimeWarning("Entrypoints are not currently supported")
+    def write_entrypoints(self, distinfo: Path, cfg: Config):
+        from flit_core.common import write_entry_points
+        with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
+            write_entry_points(cfg.entrypoints, f)
 
     def create_wheel(self, wheel_directory, tmp_build_dir, cfg, norm_name,
                      norm_version):
