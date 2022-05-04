@@ -14,15 +14,71 @@ from glob import glob
 
 from .config import Config
 
+_MIN_CMAKE_VERSION = '3.20'
+_MIN_NINJA_VERSION = '1.10'
+
 
 class _BuildBackend(object):
 
     def __init__(self) -> None:
         self.verbose = False
 
+    def check_program(self, program: str, minimum_version: Optional[str],
+                      name: Optional[str]):
+        """Check if there's a new enough version of the given command available
+        in PATH."""
+        from distlib.version import NormalizedVersion
+        name = name or program
+        try:
+            # Try running the command
+            cmd = [program, '--version']
+            res = self.run(cmd, check=True, capture_output=True)
+            # Try finding the version
+            m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
+            if not m: raise RuntimeError(f"Unexpected {name} version output")
+            program_version = NormalizedVersion(m.group(0))
+            if self.verbose: print("Found", name, program_version)
+            # Check if the version is new enough
+            if minimum_version:
+                if program_version < NormalizedVersion(minimum_version):
+                    raise RuntimeError(f"{name} too old")
+        except Exception as e:
+            # If any of that failed, return False
+            if self.verbose:
+                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
+            return False
+        return True
+
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        return []
+        self.parse_config_settings(config_settings)
+        pyproject = Path('pyproject.toml').resolve()
+        cfg = self.read_metadata(pyproject)
+        deps = []
+        # Check if we need CMake
+        if cfg.cmake:
+            if not self.check_program('cmake', _MIN_CMAKE_VERSION, "CMake"):
+                deps.append("cmake")
+            # Check if we need Ninja
+            cfgs = []
+            # Native build?
+            native = not cfg.cross
+            crossnative = self.needs_cross_native_build(cfg)
+            if native or crossnative:
+                cfgs.append(cfg.cmake[self.get_os_name()])
+            # Cross build?
+            cross = cfg.cross
+            if cross:
+                cfgs.append(cfg.cmake['cross'])
+            # Do any of the configs need Ninja as a generator?
+            needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
+            need_ninja = any(map(needs_ninja, cfgs))
+            if need_ninja and not self.check_program(
+                    'ninja', _MIN_NINJA_VERSION, "Ninja"):
+                deps.append("ninja")
+        if self.verbose:
+            print('Dependencies for build:', deps)
+        return deps
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -30,7 +86,7 @@ class _BuildBackend(object):
 
     def get_requires_for_build_sdist(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist"""
-        return self.get_requires_for_build_wheel(config_settings)
+        return []
 
     def build_wheel(self,
                     wheel_directory,
@@ -114,6 +170,8 @@ class _BuildBackend(object):
             return
         if config_settings.keys() & {'verbose', 'v'}:
             self.verbose = True
+        if 'PY_BUILD_CMAKE_VERBOSE' in os.environ:
+            self.verbose = True
 
     def read_metadata(self, pyproject):
         from .config import read_metadata
@@ -188,6 +246,9 @@ class _BuildBackend(object):
                                      norm_name, metadata.version)
         return whl_name
 
+    def needs_cross_native_build(self, cfg):
+        return cfg.cross and 'copy_from_native_build' in cfg.cross
+
     def do_native_cross_cmake_build(self, tmp_build_dir, staging_dir, src_dir,
                                     cfg, metadata):
         """If not cross-compiling, just do a regular CMake build+install.
@@ -202,7 +263,7 @@ class _BuildBackend(object):
         # When cross-compiling, optionally do a native build first
         native_install_dir = None
         native_cmake_cfg = cfg.cmake[self.get_os_name()]
-        if cfg.cross and (cfnb := 'copy_from_native_build') in cfg.cross:
+        if self.needs_cross_native_build(cfg):
             native_install_dir = tmp_build_dir / 'native-install'
             self.run_cmake(src_dir, native_install_dir, metadata,
                            native_cmake_cfg, None, native_install_dir)
@@ -213,7 +274,7 @@ class _BuildBackend(object):
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
             self.copy_native_install(staging_dir, native_install_dir,
-                                     cfg.cross[cfnb])
+                                     cfg.cross['copy_from_native_build'])
 
     def copy_native_install(self, staging_dir, native_install_dir,
                             native_install_patterns):
@@ -291,7 +352,7 @@ class _BuildBackend(object):
             shutil.copy2(mod_file, dst, follow_symlinks=False)
 
     def run(self, *args, **kwargs):
-        """Wrapper around subproces.run that optionally prints the command."""
+        """Wrapper around subprocess.run that optionally prints the command."""
         if self.verbose:
             pprint([*args])
             pprint(kwargs)
