@@ -166,11 +166,11 @@ class _BuildBackend(object):
         }[platform.system()]
 
     def parse_config_settings(self, config_settings: Optional[Dict]):
+        if 'PY_BUILD_CMAKE_VERBOSE' in os.environ:
+            self.verbose = True
         if config_settings is None:
             return
         if config_settings.keys() & {'verbose', 'v'}:
-            self.verbose = True
-        if 'PY_BUILD_CMAKE_VERBOSE' in os.environ:
             self.verbose = True
 
     def read_metadata(self, pyproject):
