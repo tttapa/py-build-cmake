@@ -25,6 +25,7 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
+| `minimum_version` | Minimum required CMake version.<br/>For example: `minimum_version = "3.18"` | string | `none` |
 | `build_type` | Build type passed to the configuration step, as -DCMAKE\_BUILD\_TYPE=&lt;?&gt;.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
 | `config` | Configuration type passed to the build and install steps, as --config &lt;?&gt;. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package. | list | `build_type` |
 | `generator` | CMake generator to use, passed to the configuration step, as -G &lt;?&gt;. | string | `none` |

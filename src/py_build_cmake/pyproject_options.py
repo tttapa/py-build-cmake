@@ -65,6 +65,10 @@ def get_options(config_path: Optional[Path] = None):
         ))
     cmake_pth = pth('pyproject.toml/tool/py-build-cmake/cmake')
     cmake.insert_multiple([
+        StrConfigOption('minimum_version',
+                        "Minimum required CMake version.",
+                        "minimum_version = \"3.18\"",
+                        default=NoDefaultValue()),
         StrConfigOption('build_type',
                         "Build type passed to the configuration step, as "
                         "-DCMAKE_BUILD_TYPE=<?>.",

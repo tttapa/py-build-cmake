@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.20)
-project(py-build-cmake VERSION 0.0.7)
+cmake_minimum_required(VERSION 3.18)
+project(py-build-cmake VERSION 0.0.8)
 set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
@@ -11,9 +11,13 @@ if (DEFINED VERIFY_VERSION)
     endif()
 endif()
 
+set(ENV CMAKE_PREFIX_PATH "/home/pieter/opt/pypy3.9-v7.3.9-linux64")
+
 # Find the Pybind11 headers
 include(cmake/QueryPythonForPybind11.cmake)
 find_pybind11_python_first()
+
+message(STATUS "FAILURE ${_${_PYTHON_PREFIX}_Development_REASON_FAILURE}")
 
 # Compile the example Python module
 Python3_add_library(_add_module MODULE "src/add_module.cpp")
@@ -22,6 +26,7 @@ target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
 )
+set_target_properties(_add_module PROPERTIES CXX_VISIBILITY_PRESET "hidden")
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_options(_add_module PRIVATE "LINKER:--exclude-libs,ALL")
 endif()

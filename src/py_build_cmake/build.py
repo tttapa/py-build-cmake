@@ -14,9 +14,6 @@ from glob import glob
 
 from .config import Config
 
-_MIN_CMAKE_VERSION = '3.20'
-_MIN_NINJA_VERSION = '1.10'
-
 
 class _BuildBackend(object):
 
@@ -57,28 +54,35 @@ class _BuildBackend(object):
         deps = []
         # Check if we need CMake
         if cfg.cmake:
-            if not self.check_program('cmake', _MIN_CMAKE_VERSION, "CMake"):
-                deps.append("cmake")
-            # Check if we need Ninja
-            cfgs = []
-            # Native build?
-            native = not cfg.cross
-            crossnative = self.needs_cross_native_build(cfg)
-            if native or crossnative:
-                cfgs.append(cfg.cmake[self.get_os_name()])
-            # Cross build?
-            cross = cfg.cross
-            if cross:
-                cfgs.append(cfg.cmake['cross'])
-            # Do any of the configs need Ninja as a generator?
-            needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
-            need_ninja = any(map(needs_ninja, cfgs))
-            if need_ninja and not self.check_program(
-                    'ninja', _MIN_NINJA_VERSION, "Ninja"):
-                deps.append("ninja")
+            self.check_cmake_program(cfg, deps)
         if self.verbose:
             print('Dependencies for build:', deps)
         return deps
+
+    def check_cmake_program(self, cfg: Config, deps: List[str]):
+        assert cfg.cmake
+        min_cmake_ver = cfg.cmake[self.get_os_name()].get('minimum_version')
+        # If CMake in PATH doesn't work, add it as a build requirement
+        if not self.check_program('cmake', min_cmake_ver, "CMake"):
+            req = "cmake"
+            if min_cmake_ver: req += ">=" + min_cmake_ver
+            deps.append(req)
+        # Check if we need Ninja
+        cfgs = []
+        # Native build?
+        native = not cfg.cross
+        crossnative = self.needs_cross_native_build(cfg)
+        if native or crossnative:
+            cfgs.append(cfg.cmake[self.get_os_name()])
+        # Cross build?
+        cross = cfg.cross
+        if cross:
+            cfgs.append(cfg.cmake['cross'])
+        # Do any of the configs need Ninja as a generator?
+        needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
+        need_ninja = any(map(needs_ninja, cfgs))
+        if need_ninja and not self.check_program('ninja', None, "Ninja"):
+            deps.append("ninja")
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
