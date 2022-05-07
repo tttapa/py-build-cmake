@@ -130,6 +130,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
 ]
 urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
