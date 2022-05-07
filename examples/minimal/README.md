@@ -102,7 +102,7 @@ detail.
 
 ```toml
 [build-system]
-requires = ["py-build-cmake", "mypy"]
+requires = ["py-build-cmake"]
 build-backend = "py_build_cmake.build"
 ```
 
@@ -110,7 +110,7 @@ The `build-system` section defines how tools like `pip` and `build` (called
 build front-ends) should build your package. We state that the package should be
 built using the `build` module of the `py_build_cmake` package as a backend,
 and that this package should be installed before building by using the 
-`requires` option. The mypy package is installed for stub generation.
+`requires` option.
 If you have other build-time requirements, you can add them to the list.
 
 ```toml

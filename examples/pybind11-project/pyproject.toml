@@ -23,7 +23,7 @@ dynamic = ["version", "description"]
 add = "pybind11_project.add:main"
 
 [build-system]
-requires = ["py-build-cmake", "pybind11", "pybind11-stubgen", "mypy"]
+requires = ["py-build-cmake", "pybind11", "pybind11-stubgen"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]

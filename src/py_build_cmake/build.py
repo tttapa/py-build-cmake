@@ -9,7 +9,7 @@ import shutil
 import textwrap
 from typing import Any, Dict, List, Optional, Union
 import tempfile
-from subprocess import run as sp_run
+from subprocess import CalledProcessError, run as sp_run
 from glob import glob
 
 from .config import Config
@@ -20,25 +20,38 @@ class _BuildBackend(object):
     def __init__(self) -> None:
         self.verbose = False
 
-    def check_program(self, program: str, minimum_version: Optional[str],
-                      name: Optional[str]):
+    def check_program_version(
+        self,
+        program: str,
+        minimum_version: Optional[str],
+        name: Optional[str],
+        check_version: bool = True,
+    ):
         """Check if there's a new enough version of the given command available
         in PATH."""
         from distlib.version import NormalizedVersion
         name = name or program
         try:
             # Try running the command
-            cmd = [program, '--version']
+            cmd = [program, '--version'] if check_version else [program, '-h']
             res = self.run(cmd, check=True, capture_output=True)
             # Try finding the version
-            m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
-            if not m: raise RuntimeError(f"Unexpected {name} version output")
-            program_version = NormalizedVersion(m.group(0))
-            if self.verbose: print("Found", name, program_version)
-            # Check if the version is new enough
-            if minimum_version:
-                if program_version < NormalizedVersion(minimum_version):
-                    raise RuntimeError(f"{name} too old")
+            if check_version:
+                m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
+                if not m:
+                    raise RuntimeError(f"Unexpected {name} version output")
+                program_version = NormalizedVersion(m.group(0))
+                if self.verbose: print("Found", name, program_version)
+                # Check if the version is new enough
+                if minimum_version:
+                    if program_version < NormalizedVersion(minimum_version):
+                        raise RuntimeError(f"{name} too old")
+        except CalledProcessError as e:
+            if self.verbose:
+                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
+                sys.stdout.buffer.write(e.stdout)
+                sys.stdout.buffer.write(e.stderr)
+            return False
         except Exception as e:
             # If any of that failed, return False
             if self.verbose:
@@ -55,6 +68,8 @@ class _BuildBackend(object):
         # Check if we need CMake
         if cfg.cmake:
             self.check_cmake_program(cfg, deps)
+        if cfg.stubgen:
+            self.check_stubgen_program(cfg, deps)
         if self.verbose:
             print('Dependencies for build:', deps)
         return deps
@@ -63,7 +78,7 @@ class _BuildBackend(object):
         assert cfg.cmake
         min_cmake_ver = cfg.cmake[self.get_os_name()].get('minimum_version')
         # If CMake in PATH doesn't work, add it as a build requirement
-        if not self.check_program('cmake', min_cmake_ver, "CMake"):
+        if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
             req = "cmake"
             if min_cmake_ver: req += ">=" + min_cmake_ver
             deps.append(req)
@@ -81,8 +96,13 @@ class _BuildBackend(object):
         # Do any of the configs need Ninja as a generator?
         needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
         need_ninja = any(map(needs_ninja, cfgs))
-        if need_ninja and not self.check_program('ninja', None, "Ninja"):
-            deps.append("ninja")
+        if need_ninja:
+            if not self.check_program_version('ninja', None, "Ninja"):
+                deps.append("ninja")
+
+    def check_stubgen_program(self, cfg: Config, deps: List[str]):
+        if not self.check_program_version('stubgen', None, None, False):
+            deps.append("mypy")
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
