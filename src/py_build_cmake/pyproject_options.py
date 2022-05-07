@@ -37,7 +37,7 @@ def get_options(config_path: Optional[Path] = None):
     sdist = pbc.insert(
         ConfigOption(
             "sdist",
-            "Defines the files that should be included in the source "
+            "Specifies the files that should be included in the source "
             "distribution for this package.",
             default=DefaultValueValue({}),
             create_if_inheritance_target_exists=True,

@@ -13,7 +13,7 @@ Defines the name and the directory of the module to package.
 | `directory` | Directory containing the Python package. | path | `'.'` |
 
 ## sdist
-Defines the files that should be included in the source distribution for this package. 
+Specifies the files that should be included in the source distribution for this package. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|

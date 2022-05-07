@@ -77,7 +77,7 @@ def recursive_help_print(opt: ConfigOption, level=0):
             headerfields = []
             if (typename := v.get_typename()) is not None:
                 headerfields += [typename]
-            if isinstance(v.default, RequiredValue):
+            if is_required := isinstance(v.default, RequiredValue):
                 headerfields += ['required']
             if v.inherit_from:
                 headerfields += ['inherits from /' + pth2str(v.inherit_from)]
@@ -88,7 +88,7 @@ def recursive_help_print(opt: ConfigOption, level=0):
             if v.example:
                 _print_wrapped('For example: ' + v.example, indent + '  ')
             default = v.default.get_name()
-            if default is not None:
+            if default is not None and not is_required:
                 print(textwrap.indent('Default: ' + default, indent + '  '))
 
 
