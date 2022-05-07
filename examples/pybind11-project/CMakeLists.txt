@@ -4,10 +4,10 @@ set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
 # Make sure that the Python and CMake versions match
-if (DEFINED VERIFY_VERSION)
-    if (NOT "${VERIFY_VERSION}" MATCHES "^${PY_FULL_VERSION}$")
+if (DEFINED PY_BUILD_CMAKE_PACKAGE_VERSION)
+    if (NOT "${PY_BUILD_CMAKE_PACKAGE_VERSION}" MATCHES "^${PY_FULL_VERSION}$")
         message(FATAL_ERROR "Version number does not match "
-                             "(${VERIFY_VERSION} - ${PY_FULL_VERSION}).")
+                             "(${PY_BUILD_CMAKE_PACKAGE_VERSION} - ${PY_FULL_VERSION}).")
     endif()
 endif()
 
@@ -35,7 +35,7 @@ endif()
 install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION pybind11_project)
+        DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME})
 
 # Generate stubs for the Python module
 option(WITH_PY_STUBS
@@ -43,5 +43,5 @@ option(WITH_PY_STUBS
 if (WITH_PY_STUBS AND NOT CMAKE_CROSSCOMPILING)
     include(cmake/Pybind11Stubgen.cmake)
     pybind11_stubgen(_add_module)
-    pybind11_stubgen_install(_add_module pybind11_project)
+    pybind11_stubgen_install(_add_module ${PY_BUILD_CMAKE_PACKAGE_NAME})
 endif()
