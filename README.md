@@ -9,7 +9,7 @@ backend for building Python packages with extensions built using CMake.
 
 ## Features
 
- - Build C, C++ or Fortran extension modules for Python using CMake
+ - Build and package C, C++ or Fortran extension modules for Python using CMake
  - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/)), compatible with
    [flit](https://github.com/pypa/flit)
  - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
@@ -83,7 +83,7 @@ The README of [`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree
 describes this configuration file in much more detail.
 
 Then use [`pip`](https://github.com/pypa/pip), [`build`](https://github.com/pypa/build)
-or another PEP 517 compatible frontend to install and/or build the package.
+or another PEP 517 compatible frontend to build and/or install the package.
 
 Build sdist and wheel packages you can upload to PyPI:
 ```sh
@@ -104,6 +104,13 @@ using a very simple Python module as an example.
 For a more advanced, real-world example, see [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project).  
 If you are interested in packaging C/C++/Fortran programs using py-build-cmake,
 have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).
+
+## Projects using py-build-cmake
+
+If you need more examples, you can look at the following projects using
+py-build-cmake as their Python build backend:
+
+- [QPALM](https://github.com/kul-optec/QPALM)
 
 ## Planned features
 
