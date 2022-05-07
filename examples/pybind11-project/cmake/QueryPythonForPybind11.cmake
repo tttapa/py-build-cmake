@@ -1,11 +1,10 @@
 # First tries to find Python 3, then tries to import the pybind11 module to
 # query the CMake config location, and finally imports pybind11 using
-# find_package(pybind11).
+# find_package(pybind11 REQUIRED CONFIG).
 function(find_pybind11_python_first)
 
     # Query Python to see if it knows where the headers are
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    find_package(Python3 COMPONENTS Development)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
     if (NOT pybind11_ROOT OR NOT EXISTS ${pybind11_ROOT})
         execute_process(COMMAND ${Python3_EXECUTABLE}
                 -m pybind11 --cmakedir

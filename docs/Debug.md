@@ -32,8 +32,7 @@ In your CMakeLists.txt script, add a macro that defines the `MODULE_NAME` as the
 base name of the extension module (which includes the `_d` suffix):
 
 ```cmake
-Python3_add_library(_add_module MODULE "src/add_module.cpp")
-target_link_libraries(_add_module PRIVATE pybind11::pybind11)
+pybind11_add_module(_add_module MODULE "src/add_module.cpp")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>)
 ```

@@ -15,7 +15,7 @@ etc.
 
 Even when using Setuptools, it's best to avoid `setup.py` if you can, and to use
 declarative configuration files like `setup.cfg` and `pyproject.toml` instead.  
-From the [setuptools quickstart guide](https://setuptools.pypa.io/en/latest/userguide/quickstart.html):
+From the [Setuptools quickstart guide](https://setuptools.pypa.io/en/latest/userguide/quickstart.html):
 
 > The landscape of Python packaging is shifting and `Setuptools` has evolved to
 > only provide backend support, no longer being the de-facto packaging tool in 
@@ -45,7 +45,7 @@ You can enable py-build-cmake's verbose mode to make it print information about
 the configuration, the exact subprocesses it invokes, the configure and build 
 environments, and so on.
 
-When using a tool like PyPA `build`, you can use the `-C` option to pass the 
+When using a tool like PyPA `build`, you can use the `-C` flag to pass the 
 `verbose` option:
 ```sh
 python -m build . -C verbose
@@ -56,14 +56,14 @@ can set the environment variable `PY_BUILD_CMAKE_VERBOSE`:
 ```sh
 PY_BUILD_CMAKE_VERBOSE=1 pip install . -v # Linux/macOS
 ```
-```ps1
+```sh
 $Env:PY_BUILD_CMAKE_VERBOSE=1 # Windows
 pip install . -v
 Remove-Item Env:PY_BUILD_CMAKE_VERBOSE
 ```
 Also note the `-v` flag to get pip to print the build output.
 
-When inspecting the output, beware that output of subprocesses is often much
+When inspecting the output, be aware that output of subprocesses is often much
 higher up than the final error message or backtrace. For example, if you get an
 error saying that the invocation of CMake failed, you'll have to scroll up to
 see the actual CMake output.
