@@ -22,7 +22,12 @@ def example_projects(session: nox.Session):
         session.run("python", "-m", "build", ".", "-n")
         session.install(".", "--no-build-isolation")
         session.run("pytest")
-    
+    with session.chdir("examples/minimal-program"):
+        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+        session.run("python", "-m", "build", ".", "-n")
+        session.install(".", "--no-build-isolation")
+        session.run("pytest")
+
 
 @nox.session
 def tests(session: nox.Session):

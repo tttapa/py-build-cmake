@@ -98,9 +98,12 @@ pip install -e . # editable installation
 
 ## Examples
 
-For example usage, see the [`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal)
-and [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project)
-example projects.
+For an introduction to py-build-cmake, see [`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal)
+for a detailed overview of the configuration files and the directory structure,
+using a very simple Python module as an example.  
+For a more advanced, real-world example, see [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project).  
+If you are interested in packaging C/C++/Fortran programs using py-build-cmake,
+have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).
 
 ## Planned features
 
