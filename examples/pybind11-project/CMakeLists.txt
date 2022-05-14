@@ -30,7 +30,7 @@ endif()
 install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
 
 # Generate stubs for the Python module
 option(WITH_PY_STUBS
@@ -38,5 +38,5 @@ option(WITH_PY_STUBS
 if (WITH_PY_STUBS AND NOT CMAKE_CROSSCOMPILING)
     include(cmake/Pybind11Stubgen.cmake)
     pybind11_stubgen(_add_module)
-    pybind11_stubgen_install(_add_module ${PY_BUILD_CMAKE_PACKAGE_NAME})
+    pybind11_stubgen_install(_add_module ${PY_BUILD_CMAKE_MODULE_NAME})
 endif()

@@ -25,7 +25,7 @@ requires = ["py-build-cmake"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
-name = "minimal_program"
+name = "minimal_program_module"
 directory = "src-python"
 
 [tool.py-build-cmake.sdist]

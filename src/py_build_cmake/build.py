@@ -229,7 +229,7 @@ class _BuildBackend(object):
         from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
         cfg = self.read_metadata(src_dir / 'pyproject.toml')
-        norm_name = normalize_name_wheel(cfg.metadata['name'])
+        dist_name = normalize_name_wheel(cfg.metadata['name'])
         import_name = cfg.module['name']
         pkg = Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
@@ -242,7 +242,7 @@ class _BuildBackend(object):
             self.write_editable_wrapper(staging_dir, src_dir, pkg)
 
         # Create dist-info folder
-        distinfo = staging_dir / f'{norm_name}-{metadata.version}.dist-info'
+        distinfo = staging_dir / f'{dist_name}-{metadata.version}.dist-info'
         os.makedirs(distinfo, exist_ok=True)
 
         # Write metadata
@@ -263,18 +263,19 @@ class _BuildBackend(object):
         # Configure, build and install the CMake project
         if cfg.cmake:
             self.do_native_cross_cmake_build(tmp_build_dir, staging_dir,
-                                             src_dir, cfg, metadata, norm_name)
+                                             src_dir, cfg, metadata, dist_name,
+                                             import_name)
 
         # Create wheel
         whl_name = self.create_wheel(wheel_directory, staging_dir, cfg,
-                                     norm_name, metadata.version)
+                                     dist_name, metadata.version)
         return whl_name
 
     def needs_cross_native_build(self, cfg):
         return cfg.cross and 'copy_from_native_build' in cfg.cross
 
     def do_native_cross_cmake_build(self, tmp_build_dir, staging_dir, src_dir,
-                                    cfg, metadata, norm_name):
+                                    cfg, metadata, dist_name, import_name):
         """If not cross-compiling, just do a regular CMake build+install.
         When cross-compiling, do a cross-build+install (using the provided 
         CMake toolchain file).
@@ -291,11 +292,11 @@ class _BuildBackend(object):
             native_install_dir = tmp_build_dir / 'native-install'
             self.run_cmake(src_dir, native_install_dir, metadata,
                            native_cmake_cfg, None, native_install_dir,
-                           norm_name)
+                           dist_name, import_name)
         # Then do the actual build
         cmake_cfg = cfg.cmake['cross'] if cfg.cross else native_cmake_cfg
         self.run_cmake(src_dir, staging_dir, metadata, cmake_cfg, cfg.cross,
-                       native_install_dir, norm_name)
+                       native_install_dir, dist_name, import_name)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
             self.copy_native_install(staging_dir, native_install_dir,
@@ -403,7 +404,7 @@ class _BuildBackend(object):
         self.run(args, cwd=pkg.path.parent, check=True, env=env)
 
     def run_cmake(self, pkgdir, install_dir, metadata, cmake_cfg, cross_cfg,
-                  native_install_dir, norm_name):
+                  native_install_dir, dist_name, import_name):
         """Configure, build and install using CMake."""
         # Source and build folders
         srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
@@ -430,7 +431,9 @@ class _BuildBackend(object):
             '-D',
             'PY_BUILD_CMAKE_PACKAGE_VERSION:STRING=' + metadata.version,
             '-D',
-            'PY_BUILD_CMAKE_PACKAGE_NAME:STRING=' + norm_name,
+            'PY_BUILD_CMAKE_PACKAGE_NAME:STRING=' + dist_name,
+            '-D',
+            'PY_BUILD_CMAKE_MODULE_NAME:STRING=' + import_name,
         ]
         if cross_cfg:
             toolchain = (pkgdir / cross_cfg['toolchain_file']).resolve()
@@ -513,11 +516,11 @@ class _BuildBackend(object):
         with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
             write_entry_points(cfg.entrypoints, f)
 
-    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, norm_name,
+    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, dist_name,
                      norm_version):
         from distlib.wheel import Wheel
         whl = Wheel()
-        whl.name = norm_name
+        whl.name = dist_name
         whl.version = norm_version
         libdir = 'platlib' if cfg.cmake else 'purelib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}

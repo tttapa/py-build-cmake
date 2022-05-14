@@ -11,10 +11,10 @@ Python3_add_library(_add_module MODULE "add_module.c")
 install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
 
 # Install stubs to get autocomplete and type hints
 install(FILES _add_module.pyi
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
