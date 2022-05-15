@@ -522,12 +522,15 @@ class _BuildBackend(object):
         whl = Wheel()
         whl.name = dist_name
         whl.version = norm_version
-        libdir = 'platlib' if cfg.cmake else 'purelib'
+        pure = not cfg.cmake
+        libdir = 'purelib' if pure else 'platlib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
         tags = None
         if cfg.cross:
             tags = self.get_cross_tags(cfg.cross)
+        if pure:
+            tags = {'pyver': ['py3']}
         wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name

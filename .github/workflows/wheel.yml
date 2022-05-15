@@ -167,7 +167,7 @@ jobs:
     container: python:${{ matrix.python-version }}-bullseye
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.10']
     steps:
     - uses: actions/checkout@v1
     - uses: actions/download-artifact@v2
@@ -188,12 +188,10 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PyPI }}
     - uses: actions/download-artifact@v2
-      if: ${{ matrix.python-version == '3.10' }}
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist
     - name: Upload source to PyPI
-      if: ${{ matrix.python-version == '3.10' }}
       run: python -m twine upload dist/py-build-cmake-*.tar.gz
       env:
         TWINE_USERNAME: __token__
