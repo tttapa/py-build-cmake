@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(py-build-cmake VERSION 0.0.9)
+project(py-build-cmake VERSION 0.0.10)
 set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
