@@ -287,7 +287,8 @@ class ConfigOption:
         superpth = self.inherit_from
         if superpth is not None:
             # If the super option is not set, there's nothing to inherit
-            if (supercfg := cfg.get(superpth)) is None:
+            supercfg = cfg.get(superpth)
+            if supercfg is None:
                 return
 
             # If this option is not set, but the super option is,
@@ -300,7 +301,8 @@ class ConfigOption:
                 return
 
             # Find the option we inherit from and make sure it exists
-            if (superopt := rootopts.get(superpth)) is None:
+            superopt = rootopts.get(superpth)
+            if superopt is None:
                 raise ValueError(f'{pth2str(superpth)} is not a valid option')
 
             # Create a copy of the config of our super-option and override it
@@ -331,7 +333,8 @@ class ConfigOption:
         for s in selfpth:
             p += s,
             opt = opt[s]
-            if (selfcfg := cfg.get(p)) is None:
+            selfcfg = cfg.get(p)
+            if selfcfg is None:
                 if not opt.create_if_inheritance_target_exists:
                     return None
                 create_paths.append(p)
@@ -374,9 +377,10 @@ class ConfigOption:
         selfcfg = cfg[cfgpath]
         # Check if there are any unknown options in the config
         if not self.allow_unknown_keys:
-            if (unkwn := set(selfcfg.sub or ()) - set(self.sub or ())):
+            unknwn = set(selfcfg.sub or ()) - set(self.sub or ())
+            if unknwn:
                 raise ConfigError(f'Unkown options in {pth2str(cfgpath)}: ' +
-                                  ', '.join(unkwn))
+                                  ', '.join(unknwn))
         # Recursively verify the sub-options
         if selfcfg.sub:
             for name, sub in selfcfg.sub.items():
@@ -416,7 +420,8 @@ class ConfigOption:
 
         result = None
         # If the entire path exists in cfg, simply return that value
-        if (cfgval := cfg.get(cfgpath)) is not None:
+        cfgval = cfg.get(cfgpath)
+        if cfgval is not None:
             result = cfgval
         # If the path is not yet in cfg
         else:
@@ -633,7 +638,8 @@ class OverrideConfigOption(ConfigOption):
 
     def override(self, rootopts: ConfigOption, cfg: ConfigNode,
                  cfgpath: ConfPath):
-        if (selfcfg := cfg.get(cfgpath, None)) is None:
+        selfcfg = cfg.get(cfgpath, None)
+        if selfcfg is None:
             return
         elif selfcfg.value is None and selfcfg.sub is None:
             return

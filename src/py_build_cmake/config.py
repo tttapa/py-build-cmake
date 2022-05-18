@@ -59,7 +59,8 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
 
     # Check the package/module name and normalize it
     from distlib.util import normalize_name
-    if (f := 'name') in pyproject['project']:
+    f = 'name'
+    if f in pyproject['project']:
         normname = normalize_name(pyproject['project'][f])
         if pyproject['project'][f] != normname:
             raise RuntimeWarning(
@@ -98,7 +99,8 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
     tool_cfg = dictcfg['pyproject.toml']['tool']['py-build-cmake']
 
     # Store the module configuration
-    if (s := 'module') in tool_cfg:
+    s = 'module'
+    if s in tool_cfg:
         # Normalize the import and wheel name of the package
         normname = normalize_name_wheel(tool_cfg[s]['name'])
         if tool_cfg[s]['name'] != normname:
@@ -120,7 +122,8 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
         os: get_sdist_cludes(tool_cfg[os])
         for os in ("linux", "windows", "mac")
     }
-    if (s := 'cross') in tool_cfg:
+    s = 'cross'
+    if s in tool_cfg:
         cfg.sdist.update({
             'cross': get_sdist_cludes(tool_cfg[s]),
         })
@@ -133,13 +136,16 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
     }
 
     # Store stubgen configuration
-    if (s := 'stubgen') in tool_cfg:
+    s = 'stubgen'
+    if s in tool_cfg:
         cfg.stubgen = tool_cfg[s]
 
     # Store the cross compilation configuration
-    if (s := 'cross') in tool_cfg:
+    s = 'cross'
+    if s in tool_cfg:
         cfg.cross = tool_cfg[s]
-        if (f := 'copy_from_native_build') in cfg.cross:
+        f = 'copy_from_native_build'
+        if f in cfg.cross:
             cfg.cross[f] = _check_glob_patterns(cfg.cross[f], f'cross.{f}')
         cfg.cmake.update({
             'cross': cfg.cross.pop('cmake', {}),
