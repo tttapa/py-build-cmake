@@ -1,4 +1,4 @@
-py-venv
+py*-venv
 build
 .build
 .*cache

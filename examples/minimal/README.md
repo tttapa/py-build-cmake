@@ -117,7 +117,7 @@ If you have other build-time requirements, you can add them to the list.
 [project]
 name = "minimal"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 license = { "file" = "LICENSE" }
 authors = [{ "name" = "Pieter P", "email" = "pieter.p.dev@outlook.com" }]
 keywords = ["addition", "subtraction", "pybind11"]
@@ -125,6 +125,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
