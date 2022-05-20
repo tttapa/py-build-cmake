@@ -14,6 +14,10 @@ from glob import glob
 
 from .config import Config
 
+from distlib.version import NormalizedVersion
+
+_CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
+
 
 class _BuildBackend(object):
 
@@ -23,13 +27,12 @@ class _BuildBackend(object):
     def check_program_version(
         self,
         program: str,
-        minimum_version: Optional[str],
+        minimum_version: Optional[NormalizedVersion],
         name: Optional[str],
         check_version: bool = True,
     ):
         """Check if there's a new enough version of the given command available
         in PATH."""
-        from distlib.version import NormalizedVersion
         name = name or program
         try:
             # Try running the command
@@ -43,8 +46,8 @@ class _BuildBackend(object):
                 program_version = NormalizedVersion(m.group(0))
                 if self.verbose: print("Found", name, program_version)
                 # Check if the version is new enough
-                if minimum_version:
-                    if program_version < NormalizedVersion(minimum_version):
+                if minimum_version is not None:
+                    if program_version < minimum_version:
                         raise RuntimeError(f"{name} too old")
         except CalledProcessError as e:
             if self.verbose:
@@ -76,27 +79,33 @@ class _BuildBackend(object):
 
     def check_cmake_program(self, cfg: Config, deps: List[str]):
         assert cfg.cmake
-        min_cmake_ver = cfg.cmake[self.get_os_name()].get('minimum_version')
-        # If CMake in PATH doesn't work, add it as a build requirement
+        # Do we need to perform a native build?
+        native = not cfg.cross or self.needs_cross_native_build(cfg)
+        native_cfg = cfg.cmake[self.get_os_name()] if native else {}
+        # Do we need to perform a cross build?
+        cross = cfg.cross
+        cross_cfg = cfg.cmake.get('cross', {})
+        # Find the strictest version requirement
+        min_cmake_ver = max(
+            _CMAKE_MINIMUM_REQUIRED,
+            NormalizedVersion(native_cfg.get('minimum_version', '0.0')),
+            NormalizedVersion(cross_cfg.get('minimum_version', '0.0')),
+        )
+        # If CMake in PATH doesn't work or is too old, add it as a build
+        # requirement
         if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
-            req = "cmake"
-            if min_cmake_ver: req += ">=" + min_cmake_ver
-            deps.append(req)
+            deps.append("cmake>=" + str(min_cmake_ver))
+
         # Check if we need Ninja
         cfgs = []
-        # Native build?
-        native = not cfg.cross
-        crossnative = self.needs_cross_native_build(cfg)
-        if native or crossnative:
-            cfgs.append(cfg.cmake[self.get_os_name()])
-        # Cross build?
-        cross = cfg.cross
-        if cross:
-            cfgs.append(cfg.cmake['cross'])
-        # Do any of the configs need Ninja as a generator?
+        if native: cfgs.append(native_cfg)
+        if cross: cfgs.append(cross_cfg)
+        # Do any of the configs require Ninja as a generator?
         needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
         need_ninja = any(map(needs_ninja, cfgs))
         if need_ninja:
+            # If so, check if a working version exists in the PATH, otherwise,
+            # add it as a build requirement
             if not self.check_program_version('ninja', None, "Ninja"):
                 deps.append("ninja")
 

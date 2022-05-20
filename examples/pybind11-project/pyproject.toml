@@ -36,7 +36,7 @@ include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
 exclude = []
 
 [tool.py-build-cmake.cmake]
-minimum_version = "3.18"
+minimum_version = "3.17"
 build_type = "Release"
 source_path = "." # Containing CMakeLists.txt
 options = { "WITH_PY_STUBS:BOOL" = "On" }

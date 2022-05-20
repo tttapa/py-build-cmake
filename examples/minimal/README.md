@@ -177,6 +177,7 @@ You can use the `exclude` option to exclude specific files.
 
 ```toml
 [tool.py-build-cmake.cmake]
+minimum_version = "3.17"
 build_type = "RelWithDebInfo"
 source_path = "src"
 build_args = ["-j"]
@@ -187,6 +188,10 @@ project. The most important option is the `source_path`, the folder containing
 your main CMakeLists.txt file. The `-j` flag enables parallel builds, and the 
 `install_components` option defines which CMake components to install. In this
 example, the `python_modules` component is defined in src/CMakeLists.txt.  
+The `minimum_version` option defines which version of CMake is required to build
+this project. If this version or newer is not found in the PATH, it is added as
+a build requirement and installed by the build frontend (e.g. pip) before 
+building.  
 There are many other options, see the py-build-cmake documentation for more 
 details.
 
