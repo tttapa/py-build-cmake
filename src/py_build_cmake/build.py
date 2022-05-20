@@ -208,7 +208,18 @@ class _BuildBackend(object):
 
     def read_metadata(self, pyproject):
         from .config import read_metadata
-        cfg = read_metadata(pyproject)
+        from flit_core.config import ConfigError
+        try:
+            cfg = read_metadata(pyproject)
+        except ConfigError as e:
+            if not self.verbose:
+                e.args = ("\n"
+                        "\n"
+                        "\t❌ Error in configuration:\n"
+                        "\n"
+                        f"\t\t{e}\n"
+                        "\n", )
+            raise
         if self.verbose:
             print("\npy-build-cmake options")
             print("======================")
