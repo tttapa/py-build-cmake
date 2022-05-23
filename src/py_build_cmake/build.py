@@ -14,6 +14,9 @@ from glob import glob
 
 from .config import Config
 
+# min version for CLI compatibility
+_MIN_CMAKE_VERSION = '3.15'
+
 
 class _BuildBackend(object):
 
@@ -76,12 +79,10 @@ class _BuildBackend(object):
 
     def check_cmake_program(self, cfg: Config, deps: List[str]):
         assert cfg.cmake
-        min_cmake_ver = cfg.cmake[self.get_os_name()].get('minimum_version')
+        min_cmake_ver = self.get_min_cmake_version(cfg)
         # If CMake in PATH doesn't work, add it as a build requirement
         if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
-            req = "cmake"
-            if min_cmake_ver: req += ">=" + min_cmake_ver
-            deps.append(req)
+            deps.append("cmake>=" + min_cmake_ver)
         # Check if we need Ninja
         cfgs = []
         # Native build?
@@ -99,6 +100,17 @@ class _BuildBackend(object):
         if need_ninja:
             if not self.check_program_version('ninja', None, "Ninja"):
                 deps.append("ninja")
+
+    def get_min_cmake_version(self, cfg: Config) -> str:
+        """Get the actual minimum required CMake version."""
+        cfg_min_version = cfg.cmake[self.get_os_name()].get('minimum_version')
+        if cfg_min_version:
+            from distlib.version import NormalizedVersion
+            version = str(max(NormalizedVersion(_MIN_CMAKE_VERSION),
+                              NormalizedVersion(cfg_min_version)))
+        else:
+            version = _MIN_CMAKE_VERSION
+        return version
 
     def check_stubgen_program(self, cfg: Config, deps: List[str]):
         if not self.check_program_version('stubgen', None, None, False):
