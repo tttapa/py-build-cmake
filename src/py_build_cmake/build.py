@@ -553,8 +553,16 @@ class _BuildBackend(object):
         tags = None
         if cfg.cross:
             tags = self.get_cross_tags(cfg.cross)
-        if pure:
+        elif pure:
             tags = {'pyver': ['py3']}
+        else:
+            import packaging.tags
+            tag = next(packaging.tags.sys_tags())
+            tags = {
+                'pyver': [tag.interpreter],
+                'abi': [tag.abi],
+                'arch': [tag.platform],
+            }
         wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name

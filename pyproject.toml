@@ -1,5 +1,5 @@
 [build-system]
-requires = ["distlib", "flit"]
+requires = ["distlib~=0.3", "flit~=3.7"]
 build-backend = "py_build_cmake.build"
 backend-path = ["src"]
 
@@ -22,7 +22,7 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
 ]
-dependencies = ["distlib~=0.3", "flit~=3.7"]
+dependencies = ["distlib~=0.3", "flit~=3.7", "packaging~=21.0"]
 dynamic = ["version", "description"]
 
 [project.urls]
