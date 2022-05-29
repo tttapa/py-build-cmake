@@ -149,9 +149,10 @@ them to be included in the final package.
 The `version` and `description` options are set to `dynamic`, which will cause
 py-build-cmake to read them from your package or module dynamically (it uses
 the module docstring as the description, and the `__version__` variable for the
-version number). Have a look at \_\_init\_\_.py for an example.
+version number). Have a look at [\_\_init\_\_.py](src-python/minimal/__init__.py)
+for an example.
 
-If your package has runtime dependencies, you can specify them here as will.
+If your package has runtime dependencies, you can specify them here as well.
 When a user installs your package, e.g. using `pip install`, `pip` will install
 these dependencies as well.
 
@@ -169,7 +170,7 @@ project on PyPI.
 include = ["CMakeLists.txt", "src/*"]
 ```
 The `sdist` section declares which files should be included for a source
-distribution. You should include everything you need to build your package, so
+distribution. You should include everything needed to build your package, so
 including the C and CMake files. The README.md and LICENSE files mentioned in
 the metadata are included automatically, and so is the entire Python package
 directory.  
@@ -187,13 +188,13 @@ The `cmake` section defines the settings for invoking CMake when building your
 project. The most important option is the `source_path`, the folder containing
 your main CMakeLists.txt file. The `-j` flag enables parallel builds, and the 
 `install_components` option defines which CMake components to install. In this
-example, the `python_modules` component is defined in src/CMakeLists.txt.  
+example, the `python_modules` component is defined in [src/CMakeLists.txt](src/CMakeLists.txt).  
 The `minimum_version` option defines which version of CMake is required to build
 this project. If this version or newer is not found in the PATH, it is added as
 a build requirement and installed by the build frontend (e.g. pip) before 
 building.  
-There are many other options, see the py-build-cmake documentation for more 
-details.
+There are many other options, see the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html)
+for more details.
 
 ```toml
 [tool.py-build-cmake.stubgen]
