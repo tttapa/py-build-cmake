@@ -40,7 +40,6 @@ def editable(session: nox.Session):
     session.install("py-build-cmake~=0.0.11a0")
     with session.chdir("examples/pybind11-project"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        session.run("python", "-m", "build", ".")
         session.install("-e", ".")
         session.run("pytest")
 
