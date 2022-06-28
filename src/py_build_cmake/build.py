@@ -356,6 +356,8 @@ class _BuildBackend(object):
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
         # Write a fake __init__.py file that points to the development folder
         tmp_pkg: Path = tmp_build_dir / pkg.name
+        pkgpath = Path(pkg.path)
+        initpath = pkgpath / '__init__.py'
         os.makedirs(tmp_pkg, exist_ok=True)
         special_dunders = [
             '__builtins__', '__cached__', '__file__', '__loader__', '__name__',
@@ -363,11 +365,11 @@ class _BuildBackend(object):
         ]
         content = f"""\
             # First extend the search path with the development folder
-            __spec__.submodule_search_locations.insert(0, "{pkg.path}")
+            __spec__.submodule_search_locations.insert(0, {str(pkgpath)!a})
             # Now manually import the development __init__.py
             from importlib import util as _util
             _spec = _util.spec_from_file_location("{pkg.name}",
-                                                  "{pkg.path}/__init__.py")
+                                                  {str(initpath)!a})
             _mod = _util.module_from_spec(_spec)
             _spec.loader.exec_module(_mod)
             # After importing, add its symbols to our global scope
