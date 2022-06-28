@@ -374,11 +374,8 @@ class _BuildBackend(object):
             _vars = _mod.__dict__.copy()
             for _k in ['{"','".join(special_dunders)}']: _vars.pop(_k)
             globals().update(_vars)
-            del _k
-            del _spec
-            del _mod
-            del _vars
-            del _util
+            # Clean up
+            del _k, _spec, _mod, _vars, _util
             """
         (tmp_pkg / '__init__.py').write_text(textwrap.dedent(content),
                                              encoding='utf-8')
