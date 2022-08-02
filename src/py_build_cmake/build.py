@@ -7,7 +7,7 @@ from string import Template
 import re
 import shutil
 import textwrap
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 import tempfile
 from subprocess import CalledProcessError, run as sp_run
 from glob import glob
@@ -21,46 +21,12 @@ _CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
 
 class _BuildBackend(object):
 
+    # --- Constructor ---------------------------------------------------------
+
     def __init__(self) -> None:
         self.verbose = False
 
-    def check_program_version(
-        self,
-        program: str,
-        minimum_version: Optional[NormalizedVersion],
-        name: Optional[str],
-        check_version: bool = True,
-    ):
-        """Check if there's a new enough version of the given command available
-        in PATH."""
-        name = name or program
-        try:
-            # Try running the command
-            cmd = [program, '--version'] if check_version else [program, '-h']
-            res = self.run(cmd, check=True, capture_output=True)
-            # Try finding the version
-            if check_version:
-                m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
-                if not m:
-                    raise RuntimeError(f"Unexpected {name} version output")
-                program_version = NormalizedVersion(m.group(0))
-                if self.verbose: print("Found", name, program_version)
-                # Check if the version is new enough
-                if minimum_version is not None:
-                    if program_version < minimum_version:
-                        raise RuntimeError(f"{name} too old")
-        except CalledProcessError as e:
-            if self.verbose:
-                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
-                sys.stdout.buffer.write(e.stdout)
-                sys.stdout.buffer.write(e.stderr)
-            return False
-        except Exception as e:
-            # If any of that failed, return False
-            if self.verbose:
-                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
-            return False
-        return True
+    # --- Methods required by PEP 517 -----------------------------------------
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
@@ -76,42 +42,6 @@ class _BuildBackend(object):
         if self.verbose:
             print('Dependencies for build:', deps)
         return deps
-
-    def check_cmake_program(self, cfg: Config, deps: List[str]):
-        assert cfg.cmake
-        # Do we need to perform a native build?
-        native = not cfg.cross or self.needs_cross_native_build(cfg)
-        native_cfg = cfg.cmake[self.get_os_name()] if native else {}
-        # Do we need to perform a cross build?
-        cross = cfg.cross
-        cross_cfg = cfg.cmake.get('cross', {})
-        # Find the strictest version requirement
-        min_cmake_ver = max(
-            _CMAKE_MINIMUM_REQUIRED,
-            NormalizedVersion(native_cfg.get('minimum_version', '0.0')),
-            NormalizedVersion(cross_cfg.get('minimum_version', '0.0')),
-        )
-        # If CMake in PATH doesn't work or is too old, add it as a build
-        # requirement
-        if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
-            deps.append("cmake>=" + str(min_cmake_ver))
-
-        # Check if we need Ninja
-        cfgs = []
-        if native: cfgs.append(native_cfg)
-        if cross: cfgs.append(cross_cfg)
-        # Do any of the configs require Ninja as a generator?
-        needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
-        need_ninja = any(map(needs_ninja, cfgs))
-        if need_ninja:
-            # If so, check if a working version exists in the PATH, otherwise,
-            # add it as a build requirement
-            if not self.check_program_version('ninja', None, "Ninja"):
-                deps.append("ninja")
-
-    def check_stubgen_program(self, cfg: Config, deps: List[str]):
-        if not self.check_program_version('stubgen', None, None, False):
-            deps.append("mypy")
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -162,7 +92,6 @@ class _BuildBackend(object):
         self.parse_config_settings(config_settings)
 
         # Load metadata
-        from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
         pyproject = src_dir / 'pyproject.toml'
         cfg = self.read_metadata(pyproject)
@@ -190,13 +119,7 @@ class _BuildBackend(object):
         sdist_tar = sdist_builder.build(Path(sdist_directory))
         return os.path.relpath(sdist_tar, sdist_directory)
 
-    @staticmethod
-    def get_os_name():
-        return {
-            "Linux": "linux",
-            "Windows": "windows",
-            "Darwin": "mac",  # TODO: untested
-        }[platform.system()]
+    # --- Parsing config options and metadata ---------------------------------
 
     def parse_config_settings(self, config_settings: Optional[Dict]):
         if 'PY_BUILD_CMAKE_VERBOSE' in os.environ:
@@ -212,40 +135,32 @@ class _BuildBackend(object):
         try:
             cfg = read_metadata(pyproject)
         except ConfigError as e:
-            if not self.verbose:
-                e.args = ("\n"
-                        "\n"
-                        "\t❌ Error in configuration:\n"
-                        "\n"
-                        f"\t\t{e}\n"
-                        "\n", )
+            e.args = ("\n"
+                      "\n"
+                      "\t❌ Error in configuration:\n"
+                      "\n"
+                      f"\t\t{e}\n"
+                      "\n", )
             raise
         if self.verbose:
-            print("\npy-build-cmake options")
-            print("======================")
-            print("module:")
-            pprint(cfg.module)
-            print("sdist:")
-            pprint(cfg.sdist)
-            print("cmake:")
-            pprint(cfg.cmake)
-            print("stubgen:")
-            pprint(cfg.stubgen)
-            print("cross:")
-            pprint(cfg.cross)
-            print("======================\n")
+            self.print_config_verbose(cfg)
         return cfg
+
+    # --- Building wheels -----------------------------------------------------
 
     def build_wheel_in_dir(self,
                            wheel_directory,
                            tmp_build_dir,
                            editable=False):
+        """This is the main function that contains all steps necessary to build
+        a complete wheel package, including the CMake builds etc."""
+        # Set up all paths
         wheel_directory = Path(wheel_directory)
         tmp_build_dir = Path(tmp_build_dir)
         staging_dir = tmp_build_dir / 'staging'
         src_dir = Path().resolve()
 
-        # Load metadata
+        # Load metadata from the pyproject.toml file
         from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
         cfg = self.read_metadata(src_dir / 'pyproject.toml')
@@ -255,7 +170,7 @@ class _BuildBackend(object):
         metadata = make_metadata(pkg, cfg)
         metadata.version = self.normalize_version(metadata.version)
 
-        # Copy the module source files to the temporary folder
+        # Copy the module's Python source files to the temporary folder
         if not editable:
             self.copy_pkg_source_to(staging_dir, src_dir, pkg)
         else:
@@ -269,14 +184,12 @@ class _BuildBackend(object):
         metadata_path = distinfo / 'METADATA'
         with open(metadata_path, 'w', encoding='utf-8') as f:
             metadata.write_metadata_file(f)
-
         # Write or copy license
         self.write_license_files(cfg.license, src_dir, distinfo)
-
-        # Write entrypoints
+        # Write entrypoints/scripts
         self.write_entrypoints(distinfo, cfg)
 
-        # Generate .pyi stubs
+        # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
             self.generate_stubs(tmp_build_dir, staging_dir, pkg, cfg.stubgen)
 
@@ -291,8 +204,25 @@ class _BuildBackend(object):
                                      dist_name, metadata.version)
         return whl_name
 
-    def needs_cross_native_build(self, cfg):
-        return cfg.cross and 'copy_from_native_build' in cfg.cross
+    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, dist_name,
+                     norm_version):
+        """Create a wheel package from the build directory."""
+        from distlib.wheel import Wheel
+        whl = Wheel()
+        whl.name = dist_name
+        whl.version = norm_version
+        pure = not cfg.cmake
+        libdir = 'purelib' if pure else 'platlib'
+        paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
+        whl.dirname = wheel_directory
+        tags = None
+        if cfg.cross:
+            tags = self.get_cross_tags(cfg.cross)
+        if pure:
+            tags = {'pyver': ['py3']}
+        wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
+        whl_name = os.path.relpath(wheel_path, wheel_directory)
+        return whl_name
 
     def do_native_cross_cmake_build(self, tmp_build_dir, staging_dir, src_dir,
                                     cfg, metadata, dist_name, import_name):
@@ -341,20 +271,35 @@ class _BuildBackend(object):
                     "pattern '" + pattern + "'")
         shutil.rmtree(native_install_dir)
 
-    def normalize_version(self, version):
-        from distlib.version import NormalizedVersion
-        norm_version = str(NormalizedVersion(version))
-        return norm_version
+    # --- Files installation --------------------------------------------------
+
+    def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
+        """Copy the files of a Python package to the build directory."""
+        for mod_file in pkg.iter_files():
+            rel_path = os.path.relpath(mod_file, pkg.path.parent)
+            dst = tmp_build_dir / rel_path
+            os.makedirs(dst.parent, exist_ok=True)
+            shutil.copy2(mod_file, dst, follow_symlinks=False)
 
     def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
+        """Write the LICENSE file from pyproject.toml to the distinfo
+        directory."""
         if 'text' in license:
             with (distinfo_dir / 'LICENSE').open('w', encoding='utf-8') as f:
                 f.write(license['text'])
         elif 'file' in license:
             shutil.copy2(srcdir / license['file'], distinfo_dir)
 
+    def write_entrypoints(self, distinfo: Path, cfg: Config):
+        from flit_core.common import write_entry_points
+        with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
+            write_entry_points(cfg.entrypoints, f)
+
+    # --- Editable installs ---------------------------------------------------
+
     def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
-        # Write a fake __init__.py file that points to the development folder
+        """Write a fake __init__.py file that points to the development 
+        folder."""
         tmp_pkg: Path = tmp_build_dir / pkg.name
         pkgpath = Path(pkg.path)
         initpath = pkgpath / '__init__.py'
@@ -389,38 +334,7 @@ class _BuildBackend(object):
         # Write a path file so IDEs find the correct files as well
         (tmp_build_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
 
-    def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
-        for mod_file in pkg.iter_files():
-            rel_path = os.path.relpath(mod_file, pkg.path.parent)
-            dst = tmp_build_dir / rel_path
-            os.makedirs(dst.parent, exist_ok=True)
-            shutil.copy2(mod_file, dst, follow_symlinks=False)
-
-    def run(self, *args, **kwargs):
-        """Wrapper around subprocess.run that optionally prints the command."""
-        if self.verbose:
-            pprint([*args])
-            pprint(kwargs)
-        return sp_run(*args, **kwargs)
-
-    def generate_stubs(self, tmp_build_dir, staging_dir, pkg, cfg: Dict[str,
-                                                                        Any]):
-        """Generate stubs (.pyi) using mypy stubgen."""
-        args = ['stubgen'] + cfg.get('args', [])
-        cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
-        for p in cfg['packages']:
-            args += ['-p', p]
-        cfg.setdefault('modules', [pkg.name] if not pkg.is_package else [])
-        for m in cfg['modules']:
-            args += ['-m', m]
-        args += cfg.get('files', [])
-        # Add output folder argument if not already specified in cfg['args']
-        if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
-            args += ['-o', str(staging_dir)]
-        env = os.environ.copy()
-        env.setdefault('MYPY_CACHE_DIR', str(tmp_build_dir))
-        # Call mypy stubgen in a subprocess
-        self.run(args, cwd=pkg.path.parent, check=True, env=env)
+    # --- Invoking CMake builds -----------------------------------------------
 
     def run_cmake(self, pkgdir, install_dir, metadata, cmake_cfg, cross_cfg,
                   native_install_dir, dist_name, import_name):
@@ -495,11 +409,24 @@ class _BuildBackend(object):
 
     def build_install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
                             config):
+        """Build the CMake project and install it."""
         self.build_cmake(cmake_cfg, builddir, cmake_env, config)
         self.install_cmake(cmake_cfg, builddir, cmake_env, install_dir, config)
 
+    def build_cmake(self, cmake_cfg, builddir, cmake_env, config):
+        """Build the CMake project."""
+        build_cmd = ['cmake', '--build', str(builddir)]
+        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
+        if config:  # --config {config}
+            build_cmd += ['--config', config]
+        f = 'build_tool_args'
+        if f in cmake_cfg:
+            build_cmd += ['--'] + cmake_cfg[f]
+        self.run(build_cmd, check=True, env=cmake_env)
+
     def install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
                       config):
+        """Install the CMake project."""
         for component in cmake_cfg['install_components']:
             install_cmd = [
                 'cmake', '--install',
@@ -514,57 +441,88 @@ class _BuildBackend(object):
             print('Installing component', component or 'all')
             self.run(install_cmd, check=True, env=cmake_env)
 
-    def build_cmake(self, cmake_cfg, builddir, cmake_env, config):
-        build_cmd = ['cmake', '--build', str(builddir)]
-        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
-        if config:  # --config {config}
-            build_cmd += ['--config', config]
-        f = 'build_tool_args'
-        if f in cmake_cfg:
-            build_cmd += ['--'] + cmake_cfg[f]
-        self.run(build_cmd, check=True, env=cmake_env)
+    # --- Generate stubs ------------------------------------------------------
+
+    def generate_stubs(self, tmp_build_dir, staging_dir, pkg, cfg: Dict[str,
+                                                                        Any]):
+        """Generate stubs (.pyi) using mypy stubgen."""
+        args = ['stubgen'] + cfg.get('args', [])
+        cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
+        for p in cfg['packages']:
+            args += ['-p', p]
+        cfg.setdefault('modules', [pkg.name] if not pkg.is_package else [])
+        for m in cfg['modules']:
+            args += ['-m', m]
+        args += cfg.get('files', [])
+        # Add output folder argument if not already specified in cfg['args']
+        if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
+            args += ['-o', str(staging_dir)]
+        env = os.environ.copy()
+        env.setdefault('MYPY_CACHE_DIR', str(tmp_build_dir))
+        # Call mypy stubgen in a subprocess
+        self.run(args, cwd=pkg.path.parent, check=True, env=env)
+
+    # --- Misc helper functions -----------------------------------------------
 
     @staticmethod
-    def get_build_config_name(cross_cfg):
-        from distlib.wheel import IMPVER, ABI, ARCH
-        buildconfig = '-'.join([IMPVER, ABI, ARCH])
-        if cross_cfg:
-            buildconfig = '-'.join(
-                map(lambda x: x[0],
-                    _BuildBackend.get_cross_tags(cross_cfg).values()))
-        return buildconfig
+    def get_os_name():
+        return {
+            "Linux": "linux",
+            "Windows": "windows",
+            "Darwin": "mac",  # TODO: untested
+        }[platform.system()]
 
-    def write_entrypoints(self, distinfo: Path, cfg: Config):
-        from flit_core.common import write_entry_points
-        with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
-            write_entry_points(cfg.entrypoints, f)
+    def print_config_verbose(self, cfg):
+        print("\npy-build-cmake options")
+        print("======================")
+        print("module:")
+        pprint(cfg.module)
+        print("sdist:")
+        pprint(cfg.sdist)
+        print("cmake:")
+        pprint(cfg.cmake)
+        print("stubgen:")
+        pprint(cfg.stubgen)
+        print("cross:")
+        pprint(cfg.cross)
+        print("======================\n")
 
-    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, dist_name,
-                     norm_version):
-        from distlib.wheel import Wheel
-        whl = Wheel()
-        whl.name = dist_name
-        whl.version = norm_version
-        pure = not cfg.cmake
-        libdir = 'purelib' if pure else 'platlib'
-        paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
-        whl.dirname = wheel_directory
-        tags = None
-        if cfg.cross:
-            tags = self.get_cross_tags(cfg.cross)
-        if pure:
-            tags = {'pyver': ['py3']}
-        wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
-        whl_name = os.path.relpath(wheel_path, wheel_directory)
-        return whl_name
+    def normalize_version(self, version):
+        from distlib.version import NormalizedVersion
+        norm_version = str(NormalizedVersion(version))
+        return norm_version
+
+    def run(self, *args, **kwargs):
+        """Wrapper around subprocess.run that optionally prints the command."""
+        if self.verbose:
+            pprint([*args])
+            pprint(kwargs)
+        return sp_run(*args, **kwargs)
 
     @staticmethod
     def get_cross_tags(crosscfg):
+        """Get the PEP 425 tags to use when cross-compiling."""
         return {
             'pyver': [crosscfg['implementation'] + crosscfg['version']],
             'abi': [crosscfg['abi']],
             'arch': [crosscfg['arch']],
         }
+
+    @staticmethod
+    def get_build_config_name(cross_cfg):
+        """Get a string representing the Python version, ABI and architecture,
+        used to name the build folder so builds for different versions don't
+        interfere."""
+        if cross_cfg:
+            return '-'.join(
+                map(lambda x: x[0],
+                    _BuildBackend.get_cross_tags(cross_cfg).values()))
+        else:
+            from distlib.wheel import IMPVER, ABI, ARCH
+            return '-'.join([IMPVER, ABI, ARCH])
+
+    def needs_cross_native_build(self, cfg):
+        return cfg.cross and 'copy_from_native_build' in cfg.cross
 
     def iter_files(self, stagedir):
         """Iterate over the files contained in the given folder.
@@ -586,6 +544,82 @@ class _BuildBackend(object):
                     yield full_path
 
             dirs[:] = [d for d in sorted(dirs) if _include(d)]
+
+    # --- Helper functions for finding programs like CMake --------------------
+
+    def check_cmake_program(self, cfg: Config, deps: List[str]):
+        assert cfg.cmake
+        # Do we need to perform a native build?
+        native = not cfg.cross or self.needs_cross_native_build(cfg)
+        native_cfg = cfg.cmake[self.get_os_name()] if native else {}
+        # Do we need to perform a cross build?
+        cross = cfg.cross
+        cross_cfg = cfg.cmake.get('cross', {})
+        # Find the strictest version requirement
+        min_cmake_ver = max(
+            _CMAKE_MINIMUM_REQUIRED,
+            NormalizedVersion(native_cfg.get('minimum_version', '0.0')),
+            NormalizedVersion(cross_cfg.get('minimum_version', '0.0')),
+        )
+        # If CMake in PATH doesn't work or is too old, add it as a build
+        # requirement
+        if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
+            deps.append("cmake>=" + str(min_cmake_ver))
+
+        # Check if we need Ninja
+        cfgs = []
+        if native: cfgs.append(native_cfg)
+        if cross: cfgs.append(cross_cfg)
+        # Do any of the configs require Ninja as a generator?
+        needs_ninja = lambda c: 'ninja' in c.get('generator', '').lower()
+        need_ninja = any(map(needs_ninja, cfgs))
+        if need_ninja:
+            # If so, check if a working version exists in the PATH, otherwise,
+            # add it as a build requirement
+            if not self.check_program_version('ninja', None, "Ninja"):
+                deps.append("ninja")
+
+    def check_stubgen_program(self, cfg: Config, deps: List[str]):
+        if not self.check_program_version('stubgen', None, None, False):
+            deps.append("mypy")
+
+    def check_program_version(
+        self,
+        program: str,
+        minimum_version: Optional[NormalizedVersion],
+        name: Optional[str],
+        check_version: bool = True,
+    ):
+        """Check if there's a new enough version of the given command available
+        in PATH."""
+        name = name or program
+        try:
+            # Try running the command
+            cmd = [program, '--version'] if check_version else [program, '-h']
+            res = self.run(cmd, check=True, capture_output=True)
+            # Try finding the version
+            if check_version:
+                m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
+                if not m:
+                    raise RuntimeError(f"Unexpected {name} version output")
+                program_version = NormalizedVersion(m.group(0))
+                if self.verbose: print("Found", name, program_version)
+                # Check if the version is new enough
+                if minimum_version is not None:
+                    if program_version < minimum_version:
+                        raise RuntimeError(f"{name} too old")
+        except CalledProcessError as e:
+            if self.verbose:
+                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
+                sys.stdout.buffer.write(e.stdout)
+                sys.stdout.buffer.write(e.stderr)
+            return False
+        except Exception as e:
+            # If any of that failed, return False
+            if self.verbose:
+                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
+            return False
+        return True
 
 
 _BACKEND = _BuildBackend()
