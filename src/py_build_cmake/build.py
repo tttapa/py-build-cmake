@@ -452,7 +452,7 @@ class _BuildBackend(object):
         args += cfg.get('files', [])
         # Add output folder argument if not already specified in cfg['args']
         if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
-            args += ['-o', staging_dir]
+            args += ['-o', str(staging_dir)]
         env = os.environ.copy()
         env.setdefault('MYPY_CACHE_DIR', str(tmp_build_dir))
         # Call mypy stubgen in a subprocess
