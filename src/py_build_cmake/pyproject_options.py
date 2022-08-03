@@ -218,10 +218,12 @@ def get_options(config_path: Optional[Path] = None):
                               "(but not '**' for recursive patterns)."),
         ConfigOption("sdist",
                      "Override sdist options when cross-compiling.",
-                     inherit_from=sdist_pth),
+                     inherit_from=sdist_pth,
+                     create_if_inheritance_target_exists=True),
         ConfigOption("cmake",
                      "Override CMake options when cross-compiling.",
-                     inherit_from=cmake_pth),
+                     inherit_from=cmake_pth,
+                     create_if_inheritance_target_exists=True),
     ]) # yapf: disable
 
     # local override
