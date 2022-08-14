@@ -35,5 +35,8 @@ Source = "https://github.com/tttapa/py-build-cmake"
 Documentation = "https://tttapa.github.io/py-build-cmake"
 Tracker = "https://github.com/tttapa/py-build-cmake/issues"
 
+[tool.py-build-cmake.module]
+name = "py_build_cmake"
+
 [tool.pytest.ini_options]
 testpaths = ["test"]

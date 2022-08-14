@@ -94,3 +94,21 @@ Additionally, two extra configuration files can be placed in the same directory 
 - `py-build-cmake.local.toml`: the options in this file override the values in the `tool.py-build-cmake` section of `pyproject.toml`.<br/>This is useful if you need specific arguments or CMake options to compile the package on your system.
 - `py-build-cmake.cross.toml`: the options in this file override the values in the `tool.py-build-cmake.cross` section of `pyproject.toml`.<br/>Useful for cross-compiling the package without having to edit the main configuration file.
 
+# Command line overrides
+
+Instead of using the `py-build-cmake.local.toml` and `py-build-cmake.cross.toml` files, you can also include additional config files using command line options:
+
+- `--local`: specifies a toml file that overrides the `tool.py-build-cmake` section of `pyproject.toml`, similar to `py-build-cmake.local.toml`
+- `--cross`: specifies a toml file that overrides the `tool.py-build-cmake.cross` section of `pyproject.toml`, similar to `py-build-cmake.cross.toml`
+
+These command line overrides are applied after the `py-build-cmake.local.toml` and `py-build-cmake.cross.toml` files in the project folder (if any).
+
+When using PyPA build, these flags can be specified using the `-C` or `--config-setting` flag: 
+```sh
+python -m build . -C--cross=/path/to/my-cross-config.toml
+```
+The same flag may appear multiple times, for example: 
+```sh
+python -m build . -C--local=conf-A.toml -C--local=conf-B.toml
+```
+For PyPA pip, you can use the `--config-settings` flag instead.

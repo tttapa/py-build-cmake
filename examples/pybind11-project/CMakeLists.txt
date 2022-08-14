@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
-project(py-build-cmake VERSION 0.0.11)
-set(PY_VERSION_SUFFIX ".post1")
+project(py-build-cmake VERSION 0.0.12)
+set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
 # Make sure that the Python and CMake versions match

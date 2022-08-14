@@ -13,7 +13,7 @@ function(pybind11_stubgen target)
                 $<TARGET_FILE_BASE_NAME:${target}>
                 --bare-numpy-ndarray
                 --no-setup-py
-                -o ${CMAKE_CURRENT_BINARY_DIR}
+                -o $<TARGET_FILE_DIR:${target}>
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${target}>
         USES_TERMINAL)
 
@@ -21,10 +21,11 @@ endfunction()
 
 function(pybind11_stubgen_install target destination)
 
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${target}>-stubs/__init__.pyi
+    install(DIRECTORY
+        $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>-stubs/
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        RENAME $<TARGET_FILE_BASE_NAME:${target}>.pyi
-        DESTINATION ${destination})
+        DESTINATION ${destination}/$<TARGET_FILE_BASE_NAME:${target}>
+        FILES_MATCHING REGEX "\.pyi$")
 
 endfunction()
