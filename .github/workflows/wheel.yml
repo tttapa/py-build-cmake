@@ -2,6 +2,10 @@ name: Python Wheel
 
 on:
   push:
+    tags-ignore:
+      - '**'
+    branches:
+      - '**'
   release:
     types: ['released', 'prereleased']
 
