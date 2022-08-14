@@ -109,7 +109,7 @@ def _print_usage():
     """))
 
 
-if __name__ == '__main__':
+def main():
     opts = get_options()
     help_pth = pth('pyproject.toml/tool/py-build-cmake')
     help_opt = {'-h', '-?', '--help', 'h', 'help', '?'}
@@ -132,9 +132,35 @@ if __name__ == '__main__':
               "override the values in the `tool.py-build-cmake.cross` section "
               "of `pyproject.toml`.<br/>Useful for cross-compiling the "
               "package without having to edit the main configuration file.\n")
+        print("# Command line overrides\n")
+        print("Instead of using the `py-build-cmake.local.toml` and "
+              "`py-build-cmake.cross.toml` files, you can also include "
+              "additional config files using command line options:\n\n"
+              "- `--local`: specifies a toml file that overrides the "
+              "`tool.py-build-cmake` section of `pyproject.toml`, "
+              "similar to `py-build-cmake.local.toml`\n"
+              "- `--cross`: specifies a toml file that overrides the "
+              "`tool.py-build-cmake.cross` section of `pyproject.toml`, "
+              "similar to `py-build-cmake.cross.toml`\n\n"
+              "These command line overrides are applied after the "
+              "`py-build-cmake.local.toml` and `py-build-cmake.cross.toml` "
+              "files in the project folder (if any).\n\n"
+              "When using PyPA build, these flags can be specified using "
+              "the `-C` or `--config-setting` flag: \n"
+              "```sh\n"
+              "python -m build . -C--cross=/path/to/my-cross-config.toml\n"
+              "```\n"
+              "The same flag may appear multiple times, for example: \n"
+              "```sh\n"
+              "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
+              "```\n")
     elif len(sys.argv) > 1 or set(map(str.lower, sys.argv[1:])) & help_opt:
         _print_usage()
     else:
         print("List of py-build-cmake pyproject.toml options:")
         recursive_help_print(opts[help_pth])
         print()
+
+
+if __name__ == '__main__':
+    main()

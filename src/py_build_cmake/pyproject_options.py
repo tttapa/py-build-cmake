@@ -1,6 +1,14 @@
 from .config_options import *
 
 
+def get_tool_pbc_path():
+    return pth('pyproject.toml/tool/py-build-cmake')
+
+
+def get_cross_path():
+    return pth('pyproject.toml/tool/py-build-cmake/cross')
+
+
 def get_options(config_path: Optional[Path] = None):
     root = ConfigOption("root")
     pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
@@ -20,7 +28,7 @@ def get_options(config_path: Optional[Path] = None):
             "Defines the name and the directory of the module to package.",
             default=DefaultValueValue({}),
         ))
-    pbc_pth = pth('pyproject.toml/tool/py-build-cmake')
+    pbc_pth = get_tool_pbc_path()
     module.insert_multiple([
         StrConfigOption('name',
                         "Import name in Python (can be different from the "
@@ -181,7 +189,7 @@ def get_options(config_path: Optional[Path] = None):
             "cross",
             "Causes py-build-cmake to cross-compile the project.",
         ))
-    cross_pth = pth('pyproject.toml/tool/py-build-cmake/cross')
+    cross_pth = get_cross_path()
     cross.insert_multiple([
         StrConfigOption('implementation',
                         "Identifier for the Python implementation.",
