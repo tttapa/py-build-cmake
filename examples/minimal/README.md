@@ -102,7 +102,7 @@ detail.
 
 ```toml
 [build-system]
-requires = ["py-build-cmake~=0.0.11"]
+requires = ["py-build-cmake~=0.0.12"]
 build-backend = "py_build_cmake.build"
 ```
 
