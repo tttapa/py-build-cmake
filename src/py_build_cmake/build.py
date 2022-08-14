@@ -32,7 +32,7 @@ class _BuildBackend(object):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
         self.parse_config_settings(config_settings)
         pyproject = Path('pyproject.toml').resolve()
-        cfg = self.read_metadata(pyproject)
+        cfg = self.read_metadata(pyproject, config_settings)
         deps = []
         # Check if we need CMake
         if cfg.cmake:
@@ -63,7 +63,8 @@ class _BuildBackend(object):
 
         # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
-            whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir)
+            whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir,
+                                               config_settings)
         return whl_name
 
     def build_editable(self,
@@ -80,6 +81,7 @@ class _BuildBackend(object):
         with tempfile.TemporaryDirectory() as tmp_build_dir:
             whl_name = self.build_wheel_in_dir(wheel_directory,
                                                tmp_build_dir,
+                                               config_settings,
                                                editable=True)
         return whl_name
 
@@ -94,7 +96,7 @@ class _BuildBackend(object):
         # Load metadata
         from flit_core.common import Module, make_metadata
         pyproject = src_dir / 'pyproject.toml'
-        cfg = self.read_metadata(pyproject)
+        cfg = self.read_metadata(pyproject, config_settings)
         import_name = cfg.module['name']
         pkg = Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
@@ -126,14 +128,26 @@ class _BuildBackend(object):
             self.verbose = True
         if config_settings is None:
             return
-        if config_settings.keys() & {'verbose', 'v'}:
+        if config_settings.keys() & {'verbose', '--verbose', 'v', '-v'}:
             self.verbose = True
 
-    def read_metadata(self, pyproject):
+    def read_metadata(self, pyproject, config_settings: Optional[Dict]):
         from .config import read_metadata
         from flit_core.config import ConfigError
+
+        config_settings = config_settings or {}
         try:
-            cfg = read_metadata(pyproject)
+            listify = lambda x: x if isinstance(x, list) else [x]
+            keys = ['--local', '--cross']
+            overrides = {
+                key: listify(config_settings.get(key) or [])
+                for key in keys
+            }
+            if self.verbose:
+                print("Configuration settings for local and "
+                      "cross-compilation overrides:")
+                pprint(overrides)
+            cfg = read_metadata(pyproject, overrides)
         except ConfigError as e:
             e.args = ("\n"
                       "\n"
@@ -151,6 +165,7 @@ class _BuildBackend(object):
     def build_wheel_in_dir(self,
                            wheel_directory,
                            tmp_build_dir,
+                           config_settings,
                            editable=False):
         """This is the main function that contains all steps necessary to build
         a complete wheel package, including the CMake builds etc."""
@@ -163,7 +178,7 @@ class _BuildBackend(object):
         # Load metadata from the pyproject.toml file
         from .config import normalize_name_wheel
         from flit_core.common import Module, make_metadata
-        cfg = self.read_metadata(src_dir / 'pyproject.toml')
+        cfg = self.read_metadata(src_dir / 'pyproject.toml', config_settings)
         dist_name = normalize_name_wheel(cfg.metadata['name'])
         import_name = cfg.module['name']
         pkg = Module(import_name, src_dir / cfg.module['directory'])

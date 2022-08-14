@@ -1,9 +1,14 @@
 from dataclasses import dataclass, field
-import os
-from pprint import pprint
 import re
+import tomli
 from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
+from flit_core.config import ConfigError, read_pep621_metadata
+from flit_core.config import _check_glob_patterns
+from distlib.util import normalize_name
+
+from .config_options import ConfigNode, OverrideConfigOption
+from .pyproject_options import get_options, get_cross_path, get_tool_pbc_path
 
 
 @dataclass
@@ -20,10 +25,8 @@ class Config:
     cross: Optional[Dict[str, Any]] = field(default=None)
 
 
-def read_metadata(pyproject_path) -> Config:
-    from flit_core.config import ConfigError
-    import tomli
-
+def read_metadata(pyproject_path, flag_overrides: Dict[str,
+                                                       List[str]]) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
     pyproject_folder = pyproject_path.parent
@@ -38,7 +41,7 @@ def read_metadata(pyproject_path) -> Config:
     if localconfig_path.exists():
         localconfig = tomli.loads(localconfig_path.read_text('utf-8'))
         # treat empty local override as no local override
-        localconfig = localconfig or None 
+        localconfig = localconfig or None
 
     # Load override for cross-compilation
     crossconfig_fname = 'py-build-cmake.cross.toml'
@@ -48,17 +51,40 @@ def read_metadata(pyproject_path) -> Config:
         crossconfig = tomli.loads(crossconfig_path.read_text('utf-8'))
         crossconfig = crossconfig or None
 
-    return check_config(pyproject_path, pyproject,
-                        (localconfig_fname, localconfig),
-                        (crossconfig_fname, crossconfig))
+    # File names mapping to the actual dict with the config
+    config_files = {
+        "pyproject.toml": pyproject,
+        localconfig_fname: localconfig,
+        crossconfig_fname: crossconfig,
+    }
+    # Additional options for config_options
+    extra_options: List[OverrideConfigOption] = []
+
+    def try_load_local(path: Path):
+        if not path.exists():
+            raise FileNotFoundError(path.absolute())
+        return tomli.loads(path.read_text('utf-8'))
+
+    extra_flag_paths = {
+        '--local': get_tool_pbc_path(),
+        '--cross': get_cross_path(),
+    }
+
+    for flag, targetpath in extra_flag_paths.items():
+        for path in flag_overrides[flag]:
+            extra_options.append(
+                OverrideConfigOption(
+                    path,
+                    "Command line override flag",
+                    targetpath=targetpath,
+                ))
+            config_files[path] = try_load_local(Path(path))
+
+    return check_config(pyproject_path, pyproject, config_files, extra_options)
 
 
-def check_config(pyproject_path, pyproject, localcfg, crosscfg):
-    from flit_core.config import read_pep621_metadata
-    from flit_core.config import _check_glob_patterns
-
+def check_config(pyproject_path, pyproject, config_files, extra_options):
     # Check the package/module name and normalize it
-    from distlib.util import normalize_name
     f = 'name'
     if f in pyproject['project']:
         normname = normalize_name(pyproject['project'][f])
@@ -78,24 +104,16 @@ def check_config(pyproject_path, pyproject, localcfg, crosscfg):
     cfg.referenced_files = flit_cfg.referenced_files
     cfg.license = pyproject['project'].setdefault('license', {})
 
-    from .config_options import ConfigNode
-    from .pyproject_options import get_options
     opts = get_options(pyproject_path.parent)
+    for o in extra_options:
+        opts.insert(o)
 
-    localconfig_fname, localconfig = localcfg
-    crossconfig_fname, crossconfig = crosscfg
-
-    rawcfg = {
-        "pyproject.toml": pyproject,
-        localconfig_fname: localconfig,
-        crossconfig_fname: crossconfig,
-    }
-    treecfg = ConfigNode.from_dict(rawcfg)
-    opts.verify_all(treecfg)
-    opts.override_all(treecfg)
-    opts.inherit_all(treecfg)
-    opts.update_default_all(treecfg)
-    dictcfg = treecfg.to_dict()
+    tree_config = ConfigNode.from_dict(config_files)
+    opts.verify_all(tree_config)
+    opts.override_all(tree_config)
+    opts.inherit_all(tree_config)
+    opts.update_default_all(tree_config)
+    dictcfg = tree_config.to_dict()
     tool_cfg = dictcfg['pyproject.toml']['tool']['py-build-cmake']
 
     # Store the module configuration
