@@ -111,4 +111,4 @@ The same flag may appear multiple times, for example:
 ```sh
 python -m build . -C--local=conf-A.toml -C--local=conf-B.toml
 ```
-
+For PyPA pip, you can use the `--config-settings` flag instead.

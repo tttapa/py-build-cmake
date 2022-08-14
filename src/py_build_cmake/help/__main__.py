@@ -155,7 +155,9 @@ def main():
               "The same flag may appear multiple times, for example: \n"
               "```sh\n"
               "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
-              "```\n")
+              "```\n"
+              "For PyPA pip, you can use the `--config-settings` flag "
+              "instead.")
     elif len(sys.argv) > 1 or set(map(str.lower, sys.argv[1:])) & help_opt:
         _print_usage()
     else:
