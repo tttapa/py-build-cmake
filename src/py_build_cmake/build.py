@@ -365,7 +365,8 @@ class _BuildBackend(object):
         builddir = builddir.resolve()
         # Environment variables
         cmake_env = os.environ.copy()
-        if (f := 'env') in cmake_cfg:
+        f = 'env'
+        if f in cmake_cfg:
             for k, v in cmake_cfg[f].items():
                 cmake_env[k] = Template(v).substitute(cmake_env)
 
@@ -404,9 +405,11 @@ class _BuildBackend(object):
         configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
         for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
             configure_cmd += ['-D', k + '=' + v]
-        if btype := cmake_cfg.get('build_type'):  # -D CMAKE_BUILD_TYPE={type}
+        btype = cmake_cfg.get('build_type')
+        if btype:  # -D CMAKE_BUILD_TYPE={type}
             configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + btype]
-        if gen := cmake_cfg.get('generator'):  # -G {generator}
+        gen = cmake_cfg.get('generator')
+        if gen:  # -G {generator}
             configure_cmd += ['-G', gen]
         self.run(configure_cmd, check=True, env=cmake_env)
 
@@ -431,7 +434,8 @@ class _BuildBackend(object):
         build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
         if config:  # --config {config}
             build_cmd += ['--config', config]
-        if (f := 'build_tool_args') in cmake_cfg:
+        f = 'build_tool_args'
+        if f in cmake_cfg:
             build_cmd += ['--'] + cmake_cfg[f]
         self.run(build_cmd, check=True, env=cmake_env)
 

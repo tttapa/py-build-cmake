@@ -75,9 +75,11 @@ def recursive_help_print(opt: ConfigOption, level=0):
             recursive_help_print(v, level + 1)
         else:
             headerfields = []
-            if (typename := v.get_typename()) is not None:
+            typename = v.get_typename()
+            if typename is not None:
                 headerfields += [typename]
-            if is_required := isinstance(v.default, RequiredValue):
+            is_required = isinstance(v.default, RequiredValue)
+            if is_required:
                 headerfields += ['required']
             if v.inherit_from:
                 headerfields += ['inherits from /' + pth2str(v.inherit_from)]
