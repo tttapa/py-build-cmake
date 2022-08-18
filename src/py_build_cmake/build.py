@@ -230,11 +230,12 @@ class _BuildBackend(object):
         libdir = 'purelib' if pure else 'platlib'
         paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
         whl.dirname = wheel_directory
-        tags = None
-        if cfg.cross:
-            tags = self.get_cross_tags(cfg.cross)
         if pure:
             tags = {'pyver': ['py3']}
+        elif cfg.cross:
+            tags = self.get_cross_tags(cfg.cross)
+        else:
+            tags = self.get_native_tags()
         wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, wheel_directory)
         return whl_name
@@ -533,17 +534,24 @@ class _BuildBackend(object):
         }
 
     @staticmethod
+    def get_native_tags():
+        from .tags import get_python_tag, get_abi_tag, get_platform_tag
+        return {
+            'pyver': [get_python_tag()],
+            'abi': [get_abi_tag()],
+            'arch': [get_platform_tag()],
+        }
+
+    @staticmethod
     def get_build_config_name(cross_cfg):
         """Get a string representing the Python version, ABI and architecture,
         used to name the build folder so builds for different versions don't
         interfere."""
         if cross_cfg:
-            return '-'.join(
-                map(lambda x: x[0],
-                    _BuildBackend.get_cross_tags(cross_cfg).values()))
+            tags = _BuildBackend.get_cross_tags(cross_cfg)
         else:
-            from distlib.wheel import IMPVER, ABI, ARCH
-            return '-'.join([IMPVER, ABI, ARCH])
+            tags = _BuildBackend.get_native_tags()
+        return '-'.join(map(lambda x: x[0], tags.values()))
 
     def needs_cross_native_build(self, cfg):
         return cfg.cross and 'copy_from_native_build' in cfg.cross
