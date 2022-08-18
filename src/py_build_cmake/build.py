@@ -397,6 +397,15 @@ class _BuildBackend(object):
                 'Python3_FIND_REGISTRY=NEVER', '-D',
                 'Python3_FIND_STRATEGY=LOCATION'
             ]
+            # Cross-compile support for macOS - respect ARCHFLAGS if set
+            # https://github.com/pybind/cmake_example/pull/48
+            if self.get_os_name() == "mac" and "ARCHFLAGS" in os.environ:
+                archs = re.findall(r"-arch (\S+)", os.environ["ARCHFLAGS"])
+                if archs:
+                    configure_cmd += [
+                        '-D',
+                        'CMAKE_OSX_ARCHITECTURES={}'.format(";".join(archs)),
+                    ]
         if native_install_dir:
             configure_cmd += [
                 '-D', 'PY_BUILD_CMAKE_NATIVE_INSTALL_DIR:PATH=' +
