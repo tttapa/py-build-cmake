@@ -15,7 +15,10 @@ def get_options(config_path: Optional[Path] = None):
     project = pyproject.insert(UncheckedConfigOption('project'))
     project.insert(UncheckedConfigOption('name', default=RequiredValue()))
     name_pth = pth('pyproject.toml/project/name')
-    tool = pyproject.insert(UncheckedConfigOption("tool"))
+    tool = pyproject.insert(
+        UncheckedConfigOption("tool",
+                              default=DefaultValueValue({}),
+                              create_if_inheritance_target_exists=True))
     pbc = tool.insert(
         ConfigOption("py-build-cmake",
                      default=DefaultValueValue({}),
