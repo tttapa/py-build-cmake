@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import re
+import warnings
 import tomli
 from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
@@ -89,7 +90,7 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     if f in pyproject['project']:
         normname = normalize_name(pyproject['project'][f])
         if pyproject['project'][f] != normname:
-            raise RuntimeWarning(
+            warnings.warn(
                 f"Name changed from {pyproject['project'][f]} to {normname}")
         pyproject['project'][f] = normname
 
