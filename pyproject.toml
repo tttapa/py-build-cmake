@@ -22,7 +22,11 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
 ]
-dependencies = ["distlib~=0.3.5", "flit~=3.7"]
+dependencies = [
+    "distlib~=0.3.5",
+    "flit~=3.7",
+    "tomli~=1.1.0; python_version < '3.11'",
+]
 dynamic = ["version", "description"]
 
 [project.urls]
