@@ -525,22 +525,26 @@ class _BuildBackend(object):
         return sp_run(*args, **kwargs)
 
     @staticmethod
-    def get_cross_tags(crosscfg):
-        """Get the PEP 425 tags to use when cross-compiling."""
-        return {
-            'pyver': [crosscfg['implementation'] + crosscfg['version']],
-            'abi': [crosscfg['abi']],
-            'arch': [crosscfg['arch']],
-        }
-
-    @staticmethod
     def get_native_tags():
+        """Get the PEP 425 tags for the current platform."""
         from .tags import get_python_tag, get_abi_tag, get_platform_tag
         return {
             'pyver': [get_python_tag()],
             'abi': [get_abi_tag()],
             'arch': [get_platform_tag()],
         }
+
+    @staticmethod
+    def get_cross_tags(crosscfg):
+        """Get the PEP 425 tags to use when cross-compiling."""
+        tags = _BuildBackend.get_native_tags()
+        if 'implementation' in crosscfg and 'version' in crosscfg:
+            tags['pyver'] = [crosscfg['implementation'] + crosscfg['version']]
+        if 'abi' in crosscfg:
+            tags['abi'] = [crosscfg['abi']]
+        if 'arch' in crosscfg:
+            tags['arch'] = [crosscfg['arch']]
+        return tags
 
     @staticmethod
     def get_build_config_name(cross_cfg):

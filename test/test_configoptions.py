@@ -1,3 +1,4 @@
+from pathlib import Path
 from pprint import pprint
 
 import pytest
@@ -532,7 +533,7 @@ def test_joinpth():
 
 
 def test_real_config_inherit_cross_cmake():
-    opts = get_options()
+    opts = get_options(Path('/project'), test=True)
     d = {
         "pyproject.toml": {
             "project": {
@@ -595,7 +596,7 @@ def test_real_config_inherit_cross_cmake():
                     "cmake": {
                         "build_type": "Release",
                         "generator": "Ninja",
-                        "source_path": "src",
+                        "source_path": "/project/src",
                         "args": ["arg1", "arg2"],
                         "env": {
                             "foo": "bar"
@@ -610,7 +611,7 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "build_type": "RelWithDebInfo",
                             "generator": "Unix Makefiles",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "args": ["arg1", "arg2", "arg3", "arg4"],
                             "env": {
                                 "foo": "bar",
@@ -622,7 +623,7 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "build_type": "Release",
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "args": ["arg1", "arg2"],
                             "env": {
                                 "foo": "bar"
@@ -634,7 +635,7 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "build_type": "Release",
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "args": ["arg1", "arg2"],
                             "env": {
                                 "foo": "bar"
@@ -646,7 +647,7 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "build_type": "Release",
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "args": ["arg1", "arg2"],
                             "env": {
                                 "foo": "bar"
@@ -670,7 +671,7 @@ def test_real_config_inherit_cross_cmake():
                 "py-build-cmake": {
                     "module": {
                         "name": "foobar",
-                        "directory": ".",
+                        "directory": "/project",
                     },
                     "sdist": {
                         "include": [],
@@ -680,7 +681,7 @@ def test_real_config_inherit_cross_cmake():
                         "build_type": "Release",
                         "config": ["Release"],
                         "generator": "Ninja",
-                        "source_path": "src",
+                        "source_path": "/project/src",
                         "build_path": ".py-build-cmake_cache",
                         "options": {},
                         "args": ["arg1", "arg2"],
@@ -706,7 +707,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "RelWithDebInfo",
                             "config": ["RelWithDebInfo"],
                             "generator": "Unix Makefiles",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2", "arg3", "arg4"],
@@ -729,7 +730,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -751,7 +752,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -773,7 +774,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -793,7 +794,7 @@ def test_real_config_inherit_cross_cmake():
 
 
 def test_real_config_no_cross():
-    opts = get_options()
+    opts = get_options(Path('/project'), test=True)
     d = {
         "pyproject.toml": {
             "project": {
@@ -841,7 +842,7 @@ def test_real_config_no_cross():
                 "py-build-cmake": {
                     "module": {
                         "name": "foobar",
-                        "directory": ".",
+                        "directory": "/project",
                     },
                     "sdist": {
                         "include": [],
@@ -851,7 +852,7 @@ def test_real_config_no_cross():
                         "build_type": "Release",
                         "config": ["Release"],
                         "generator": "Ninja",
-                        "source_path": "src",
+                        "source_path": "/project/src",
                         "build_path": ".py-build-cmake_cache",
                         "options": {},
                         "args": ["arg1", "arg2"],
@@ -872,7 +873,7 @@ def test_real_config_no_cross():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -894,7 +895,7 @@ def test_real_config_no_cross():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -916,7 +917,7 @@ def test_real_config_no_cross():
                             "build_type": "Release",
                             "config": ["Release"],
                             "generator": "Ninja",
-                            "source_path": "src",
+                            "source_path": "/project/src",
                             "build_path": ".py-build-cmake_cache",
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -936,7 +937,7 @@ def test_real_config_no_cross():
 
 
 def test_real_config_no_cmake():
-    opts = get_options()
+    opts = get_options(Path('/project'), test=True)
     d = {
         "pyproject.toml": {
             "project": {
@@ -964,7 +965,7 @@ def test_real_config_no_cmake():
                 "py-build-cmake": {
                     "module": {
                         "name": "foobar",
-                        "directory": ".",
+                        "directory": "/project",
                     },
                     "sdist": {
                         "include": [],
@@ -995,7 +996,7 @@ def test_real_config_no_cmake():
 
 
 def test_real_config_local_override():
-    opts = get_options()
+    opts = get_options(Path('/project'), test=True)
     d = {
         "pyproject.toml": {
             "project": {
@@ -1029,7 +1030,7 @@ def test_real_config_local_override():
                 "py-build-cmake": {
                     "module": {
                         "name": "foobar",
-                        "directory": ".",
+                        "directory": "/project",
                     },
                     "sdist": {
                         "include": ["somefile*"],
@@ -1065,7 +1066,7 @@ def test_real_config_local_override():
 
 
 def test_real_config_local_override_windows():
-    opts = get_options()
+    opts = get_options(Path('/project'), test=True)
     d = {
         "pyproject.toml": {
             "project": {
@@ -1103,7 +1104,7 @@ def test_real_config_local_override_windows():
                 "py-build-cmake": {
                     "module": {
                         "name": "foobar",
-                        "directory": ".",
+                        "directory": "/project",
                     },
                     "sdist": {
                         "include": [],

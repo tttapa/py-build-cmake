@@ -1,10 +1,11 @@
 import html
 import itertools
+from pathlib import Path
 import shutil
 import sys
 import textwrap
 
-from py_build_cmake.config_options import ConfigOption, NoDefaultValue, RefDefaultValue, RequiredValue, pth, pth2str
+from py_build_cmake.config_options import ConfigOption, NoDefaultValue, PathConfigOption, RefDefaultValue, RequiredValue, pth, pth2str
 from py_build_cmake.pyproject_options import get_options
 
 
@@ -45,6 +46,8 @@ def help_print_md(pbc_opts: ConfigOption):
 
 def _get_full_description(vv: ConfigOption):
     descr = _md_escape(vv.description)
+    if isinstance(vv, PathConfigOption):
+        descr += '<br/>' + _describe_path_option(vv).capitalize() + '.'
     if vv.inherit_from:
         descr += '<br/>Inherits from: `/' + pth2str(vv.inherit_from) + '`'
     if vv.example:
@@ -78,6 +81,8 @@ def recursive_help_print(opt: ConfigOption, level=0):
             typename = v.get_typename()
             if typename is not None:
                 headerfields += [typename]
+            if isinstance(v, PathConfigOption):
+                headerfields += [_describe_path_option(v)]
             is_required = isinstance(v.default, RequiredValue)
             if is_required:
                 headerfields += ['required']
@@ -92,6 +97,13 @@ def recursive_help_print(opt: ConfigOption, level=0):
             default = v.default.get_name()
             if default is not None and not is_required:
                 print(textwrap.indent('Default: ' + default, indent + '  '))
+
+
+def _describe_path_option(v: PathConfigOption):
+    t = 'absolute or relative' if v.allow_abs else 'relative'
+    if v.base_path is not None:
+        t += ' to ' + v.base_path.description
+    return t
 
 
 def _print_usage():
@@ -112,7 +124,7 @@ def _print_usage():
 
 
 def main():
-    opts = get_options()
+    opts = get_options(Path('/'))
     help_pth = pth('pyproject.toml/tool/py-build-cmake')
     help_opt = {'-h', '-?', '--help', 'h', 'help', '?'}
     if len(sys.argv) == 2 and sys.argv[1] == 'md':

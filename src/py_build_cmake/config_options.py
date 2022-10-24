@@ -148,13 +148,16 @@ class DefaultValueValue(DefaultValue):
 
 class NoDefaultValue(DefaultValue):
 
+    def __init__(self, name = 'none'):
+        self.name = name
+
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
                     cfg: ConfigNode, cfgpath: ConfPath,
                     optpath: ConfPath) -> Optional[DefaultValueWrapper]:
         return None
 
     def get_name(self):
-        return 'none'
+        return self.name
 
 
 class MissingDefaultError(ConfigError):
@@ -488,6 +491,16 @@ class StrConfigOption(ConfigOption):
                               f'{str}, not {type(cfg[cfgpath].value)}')
 
 
+class RelativeToCurrentConfig:
+    description = 'current configuration file'
+
+
+@dataclass
+class RelativeToProject:
+    project_path: Path
+    description: str = 'project directory'
+
+
 class PathConfigOption(StrConfigOption):
 
     def __init__(self,
@@ -497,32 +510,57 @@ class PathConfigOption(StrConfigOption):
                  default: DefaultValue = NoDefaultValue(),
                  must_exist: bool = True,
                  expected_contents: List[str] = [],
-                 base_path: Optional[Path] = None):
+                 base_path: Optional[Union[RelativeToProject,
+                                           RelativeToCurrentConfig]] = None,
+                 allow_abs: bool = False,
+                 is_folder: bool = True):
         super().__init__(name, description, example, default)
-        self.must_exist = must_exist
+        self.must_exist = must_exist or bool(expected_contents)
         self.expected_contents = expected_contents
         self.base_path = base_path
+        self.allow_abs = allow_abs
+        self.is_folder = is_folder
 
     def get_typename(self):
-        return 'path'
+        return 'path' if self.is_folder else 'filepath'
 
     def check_path(self, cfg: ConfigNode, cfgpath):
-        path = cfg[cfgpath].value = os.path.normpath(cfg[cfgpath].value)
+        path = os.path.normpath(cfg[cfgpath].value)
+        # Absolute or relative path?
         if os.path.isabs(path):
-            raise ConfigError(f'{pth2str(cfgpath)} must be a relative path')
-        if self.base_path is not None:
-            abspath = self.base_path / path
-            if self.must_exist and not os.path.exists(abspath):
-                raise ConfigError(f'{pth2str(cfgpath)}: {str(abspath)} '
-                                  f'does not exist')
+            # Absolute path
+            if not self.allow_abs:
+                raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
+                                  f'must be a relative path')
+        else:
+            # Relative path
+            if isinstance(self.base_path, RelativeToCurrentConfig):
+                path = os.path.join(os.path.dirname(cfgpath[0]), path)
+            elif isinstance(self.base_path, RelativeToProject):
+                path = os.path.join(self.base_path.project_path, path)
+            else:
+                assert self.base_path is None
+        # Does the path exist?
+        if self.must_exist:
+            assert os.path.isabs(path)
+            if not os.path.exists(path):
+                raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
+                                f'does not exist')
+            if self.is_folder != os.path.isdir(path):
+                type_ = 'directory' if self.is_folder else 'file'
+                raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
+                                f'should be a {type_}')
+            # Are any of the required contents missing?
             missing = [
                 sub for sub in self.expected_contents
-                if not os.path.exists(os.path.join(abspath, sub))
+                if not os.path.exists(os.path.join(path, sub))
             ]
             if missing:
                 missingstr = '", "'.join(missing)
-                raise ConfigError(f'{pth2str(cfgpath)} does not contain '
-                                  f'required files or folders "{missingstr}"')
+                raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
+                                f'does not contain the following '
+                                f'required files or folders: "{missingstr}"')
+        cfg[cfgpath].value = os.path.normpath(path)
 
     def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                cfgpath: ConfPath):

@@ -9,7 +9,7 @@ def get_cross_path():
     return pth('pyproject.toml/tool/py-build-cmake/cross')
 
 
-def get_options(config_path: Optional[Path] = None):
+def get_options(project_path: Path, *, test: bool = False):
     root = ConfigOption("root")
     pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
     project = pyproject.insert(UncheckedConfigOption('project'))
@@ -41,7 +41,8 @@ def get_options(config_path: Optional[Path] = None):
         PathConfigOption('directory',
                          "Directory containing the Python package.",
                          default=DefaultValueValue("."),
-                         base_path=config_path),
+                         base_path=RelativeToProject(project_path),
+                         must_exist=not test),
     ])
 
     # [tool.py-build-cmake.sdist]
@@ -101,8 +102,9 @@ def get_options(config_path: Optional[Path] = None):
         PathConfigOption('source_path',
                          "Folder containing CMakeLists.txt.",
                          default=DefaultValueValue("."),
-                         expected_contents=["CMakeLists.txt"],
-                         base_path=config_path),
+                         expected_contents=[] if test else ["CMakeLists.txt"],
+                         base_path=RelativeToProject(project_path),
+                         must_exist=not test),
         PathConfigOption('build_path',
                          "CMake build and cache folder.",
                          default=DefaultValueValue('.py-build-cmake_cache'),
@@ -197,24 +199,27 @@ def get_options(config_path: Optional[Path] = None):
         StrConfigOption('implementation',
                         "Identifier for the Python implementation.",
                         "implementation = 'cp' # CPython",
-                        default=RequiredValue()),
+                        default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('version',
                         "Python version, major and minor, without dots.",
                         "version = '310' # 3.10",
-                        default=RequiredValue()),
+                        default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('abi',
                         "Python ABI.",
                         "abi = 'cp310'",
-                        default=RequiredValue()),
+                        default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('arch',
                         "Operating system and architecture (no dots or "
                         "dashes, only underscores, all lowercase).",
                         "arch = 'linux_x86_64'",
-                        default=RequiredValue()),
+                        default=NoDefaultValue('same as current interpreter')),
         PathConfigOption('toolchain_file',
                          "CMake toolchain file to use.",
                          default=RequiredValue(),
-                         base_path=config_path),
+                         base_path=RelativeToCurrentConfig(),
+                         must_exist=not test,
+                         allow_abs=True,
+                         is_folder=False),
         ListOfStrConfigOption('copy_from_native_build',
                               "If set, this will cause a native version of the "
                               "CMake project to be built and installed in a "
