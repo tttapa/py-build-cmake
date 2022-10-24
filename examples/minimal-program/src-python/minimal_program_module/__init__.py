@@ -1,4 +1,4 @@
 """
 A simple, minimal example of building a C++ program using CMake.
 """
-__version__ = '0.0.14'
+__version__ = '0.0.15'
