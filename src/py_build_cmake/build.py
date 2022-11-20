@@ -137,6 +137,9 @@ class _BuildBackend(object):
 
         config_settings = config_settings or {}
         try:
+            if self.verbose:
+                print("Configuration settings:")
+                pprint(config_settings)
             listify = lambda x: x if isinstance(x, list) else [x]
             keys = ['--local', '--cross']
             overrides = {
@@ -355,116 +358,63 @@ class _BuildBackend(object):
     def run_cmake(self, pkgdir, install_dir, metadata, cmake_cfg, cross_cfg,
                   native_install_dir, dist_name, import_name):
         """Configure, build and install using CMake."""
-        # Source and build folders
-        srcdir = Path(cmake_cfg.get('source_path', pkgdir)).resolve()
-        builddir = pkgdir / '.py-build-cmake_cache'
-        builddir = Path(cmake_cfg.get('build_path', builddir))
-        if not builddir.is_absolute():
-            builddir = pkgdir / builddir
-        buildconfig = self.get_build_config_name(cross_cfg)
-        builddir = builddir / buildconfig
-        builddir = builddir.resolve()
-        # Environment variables
-        cmake_env = os.environ.copy()
-        f = 'env'
-        if f in cmake_cfg:
-            for k, v in cmake_cfg[f].items():
-                cmake_env[k] = Template(v).substitute(cmake_env)
 
-        # Configure
-        configure_cmd = [
-            'cmake',
-            '-B',
-            str(builddir),
-            '-S',
-            str(srcdir),
-            '-D',
-            'PY_BUILD_CMAKE_PACKAGE_VERSION:STRING=' + metadata.version,
-            '-D',
-            'PY_BUILD_CMAKE_PACKAGE_NAME:STRING=' + dist_name,
-            '-D',
-            'PY_BUILD_CMAKE_MODULE_NAME:STRING=' + import_name,
-        ]
+        from . import cmake
+        toolchain_file = None
         if cross_cfg:
-            toolchain = (pkgdir / cross_cfg['toolchain_file']).resolve()
-            configure_cmd += [
-                '-D', 'CMAKE_TOOLCHAIN_FILE:FILEPATH=' + str(toolchain), '-D',
-                'Python3_EXECUTABLE:FILEPATH=' + sys.executable
-            ]
-        else:
-            configure_cmd += [
-                '-D', 'Python3_EXECUTABLE:FILEPATH=' + sys.executable, '-D',
-                'Python3_ROOT_DIR:PATH=' + sys.prefix, '-D',
-                'Python3_FIND_REGISTRY=NEVER', '-D',
-                'Python3_FIND_STRATEGY=LOCATION'
-            ]
-            # Cross-compile support for macOS - respect ARCHFLAGS if set
-            # https://github.com/pybind/cmake_example/pull/48
-            if self.get_os_name() == "mac" and "ARCHFLAGS" in os.environ:
-                archs = re.findall(r"-arch (\S+)", os.environ["ARCHFLAGS"])
-                if archs:
-                    configure_cmd += [
-                        '-D',
-                        'CMAKE_OSX_ARCHITECTURES={}'.format(";".join(archs)),
-                    ]
+            toolchain_file = (pkgdir / cross_cfg['toolchain_file']).resolve()
+
+        # Add some CMake configure options
+        options = cmake_cfg.get('options', {})
         if native_install_dir:
-            configure_cmd += [
-                '-D', 'PY_BUILD_CMAKE_NATIVE_INSTALL_DIR:PATH=' +
+            options['PY_BUILD_CMAKE_NATIVE_INSTALL_DIR:PATH'] = \
                 str(native_install_dir)
-            ]
-        configure_cmd += cmake_cfg.get('args', [])  # User-supplied arguments
-        for k, v in cmake_cfg.get('options', {}).items():  # -D {option}={val}
-            configure_cmd += ['-D', k + '=' + v]
         btype = cmake_cfg.get('build_type')
         if btype:  # -D CMAKE_BUILD_TYPE={type}
-            configure_cmd += ['-D', 'CMAKE_BUILD_TYPE=' + btype]
-        gen = cmake_cfg.get('generator')
-        if gen:  # -G {generator}
-            configure_cmd += ['-G', gen]
-        self.run(configure_cmd, check=True, env=cmake_env)
+            options['CMAKE_BUILD_TYPE:STRING'] = btype
 
-        # Build and install
-        if not cmake_cfg.get('config', False):
-            self.build_install_cmake(cmake_cfg, builddir, cmake_env,
-                                     install_dir, None)
-        else:
-            for config in cmake_cfg['config']:
-                self.build_install_cmake(cmake_cfg, builddir, cmake_env,
-                                         install_dir, config)
+        # CMake options
+        cmaker = cmake.CMaker(
+            cmake_settings=cmake.CMakeSettings(
+                working_dir=Path(pkgdir),
+                source_path=Path(pkgdir),
+                build_path=Path(cmake_cfg['build_path']),
+                os=self.get_os_name(),
+                command=Path("cmake"),
+            ),
+            conf_settings=cmake.CMakeConfigureSettings(
+                environment=cmake_cfg.get("env", {}),
+                toolchain_file=toolchain_file,
+                build_type=cmake_cfg.get('build_type'),
+                options=options,
+                args=cmake_cfg.get('args', []),
+                preset=cmake_cfg.get('preset'),
+                generator=cmake_cfg.get('generator'),
+            ),
+            build_settings=cmake.CMakeBuildSettings(
+                args=cmake_cfg['build_args'],
+                tool_args=cmake_cfg['build_tool_args'],
+                presets=cmake_cfg.get('build_presets', []),
+                configs=cmake_cfg.get('config', []),
+            ),
+            install_settings=cmake.CMakeInstallSettings(
+                args=cmake_cfg['install_args'],
+                presets=cmake_cfg.get('install_presets', []),
+                configs=cmake_cfg.get('config', []),
+                components=cmake_cfg.get('install_components', []),
+                prefix=install_dir,
+            ),
+            package_info=cmake.PackageInfo(
+                version=metadata.version,
+                package_name=dist_name,
+                module_name=import_name,
+            ),
+            verbose=self.verbose
+        )
 
-    def build_install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
-                            config):
-        """Build the CMake project and install it."""
-        self.build_cmake(cmake_cfg, builddir, cmake_env, config)
-        self.install_cmake(cmake_cfg, builddir, cmake_env, install_dir, config)
-
-    def build_cmake(self, cmake_cfg, builddir, cmake_env, config):
-        """Build the CMake project."""
-        build_cmd = ['cmake', '--build', str(builddir)]
-        build_cmd += cmake_cfg.get('build_args', [])  # User-supplied arguments
-        if config:  # --config {config}
-            build_cmd += ['--config', config]
-        f = 'build_tool_args'
-        if f in cmake_cfg:
-            build_cmd += ['--'] + cmake_cfg[f]
-        self.run(build_cmd, check=True, env=cmake_env)
-
-    def install_cmake(self, cmake_cfg, builddir, cmake_env, install_dir,
-                      config):
-        """Install the CMake project."""
-        for component in cmake_cfg['install_components']:
-            install_cmd = [
-                'cmake', '--install',
-                str(builddir), '--prefix',
-                str(install_dir)
-            ]
-            install_cmd += cmake_cfg.get('install_args', [])
-            if config:  # --config {config}
-                install_cmd += ['--config', config]
-            if component:
-                install_cmd += ['--component', component]
-            print('Installing component', component or 'all')
-            self.run(install_cmd, check=True, env=cmake_env)
+        cmaker.configure()
+        cmaker.build()
+        cmaker.install()
 
     # --- Generate stubs ------------------------------------------------------
 
