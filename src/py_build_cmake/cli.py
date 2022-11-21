@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 
 
-def cmake_command(directory, verbose, dry, native, cross, local):
+def cmake_command(directory, build_path, verbose, dry, native, cross, local):
 
     def get_cmaker():
         from .build import _BuildBackend as backend
@@ -31,6 +31,9 @@ def cmake_command(directory, verbose, dry, native, cross, local):
         cmake_cfg, native_cmake_cfg = backend.get_cmake_configs(cfg)
         cmake_cfg = native_cmake_cfg if native else cmake_cfg
         cross_cfg = None if native else cfg.cross
+        # Override the build folder
+        if build_path is not None:
+            cmake_cfg['build_path'] = str(build_path)
         # Configure all CMake options
         return backend.get_cmaker(pkg_dir=source_dir,
                                   install_dir=None,
@@ -50,6 +53,12 @@ def cmake_command(directory, verbose, dry, native, cross, local):
               type=click.Path(exists=True, file_okay=False, dir_okay=True),
               required=False,
               help="The directory containing pyproject.toml.")
+@click.option("-B",
+              "--build-path",
+              type=click.Path(exists=False, file_okay=False, dir_okay=True),
+              required=False,
+              default=None,
+              help="Override py-build-cmake's default build folder.")
 @click.option("-V",
               "--verbose",
               is_flag=True,
