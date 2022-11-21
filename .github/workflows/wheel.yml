@@ -12,27 +12,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: tttapa/alpaqa-build-python-gcc:${{ matrix.python-version }}-11
+    container: python:${{ matrix.python-version }}-bullseye
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Build
       shell: bash
       run: |
         python3 -m venv /tmp/py-venv
         . /tmp/py-venv/bin/activate
-        python -m pip install build
+        python -m pip install -U pip build
         python -m build .
     - name: Upload Wheel
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
     - name: Upload source
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist/py-build-cmake-*.tar.gz
@@ -43,16 +43,16 @@ jobs:
     container: python:${{ matrix.python-version }}-bullseye
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install nox
+        python -m pip install -U pip nox
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -61,11 +61,11 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       name: Install Python
       with: 
         python-version: ${{ matrix.python-version }}
@@ -74,17 +74,17 @@ jobs:
       run: |
         python -m venv py-venv
         ./py-venv/Scripts/Activate.ps1
-        python -m pip install build
+        python -m pip install -U pip build
         python -m build .
       env:
         PYTHONUTF8: 1
     - name: Upload Wheel
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-whl-win-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
     - name: Upload source
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist/py-build-cmake-*.tar.gz
@@ -94,20 +94,20 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       name: Install Python
       with: 
         python-version: ${{ matrix.python-version }}
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: py_build_cmake-whl-win-${{ matrix.python-version }}
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install nox
+        python -m pip install -U pip nox
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -116,11 +116,11 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       name: Install Python
       with: 
         python-version: ${{ matrix.python-version }}
@@ -128,15 +128,15 @@ jobs:
       run: |
         python -m venv py-venv
         . ./py-venv/bin/activate
-        python -m pip install build
+        python -m pip install -U pip build
         python -m build .
     - name: Upload Wheel
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-whl-mac-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
     - name: Upload source
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist/py-build-cmake-*.tar.gz
@@ -146,20 +146,20 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       name: Install Python
       with: 
         python-version: ${{ matrix.python-version }}
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: py_build_cmake-whl-mac-${{ matrix.python-version }}
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install nox
+        python -m pip install -U pip nox
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -173,13 +173,13 @@ jobs:
       matrix:
         python-version: ['3.10']
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist
     - name: Install py_build_cmake
-      run: pip install --find-links=dist py_build_cmake
+      run: pip install --find-links=dist py_build_cmake==${{ github.event.release.tag_name }}
     - name: 'Check py_build_cmake version'
       run: |
         [ "${{ github.event.release.tag_name }}" == "$(python -c 'from importlib.metadata import version as v; print(v("py_build_cmake"))')" ]
@@ -191,7 +191,7 @@ jobs:
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PyPI }}
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist
