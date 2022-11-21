@@ -9,7 +9,7 @@ from typing import Dict
 import sys
 import sysconfig
 from importlib.machinery import EXTENSION_SUFFIXES
-from distlib.util import get_platform as get_platform_dashes
+from distlib.util import get_platform as get_platform_dashes  # type: ignore
 
 _INTERPRETER_SHORT_NAMES: Dict[str, str] = {
     "python": "py",

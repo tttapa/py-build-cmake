@@ -7,14 +7,7 @@ from typing import Dict, List, Optional
 import re
 from pprint import pprint
 from subprocess import run as sp_run
-
-
-@dataclass
-class PackageInfo:
-    version: str
-    package_name: str
-    module_name: str
-
+from .datastructures import PackageInfo
 
 @dataclass
 class CMakeSettings:

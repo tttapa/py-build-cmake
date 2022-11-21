@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
-from flit_core.config import ConfigError
+from flit_core.config import ConfigError  # type: ignore
 
 ConfPath = Tuple[str, ...]
 ConfValue = Optional[Union[str, List[str], Dict[str, Any]]]

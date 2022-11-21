@@ -5,9 +5,9 @@ import click
 
 def cmake_command(directory, verbose, dry, native, cross, local):
 
-    def closure():
+    def get_cmaker():
         from .build import _BuildBackend as backend
-        from . import cmake
+        from .datastructures import PackageInfo
         source_dir = Path(directory or '.').resolve()
         config_settings = {
             "--cross": cross,
@@ -22,7 +22,7 @@ def cmake_command(directory, verbose, dry, native, cross, local):
             print("Not a CMake package")
             return None
 
-        pkg_info = cmake.PackageInfo(
+        pkg_info = PackageInfo(
             version=metadata.version,
             package_name=cfg.package_name,
             module_name=cfg.module["name"],
@@ -41,7 +41,7 @@ def cmake_command(directory, verbose, dry, native, cross, local):
                                   verbose=verbose,
                                   dry=dry)
 
-    return closure
+    return get_cmaker
 
 
 @click.group()
@@ -105,12 +105,13 @@ def build(obj, preset, config, args):
     if cmaker is None:
         return
     cmaker.build_settings.args += args or []
+    if preset or config:
+        cmaker.build_settings.presets = []
+        cmaker.build_settings.configs = []
     if preset:
         cmaker.build_settings.presets = preset
-        cmaker.build_settings.configs = []
-    elif config:
+    if config:
         cmaker.build_settings.configs = config
-        cmaker.build_settings.presets = []
     cmaker.build()
 
 
@@ -125,12 +126,13 @@ def install(obj, preset, config, component, args):
     if cmaker is None:
         return
     cmaker.install_settings.args += args or []
+    if preset or config:
+        cmaker.install_settings.presets = []
+        cmaker.install_settings.configs = []
     if preset:
         cmaker.install_settings.presets = preset
-        cmaker.install_settings.configs = []
-    elif config:
+    if config:
         cmaker.install_settings.configs = config
-        cmaker.install_settings.presets = []
     if component:
         cmaker.install_settings.components = component
     cmaker.install()

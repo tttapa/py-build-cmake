@@ -10,14 +10,14 @@ from typing import Any, Dict, List, Optional
 import tempfile
 from subprocess import CalledProcessError, run as sp_run
 from glob import glob
-from dataclasses import dataclass
 
 from . import config
 from . import cmake
+from .datastructures import BuildPaths, PackageInfo
 
-import flit_core.common
-import flit_core.config
-from distlib.version import NormalizedVersion
+import flit_core.common  # type: ignore
+import flit_core.config  # type: ignore
+from distlib.version import NormalizedVersion  # type: ignore
 
 _CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
 
@@ -106,7 +106,7 @@ class _BuildBackend(object):
         metadata.version = self.normalize_version(metadata.version)
 
         # Export dist
-        from flit_core.sdist import SdistBuilder
+        from flit_core.sdist import SdistBuilder  # type: ignore
         rel_pyproject = os.path.relpath(pyproject, src_dir)
         extra_files = [str(rel_pyproject)] + cfg.referenced_files
         sdist_cfg = cfg.sdist[self.get_os_name()]
@@ -170,15 +170,6 @@ class _BuildBackend(object):
             _BuildBackend.print_config_verbose(cfg)
         return cfg
 
-    # --- Paths ---------------------------------------------------------------
-
-    @dataclass
-    class BuildPaths:
-        source_dir: Path
-        wheel_dir: Path
-        temp_dir: Path
-        staging_dir: Path
-
     # --- Building wheels -----------------------------------------------------
 
     def build_wheel_in_dir(self,
@@ -189,7 +180,7 @@ class _BuildBackend(object):
         """This is the main function that contains all steps necessary to build
         a complete wheel package, including the CMake builds etc."""
         # Set up all paths
-        paths = self.BuildPaths(
+        paths = BuildPaths(
             source_dir=Path().resolve(),
             wheel_dir=Path(wheel_directory_),
             temp_dir=Path(tmp_build_dir),
@@ -200,7 +191,7 @@ class _BuildBackend(object):
         cfg, pkg, metadata = _BuildBackend.read_all_metadata(
             paths.source_dir, config_settings, self.verbose)
 
-        pkg_info = cmake.PackageInfo(
+        pkg_info = PackageInfo(
             version=metadata.version,
             package_name=cfg.package_name,
             module_name=cfg.module['name'],
@@ -250,7 +241,7 @@ class _BuildBackend(object):
 
     def create_wheel(self, paths, cfg, package_info):
         """Create a wheel package from the build directory."""
-        from distlib.wheel import Wheel
+        from distlib.wheel import Wheel  # type: ignore
         whl = Wheel()
         whl.name = package_info.package_name
         whl.version = package_info.version
@@ -408,7 +399,7 @@ class _BuildBackend(object):
     def get_cmaker(pkg_dir: Path, install_dir: Optional[Path], cmake_cfg: dict,
                    cross_cfg: Optional[dict],
                    native_install_dir: Optional[Path],
-                   package_info: cmake.PackageInfo, **kwargs):
+                   package_info: PackageInfo, **kwargs):
         toolchain_file = None
         if cross_cfg:
             toolchain_file = (pkg_dir / cross_cfg['toolchain_file']).resolve()

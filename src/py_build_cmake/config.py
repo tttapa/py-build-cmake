@@ -3,17 +3,17 @@ import re
 import warnings
 from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
-from flit_core.config import ConfigError, read_pep621_metadata
-from flit_core.config import _check_glob_patterns
-from distlib.util import normalize_name
+from flit_core.config import ConfigError, read_pep621_metadata  # type: ignore
+from flit_core.config import _check_glob_patterns  # type: ignore
+from distlib.util import normalize_name  # type: ignore
 
 from .config_options import ConfigNode, OverrideConfigOption
 from .pyproject_options import get_options, get_cross_path, get_tool_pbc_path
 
 try:
-    import tomllib as toml_
+    import tomllib as toml_  # type: ignore
 except ImportError:
-    import tomli as toml_
+    import tomli as toml_  # type: ignore
 
 
 @dataclass
