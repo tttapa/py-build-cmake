@@ -161,10 +161,20 @@ class _BuildBackend(object):
         except flit_core.config.ConfigError as e:
             e.args = ("\n"
                       "\n"
-                      "\t❌ Error in configuration:\n"
+                      "\t❌ Error in user configuration:\n"
                       "\n"
                       f"\t\t{e}\n"
                       "\n", )
+            raise
+        except AssertionError as e:
+            e.args = (
+                "\n"
+                "\n"
+                "\t❌ Internal error while processing the configuration\n"
+                "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
+                "\n"
+                f"\t\t{e}\n"
+                "\n", )
             raise
         if verbose:
             _BuildBackend.print_config_verbose(cfg)
@@ -420,7 +430,7 @@ class _BuildBackend(object):
         return cmake.CMaker(
             cmake_settings=cmake.CMakeSettings(
                 working_dir=Path(pkg_dir),
-                source_path=Path(pkg_dir),
+                source_path=Path(cmake_cfg["source_path"]),
                 build_path=Path(cmake_cfg['build_path']) / build_cfg_name,
                 os=_BuildBackend.get_os_name(),
                 command=Path("cmake"),
