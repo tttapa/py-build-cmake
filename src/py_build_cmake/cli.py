@@ -67,14 +67,14 @@ def cmake_command(directory, verbose, dry, native, cross, local):
               type=click.Path(exists=False, file_okay=True, dir_okay=False),
               required=False,
               help="Specifies a toml file that overrides the "
-              "`tool.py-build-cmake` section of `pyproject.toml`, "
-              "similar to `py-build-cmake.local.toml`.")
+              "tool.py-build-cmake section of pyproject.toml, "
+              "similar to py-build-cmake.local.toml.")
 @click.option("--cross",
               type=click.Path(exists=False, file_okay=True, dir_okay=False),
               required=False,
               help="Specifies a toml file that overrides the "
-              "`tool.py-build-cmake.cross` section of `pyproject.toml`, "
-              "similar to `py-build-cmake.cross.toml`.")
+              "tool.py-build-cmake.cross section of pyproject.toml, "
+              "similar to py-build-cmake.cross.toml.")
 @click.version_option(__version__, "-v", "--version")
 @click.pass_context
 def cli(ctx: click.Context, **kwargs):
@@ -83,7 +83,7 @@ def cli(ctx: click.Context, **kwargs):
 
 @cli.command(help="Configure the CMake project.")
 @click.pass_obj
-@click.option("--preset", nargs=1, type=str, required=False)
+@click.option("--preset", nargs=1, type=str, required=False, metavar="PRESET")
 @click.argument("args", nargs=-1, required=False)
 def configure(obj, preset, args):
     cmaker = obj()
@@ -97,8 +97,18 @@ def configure(obj, preset, args):
 
 @cli.command(help="Build the CMake project.")
 @click.pass_obj
-@click.option("--preset", nargs=1, multiple=True, type=str, required=False)
-@click.option("--config", nargs=1, multiple=True, type=str, required=False)
+@click.option("--preset",
+              nargs=1,
+              multiple=True,
+              type=str,
+              required=False,
+              metavar="PRESET")
+@click.option("--config",
+              nargs=1,
+              multiple=True,
+              type=str,
+              required=False,
+              metavar="CONFIG")
 @click.argument("args", nargs=-1, required=False)
 def build(obj, preset, config, args):
     cmaker = obj()
@@ -117,9 +127,24 @@ def build(obj, preset, config, args):
 
 @cli.command(help="Install the CMake project.")
 @click.pass_obj
-@click.option("--preset", nargs=1, multiple=True, type=str, required=False)
-@click.option("--config", nargs=1, multiple=True, type=str, required=False)
-@click.option("--component", nargs=1, multiple=True, type=str, required=False)
+@click.option("--preset",
+              nargs=1,
+              multiple=True,
+              type=str,
+              required=False,
+              metavar="PRESET")
+@click.option("--config",
+              nargs=1,
+              multiple=True,
+              type=str,
+              required=False,
+              metavar="CONFIG")
+@click.option("--component",
+              nargs=1,
+              multiple=True,
+              type=str,
+              required=False,
+              metavar="COMP")
 @click.argument("args", nargs=-1, required=False)
 def install(obj, preset, config, component, args):
     cmaker = obj()
