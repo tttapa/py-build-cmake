@@ -148,7 +148,7 @@ class DefaultValueValue(DefaultValue):
 
 class NoDefaultValue(DefaultValue):
 
-    def __init__(self, name = 'none'):
+    def __init__(self, name='none'):
         self.name = name
 
     def get_default(self, rootopts: 'ConfigOption', opt: 'ConfigOption',
@@ -491,8 +491,10 @@ class StrConfigOption(ConfigOption):
                               f'{str}, not {type(cfg[cfgpath].value)}')
 
 
+@dataclass
 class RelativeToCurrentConfig:
-    description = 'current configuration file'
+    project_path: Path
+    description: str = 'current configuration file'
 
 
 @dataclass
@@ -520,14 +522,17 @@ class PathConfigOption(StrConfigOption):
         self.base_path = base_path
         self.allow_abs = allow_abs
         self.is_folder = is_folder
+        if self.base_path:
+            assert os.path.isabs(self.base_path.project_path)
 
     def get_typename(self):
         return 'path' if self.is_folder else 'filepath'
 
     def check_path(self, cfg: ConfigNode, cfgpath):
-        path = os.path.normpath(cfg[cfgpath].value)
+        osp = os.path
+        path = osp.normpath(cfg[cfgpath].value)
         # Absolute or relative path?
-        if os.path.isabs(path):
+        if osp.isabs(path):
             # Absolute path
             if not self.allow_abs:
                 raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
@@ -535,32 +540,36 @@ class PathConfigOption(StrConfigOption):
         else:
             # Relative path
             if isinstance(self.base_path, RelativeToCurrentConfig):
-                path = os.path.join(os.path.dirname(cfgpath[0]), path)
+                # cfgpath[0] is relative for files inside of the project,
+                # otherwise it is absolute
+                path = osp.join(osp.dirname(cfgpath[0]), path)
+                if not osp.isabs(path):
+                    path = osp.join(self.base_path.project_path, path)
             elif isinstance(self.base_path, RelativeToProject):
-                path = os.path.join(self.base_path.project_path, path)
+                path = osp.join(self.base_path.project_path, path)
             else:
-                assert self.base_path is None
+                assert False, "Invalid relative path type"
+        assert osp.isabs(path), "Failed to make path absolute"
         # Does the path exist?
         if self.must_exist:
-            assert os.path.isabs(path)
-            if not os.path.exists(path):
+            if not osp.exists(path):
                 raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
-                                f'does not exist')
-            if self.is_folder != os.path.isdir(path):
+                                  f'does not exist')
+            if self.is_folder != osp.isdir(path):
                 type_ = 'directory' if self.is_folder else 'file'
                 raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
-                                f'should be a {type_}')
+                                  f'should be a {type_}')
             # Are any of the required contents missing?
             missing = [
                 sub for sub in self.expected_contents
-                if not os.path.exists(os.path.join(path, sub))
+                if not osp.exists(osp.join(path, sub))
             ]
             if missing:
                 missingstr = '", "'.join(missing)
                 raise ConfigError(f'{pth2str(cfgpath)}: "{str(path)}" '
-                                f'does not contain the following '
-                                f'required files or folders: "{missingstr}"')
-        cfg[cfgpath].value = os.path.normpath(path)
+                                  f'does not contain the following '
+                                  f'required files or folders: "{missingstr}"')
+        cfg[cfgpath].value = osp.normpath(path)
 
     def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                cfgpath: ConfPath):

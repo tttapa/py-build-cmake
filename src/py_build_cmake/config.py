@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import re
+import os
 import warnings
 from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
@@ -77,14 +78,16 @@ def read_config(pyproject_path, flag_overrides: Dict[str,
     }
 
     for flag, targetpath in extra_flag_paths.items():
-        for path in flag_overrides[flag]:
+        for path in map(Path, flag_overrides[flag]):
+            if not path.is_absolute():
+                path = (Path(os.environ.get("PWD", ".")) / path).resolve()
             extra_options.append(
                 OverrideConfigOption(
-                    path,
+                    str(path),
                     "Command line override flag",
                     targetpath=targetpath,
                 ))
-            config_files[path] = try_load_local(Path(path))
+            config_files[str(path)] = try_load_local(path)
 
     return check_config(pyproject_path, pyproject, config_files, extra_options)
 

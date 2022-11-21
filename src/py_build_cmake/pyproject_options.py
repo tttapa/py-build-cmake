@@ -235,7 +235,7 @@ def get_options(project_path: Path, *, test: bool = False):
         PathConfigOption('toolchain_file',
                          "CMake toolchain file to use.",
                          default=RequiredValue(),
-                         base_path=RelativeToCurrentConfig(),
+                         base_path=RelativeToCurrentConfig(project_path),
                          must_exist=not test,
                          allow_abs=True,
                          is_folder=False),
