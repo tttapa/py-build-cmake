@@ -125,6 +125,8 @@ def get_options(project_path: Path, *, test: bool = False):
         PathConfigOption('build_path',
                          "CMake build and cache folder.",
                          default=DefaultValueValue('.py-build-cmake_cache'),
+                         allow_abs=True,
+                         base_path=RelativeToProject(project_path),
                          must_exist=False),
         DictOfStrConfigOption('options',
                               "Extra options passed to the configuration step, "

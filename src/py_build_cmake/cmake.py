@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 from string import Template
 import sys
-from typing import List, Optional
+from typing import Dict, List, Optional
 import re
 from pprint import pprint
 from subprocess import run as sp_run
@@ -30,7 +30,7 @@ class CMakeConfigureSettings:
     environment: dict
     toolchain_file: Optional[Path]
     build_type: Optional[str]
-    options: dict[str, str]
+    options: Dict[str, str]
     args: List[str]
     preset: Optional[str]
     generator: Optional[str]
@@ -61,13 +61,15 @@ class CMaker:
                  build_settings: CMakeBuildSettings,
                  install_settings: CMakeInstallSettings,
                  package_info: PackageInfo,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 dry: bool = False):
         self.cmake_settings = cmake_settings
         self.conf_settings = conf_settings
         self.build_settings = build_settings
         self.install_settings = install_settings
         self.package_info = package_info
         self.verbose = verbose
+        self.dry = dry
         self.environment: Optional[dict] = None
 
     def run(self, *args, **kwargs):
@@ -75,7 +77,11 @@ class CMaker:
         if self.verbose:
             pprint([*args])
             pprint(kwargs)
-        return sp_run(*args, **kwargs)
+        elif self.dry:
+            from shlex import join
+            print(join(args[0]))
+        if not self.dry:
+            return sp_run(*args, **kwargs)
 
     def prepare_environment(self):
         """Copy of the current environment with the variables defined in the
@@ -195,7 +201,6 @@ class CMaker:
         cwd = self.cmake_settings.working_dir
         cwd = str(cwd) if cwd is not None else None
         for cmd in self.get_build_commands():
-            pprint(cmd)
             self.run(cmd, cwd=cwd, check=True, env=env)
 
     def get_install_command(self, config, preset):
@@ -223,5 +228,4 @@ class CMaker:
         cwd = self.cmake_settings.working_dir
         cwd = str(cwd) if cwd is not None else None
         for cmd in self.get_install_commands():
-            pprint(cmd)
             self.run(cmd, cwd=cwd, check=True, env=env)

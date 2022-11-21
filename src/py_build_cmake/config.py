@@ -22,16 +22,17 @@ class Config:
     entrypoints: Dict[str, Dict[str, str]] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
     referenced_files: List[str] = field(default_factory=list)
+    package_name: str = field(default='')
     module: Dict[str, str] = field(default_factory=dict)
-    sdist: Dict[str, List[str]] = field(default_factory=dict)
+    sdist: Dict[str, Dict[str, str]] = field(default_factory=dict)
     license: Dict[str, str] = field(default_factory=dict)
     cmake: Optional[Dict[str, Any]] = field(default=None)
     stubgen: Optional[Dict[str, Any]] = field(default=None)
     cross: Optional[Dict[str, Any]] = field(default=None)
 
 
-def read_metadata(pyproject_path, flag_overrides: Dict[str,
-                                                       List[str]]) -> Config:
+def read_config(pyproject_path, flag_overrides: Dict[str,
+                                                     List[str]]) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
     pyproject_folder = pyproject_path.parent
@@ -108,6 +109,7 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     cfg.metadata = flit_cfg.metadata
     cfg.referenced_files = flit_cfg.referenced_files
     cfg.license = pyproject['project'].setdefault('license', {})
+    cfg.package_name = normalize_name_wheel(cfg.metadata["name"])
 
     opts = get_options(pyproject_path.parent)
     for o in extra_options:

@@ -28,6 +28,9 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `minimum_version` | Minimum required CMake version.<br/>For example: `minimum_version = "3.18"` | string | `none` |
 | `build_type` | Build type passed to the configuration step, as -DCMAKE\_BUILD\_TYPE=&lt;?&gt;.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
 | `config` | Configuration type passed to the build and install steps, as --config &lt;?&gt;. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package. | list | `build_type` |
+| `preset` | CMake preset to use for configuration. Passed as --preset &lt;?&gt; during the configuration phase. | string | `none` |
+| `build_presets` | CMake presets to use for building. Passed as --preset &lt;?&gt; during the build phase, once for each preset. | list | `preset` |
+| `install_presets` | CMake presets to use for installing. Passed as --preset &lt;?&gt; during the installation phase, once for each preset. | list | `build_presets` |
 | `generator` | CMake generator to use, passed to the configuration step, as -G &lt;?&gt;. | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder.<br/>Relative. | path | `'.py-build-cmake_cache'` |

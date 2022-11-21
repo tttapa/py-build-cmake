@@ -3,7 +3,6 @@ from pprint import pprint
 import sys
 import os
 from pathlib import Path
-from string import Template
 import re
 import shutil
 import textwrap
@@ -11,9 +10,13 @@ from typing import Any, Dict, List, Optional
 import tempfile
 from subprocess import CalledProcessError, run as sp_run
 from glob import glob
+from dataclasses import dataclass
 
-from .config import Config
+from . import config
+from . import cmake
 
+import flit_core.common
+import flit_core.config
 from distlib.version import NormalizedVersion
 
 _CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
@@ -24,7 +27,7 @@ class _BuildBackend(object):
     # --- Constructor ---------------------------------------------------------
 
     def __init__(self) -> None:
-        self.verbose = False
+        self.verbose: bool = False
 
     # --- Methods required by PEP 517 -----------------------------------------
 
@@ -32,7 +35,7 @@ class _BuildBackend(object):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
         self.parse_config_settings(config_settings)
         pyproject = Path('pyproject.toml').resolve()
-        cfg = self.read_metadata(pyproject, config_settings)
+        cfg = self.read_config(pyproject, config_settings, self.verbose)
         deps = []
         # Check if we need CMake
         if cfg.cmake:
@@ -96,7 +99,7 @@ class _BuildBackend(object):
         # Load metadata
         from flit_core.common import Module, make_metadata
         pyproject = src_dir / 'pyproject.toml'
-        cfg = self.read_metadata(pyproject, config_settings)
+        cfg = self.read_config(pyproject, config_settings, self.verbose)
         import_name = cfg.module['name']
         pkg = Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
@@ -123,21 +126,25 @@ class _BuildBackend(object):
 
     # --- Parsing config options and metadata ---------------------------------
 
-    def parse_config_settings(self, config_settings: Optional[Dict]):
+    @staticmethod
+    def is_verbose_enabled(config_settings: Optional[dict]):
         if 'PY_BUILD_CMAKE_VERBOSE' in os.environ:
-            self.verbose = True
+            return True
         if config_settings is None:
-            return
-        if config_settings.keys() & {'verbose', '--verbose', 'v', '-v'}:
-            self.verbose = True
+            return False
+        if config_settings.keys() & {'verbose', '--verbose', 'V', '-V'}:
+            return True
+        return False
 
-    def read_metadata(self, pyproject, config_settings: Optional[Dict]):
-        from .config import read_metadata
-        from flit_core.config import ConfigError
+    def parse_config_settings(self, config_settings: Optional[Dict]):
+        self.verbose = self.is_verbose_enabled(config_settings)
 
+    @staticmethod
+    def read_config(pyproject_path: Path, config_settings: Optional[Dict],
+                    verbose: bool) -> config.Config:
         config_settings = config_settings or {}
         try:
-            if self.verbose:
+            if verbose:
                 print("Configuration settings:")
                 pprint(config_settings)
             listify = lambda x: x if isinstance(x, list) else [x]
@@ -146,12 +153,12 @@ class _BuildBackend(object):
                 key: listify(config_settings.get(key) or [])
                 for key in keys
             }
-            if self.verbose:
+            if verbose:
                 print("Configuration settings for local and "
                       "cross-compilation overrides:")
                 pprint(overrides)
-            cfg = read_metadata(pyproject, overrides)
-        except ConfigError as e:
+            cfg = config.read_config(pyproject_path, overrides)
+        except flit_core.config.ConfigError as e:
             e.args = ("\n"
                       "\n"
                       "\t❌ Error in configuration:\n"
@@ -159,92 +166,117 @@ class _BuildBackend(object):
                       f"\t\t{e}\n"
                       "\n", )
             raise
-        if self.verbose:
-            self.print_config_verbose(cfg)
+        if verbose:
+            _BuildBackend.print_config_verbose(cfg)
         return cfg
+
+    # --- Paths ---------------------------------------------------------------
+
+    @dataclass
+    class BuildPaths:
+        source_dir: Path
+        wheel_dir: Path
+        temp_dir: Path
+        staging_dir: Path
 
     # --- Building wheels -----------------------------------------------------
 
     def build_wheel_in_dir(self,
-                           wheel_directory,
+                           wheel_directory_,
                            tmp_build_dir,
                            config_settings,
                            editable=False):
         """This is the main function that contains all steps necessary to build
         a complete wheel package, including the CMake builds etc."""
         # Set up all paths
-        wheel_directory = Path(wheel_directory)
-        tmp_build_dir = Path(tmp_build_dir)
-        staging_dir = tmp_build_dir / 'staging'
-        src_dir = Path().resolve()
+        paths = self.BuildPaths(
+            source_dir=Path().resolve(),
+            wheel_dir=Path(wheel_directory_),
+            temp_dir=Path(tmp_build_dir),
+            staging_dir=Path(tmp_build_dir) / 'staging',
+        )
 
         # Load metadata from the pyproject.toml file
-        from .config import normalize_name_wheel
-        from flit_core.common import Module, make_metadata
-        cfg = self.read_metadata(src_dir / 'pyproject.toml', config_settings)
-        dist_name = normalize_name_wheel(cfg.metadata['name'])
-        import_name = cfg.module['name']
-        pkg = Module(import_name, src_dir / cfg.module['directory'])
-        metadata = make_metadata(pkg, cfg)
-        metadata.version = self.normalize_version(metadata.version)
+        cfg, pkg, metadata = _BuildBackend.read_all_metadata(
+            paths.source_dir, config_settings, self.verbose)
+
+        pkg_info = cmake.PackageInfo(
+            version=metadata.version,
+            package_name=cfg.package_name,
+            module_name=cfg.module['name'],
+        )
 
         # Copy the module's Python source files to the temporary folder
         if not editable:
-            self.copy_pkg_source_to(staging_dir, src_dir, pkg)
+            self.copy_pkg_source_to(paths.staging_dir, pkg)
         else:
-            self.write_editable_wrapper(staging_dir, src_dir, pkg)
+            self.write_editable_wrapper(paths.staging_dir, pkg)
 
         # Create dist-info folder
-        distinfo = staging_dir / f'{dist_name}-{metadata.version}.dist-info'
-        os.makedirs(distinfo, exist_ok=True)
+        distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
+        distinfo_dir = paths.staging_dir / distinfo_dir
+        os.makedirs(distinfo_dir, exist_ok=True)
 
         # Write metadata
-        metadata_path = distinfo / 'METADATA'
+        metadata_path = distinfo_dir / 'METADATA'
         with open(metadata_path, 'w', encoding='utf-8') as f:
             metadata.write_metadata_file(f)
         # Write or copy license
-        self.write_license_files(cfg.license, src_dir, distinfo)
+        self.write_license_files(cfg.license, paths.source_dir, distinfo_dir)
         # Write entrypoints/scripts
-        self.write_entrypoints(distinfo, cfg)
+        self.write_entrypoints(distinfo_dir, cfg)
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
-            self.generate_stubs(tmp_build_dir, staging_dir, pkg, cfg.stubgen)
+            self.generate_stubs(paths, pkg, cfg.stubgen)
 
         # Configure, build and install the CMake project
         if cfg.cmake:
-            self.do_native_cross_cmake_build(tmp_build_dir, staging_dir,
-                                             src_dir, cfg, metadata, dist_name,
-                                             import_name)
+            self.do_native_cross_cmake_build(paths, cfg, pkg_info)
 
         # Create wheel
-        whl_name = self.create_wheel(wheel_directory, staging_dir, cfg,
-                                     dist_name, metadata.version)
+        whl_name = self.create_wheel(paths, cfg, pkg_info)
         return whl_name
 
-    def create_wheel(self, wheel_directory, tmp_build_dir, cfg, dist_name,
-                     norm_version):
+    @staticmethod
+    def read_all_metadata(src_dir, config_settings, verbose):
+        from flit_core.common import Module, make_metadata
+        cfg = _BuildBackend.read_config(src_dir / 'pyproject.toml',
+                                        config_settings, verbose)
+        pkg = Module(cfg.module['name'], src_dir / cfg.module['directory'])
+        metadata = make_metadata(pkg, cfg)
+        metadata.version = _BuildBackend.normalize_version(metadata.version)
+        return cfg, pkg, metadata
+
+    def create_wheel(self, paths, cfg, package_info):
         """Create a wheel package from the build directory."""
         from distlib.wheel import Wheel
         whl = Wheel()
-        whl.name = dist_name
-        whl.version = norm_version
+        whl.name = package_info.package_name
+        whl.version = package_info.version
         pure = not cfg.cmake
         libdir = 'purelib' if pure else 'platlib'
-        paths = {'prefix': str(tmp_build_dir), libdir: str(tmp_build_dir)}
-        whl.dirname = wheel_directory
+        staging_dir = paths.staging_dir
+        whl_paths = {'prefix': str(staging_dir), libdir: str(staging_dir)}
+        whl.dirname = paths.wheel_dir
         if pure:
             tags = {'pyver': ['py3']}
         elif cfg.cross:
             tags = self.get_cross_tags(cfg.cross)
         else:
             tags = self.get_native_tags()
-        wheel_path = whl.build(paths, tags=tags, wheel_version=(1, 0))
-        whl_name = os.path.relpath(wheel_path, wheel_directory)
+        wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
+        whl_name = os.path.relpath(wheel_path, paths.wheel_dir)
         return whl_name
 
-    def do_native_cross_cmake_build(self, tmp_build_dir, staging_dir, src_dir,
-                                    cfg, metadata, dist_name, import_name):
+    @staticmethod
+    def get_cmake_configs(cfg):
+        native_cmake_cfg = cfg.cmake[_BuildBackend.get_os_name()]
+        cmake_cfg = cfg.cmake['cross'] if cfg.cross else native_cmake_cfg
+        return cmake_cfg, native_cmake_cfg
+
+    def do_native_cross_cmake_build(self, paths: BuildPaths, cfg,
+                                    package_info):
         """If not cross-compiling, just do a regular CMake build+install.
         When cross-compiling, do a cross-build+install (using the provided 
         CMake toolchain file).
@@ -254,21 +286,20 @@ class _BuildBackend(object):
         from the native build that match the patterns in
         cfg.cross['copy_from_native_build'] are copied to the installation
         directory of the cross-build for packaging."""
+        cmake_cfg, native_cmake_cfg = self.get_cmake_configs(cfg)
         # When cross-compiling, optionally do a native build first
         native_install_dir = None
-        native_cmake_cfg = cfg.cmake[self.get_os_name()]
         if self.needs_cross_native_build(cfg):
-            native_install_dir = tmp_build_dir / 'native-install'
-            self.run_cmake(src_dir, native_install_dir, metadata,
-                           native_cmake_cfg, None, native_install_dir,
-                           dist_name, import_name)
+            native_install_dir = paths.temp_dir / 'native-install'
+            self.run_cmake(paths.source_dir, native_install_dir,
+                           native_cmake_cfg, None, package_info,
+                           native_install_dir)
         # Then do the actual build
-        cmake_cfg = cfg.cmake['cross'] if cfg.cross else native_cmake_cfg
-        self.run_cmake(src_dir, staging_dir, metadata, cmake_cfg, cfg.cross,
-                       native_install_dir, dist_name, import_name)
+        self.run_cmake(paths.source_dir, paths.staging_dir, cmake_cfg,
+                       cfg.cross, package_info, native_install_dir)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
-            self.copy_native_install(staging_dir, native_install_dir,
+            self.copy_native_install(paths.staging_dir, native_install_dir,
                                      cfg.cross['copy_from_native_build'])
 
     def copy_native_install(self, staging_dir, native_install_dir,
@@ -292,11 +323,12 @@ class _BuildBackend(object):
 
     # --- Files installation --------------------------------------------------
 
-    def copy_pkg_source_to(self, tmp_build_dir, src_dir, pkg):
+    def copy_pkg_source_to(self, staging_dir: Path,
+                           pkg: flit_core.common.Module):
         """Copy the files of a Python package to the build directory."""
         for mod_file in pkg.iter_files():
             rel_path = os.path.relpath(mod_file, pkg.path.parent)
-            dst = tmp_build_dir / rel_path
+            dst = staging_dir / rel_path
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy2(mod_file, dst, follow_symlinks=False)
 
@@ -309,17 +341,18 @@ class _BuildBackend(object):
         elif 'file' in license:
             shutil.copy2(srcdir / license['file'], distinfo_dir)
 
-    def write_entrypoints(self, distinfo: Path, cfg: Config):
+    def write_entrypoints(self, distinfo: Path, cfg: config.Config):
         from flit_core.common import write_entry_points
         with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
             write_entry_points(cfg.entrypoints, f)
 
     # --- Editable installs ---------------------------------------------------
 
-    def write_editable_wrapper(self, tmp_build_dir: Path, src_dir: Path, pkg):
+    def write_editable_wrapper(self, staging_dir: Path,
+                               pkg: flit_core.common.Module):
         """Write a fake __init__.py file that points to the development 
         folder."""
-        tmp_pkg: Path = tmp_build_dir / pkg.name
+        tmp_pkg: Path = staging_dir / pkg.name
         pkgpath = Path(pkg.path)
         initpath = pkgpath / '__init__.py'
         os.makedirs(tmp_pkg, exist_ok=True)
@@ -351,18 +384,34 @@ class _BuildBackend(object):
         if py_typed.exists():
             shutil.copy2(py_typed, tmp_pkg)
         # Write a path file so IDEs find the correct files as well
-        (tmp_build_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
+        (staging_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
 
     # --- Invoking CMake builds -----------------------------------------------
 
-    def run_cmake(self, pkgdir, install_dir, metadata, cmake_cfg, cross_cfg,
-                  native_install_dir, dist_name, import_name):
+    def run_cmake(self, pkgdir, install_dir, cmake_cfg, cross_cfg,
+                  package_info, native_install_dir):
         """Configure, build and install using CMake."""
 
-        from . import cmake
+        cmaker = self.get_cmaker(pkgdir,
+                                 install_dir,
+                                 cmake_cfg,
+                                 cross_cfg,
+                                 native_install_dir,
+                                 package_info,
+                                 verbose=self.verbose)
+
+        cmaker.configure()
+        cmaker.build()
+        cmaker.install()
+
+    @staticmethod
+    def get_cmaker(pkg_dir: Path, install_dir: Optional[Path], cmake_cfg: dict,
+                   cross_cfg: Optional[dict],
+                   native_install_dir: Optional[Path],
+                   package_info: cmake.PackageInfo, **kwargs):
         toolchain_file = None
         if cross_cfg:
-            toolchain_file = (pkgdir / cross_cfg['toolchain_file']).resolve()
+            toolchain_file = (pkg_dir / cross_cfg['toolchain_file']).resolve()
 
         # Add some CMake configure options
         options = cmake_cfg.get('options', {})
@@ -373,13 +422,16 @@ class _BuildBackend(object):
         if btype:  # -D CMAKE_BUILD_TYPE={type}
             options['CMAKE_BUILD_TYPE:STRING'] = btype
 
+        # Build folder for each platform
+        build_cfg_name = _BuildBackend.get_build_config_name(cross_cfg)
+
         # CMake options
-        cmaker = cmake.CMaker(
+        return cmake.CMaker(
             cmake_settings=cmake.CMakeSettings(
-                working_dir=Path(pkgdir),
-                source_path=Path(pkgdir),
-                build_path=Path(cmake_cfg['build_path']),
-                os=self.get_os_name(),
+                working_dir=Path(pkg_dir),
+                source_path=Path(pkg_dir),
+                build_path=Path(cmake_cfg['build_path']) / build_cfg_name,
+                os=_BuildBackend.get_os_name(),
                 command=Path("cmake"),
             ),
             conf_settings=cmake.CMakeConfigureSettings(
@@ -404,22 +456,13 @@ class _BuildBackend(object):
                 components=cmake_cfg.get('install_components', []),
                 prefix=install_dir,
             ),
-            package_info=cmake.PackageInfo(
-                version=metadata.version,
-                package_name=dist_name,
-                module_name=import_name,
-            ),
-            verbose=self.verbose
+            package_info=package_info,
+            **kwargs,
         )
-
-        cmaker.configure()
-        cmaker.build()
-        cmaker.install()
 
     # --- Generate stubs ------------------------------------------------------
 
-    def generate_stubs(self, tmp_build_dir, staging_dir, pkg, cfg: Dict[str,
-                                                                        Any]):
+    def generate_stubs(self, paths: BuildPaths, pkg, cfg: Dict[str, Any]):
         """Generate stubs (.pyi) using mypy stubgen."""
         args = ['stubgen'] + cfg.get('args', [])
         cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
@@ -431,9 +474,9 @@ class _BuildBackend(object):
         args += cfg.get('files', [])
         # Add output folder argument if not already specified in cfg['args']
         if 'args' not in cfg or not ({'-o', '--output'} & set(cfg['args'])):
-            args += ['-o', str(staging_dir)]
+            args += ['-o', str(paths.staging_dir)]
         env = os.environ.copy()
-        env.setdefault('MYPY_CACHE_DIR', str(tmp_build_dir))
+        env.setdefault('MYPY_CACHE_DIR', str(paths.temp_dir))
         # Call mypy stubgen in a subprocess
         self.run(args, cwd=pkg.path.parent, check=True, env=env)
 
@@ -447,7 +490,8 @@ class _BuildBackend(object):
             "Darwin": "mac",  # TODO: untested
         }[platform.system()]
 
-    def print_config_verbose(self, cfg):
+    @staticmethod
+    def print_config_verbose(cfg):
         print("\npy-build-cmake options")
         print("======================")
         print("module:")
@@ -462,7 +506,8 @@ class _BuildBackend(object):
         pprint(cfg.cross)
         print("======================\n")
 
-    def normalize_version(self, version):
+    @staticmethod
+    def normalize_version(version):
         from distlib.version import NormalizedVersion
         norm_version = str(NormalizedVersion(version))
         return norm_version
@@ -507,10 +552,12 @@ class _BuildBackend(object):
             tags = _BuildBackend.get_native_tags()
         return '-'.join(map(lambda x: x[0], tags.values()))
 
-    def needs_cross_native_build(self, cfg):
+    @staticmethod
+    def needs_cross_native_build(cfg):
         return cfg.cross and 'copy_from_native_build' in cfg.cross
 
-    def iter_files(self, stagedir):
+    @staticmethod
+    def iter_files(stagedir):
         """Iterate over the files contained in the given folder.
 
         Yields absolute paths - caller may want to make them relative.
@@ -533,7 +580,7 @@ class _BuildBackend(object):
 
     # --- Helper functions for finding programs like CMake --------------------
 
-    def check_cmake_program(self, cfg: Config, deps: List[str]):
+    def check_cmake_program(self, cfg: config.Config, deps: List[str]):
         assert cfg.cmake
         # Do we need to perform a native build?
         native = not cfg.cross or self.needs_cross_native_build(cfg)
@@ -565,7 +612,7 @@ class _BuildBackend(object):
             if not self.check_program_version('ninja', None, "Ninja"):
                 deps.append("ninja")
 
-    def check_stubgen_program(self, cfg: Config, deps: List[str]):
+    def check_stubgen_program(self, cfg: config.Config, deps: List[str]):
         if not self.check_program_version('stubgen', None, None, False):
             deps.append("mypy")
 
