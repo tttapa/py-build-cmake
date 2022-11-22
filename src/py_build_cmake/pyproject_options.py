@@ -276,3 +276,66 @@ def get_options(project_path: Path, *, test: bool = False):
                              targetpath=cross_pth))
 
     return root
+
+
+def get_component_options(project_path: Path, *, test: bool = False):
+    root = ConfigOption("root")
+    pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
+    project = pyproject.insert(UncheckedConfigOption('project'))
+    project.insert(UncheckedConfigOption('name', default=RequiredValue()))
+    tool = pyproject.insert(
+        UncheckedConfigOption("tool",
+                              default=DefaultValueValue({}),
+                              create_if_inheritance_target_exists=True))
+    pbc = tool.insert(
+        ConfigOption("py-build-cmake",
+                     default=DefaultValueValue({}),
+                     create_if_inheritance_target_exists=True))
+
+    # [tool.py-build-cmake.component]
+    component = pbc.insert(
+        ConfigOption(
+            "component",
+            "Options for a separately packaged component.",
+            default=DefaultValueValue({}),
+        ))
+    component.insert_multiple([
+        PathConfigOption('main_project',
+                         "Directory containing the main pyproject.toml file.",
+                         default=DefaultValueValue(".."),
+                         base_path=RelativeToProject(project_path),
+                         must_exist=not test),
+        ListOfStrConfigOption('build_presets',
+                              "CMake presets to use for building. Passed as "
+                              "--preset <?> during the build phase, once for "
+                              "each preset.",
+                              default=NoDefaultValue(),
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption('install_presets',
+                              "CMake presets to use for installing. Passed as "
+                              "--preset <?> during the installation phase, "
+                              "once for each preset.",
+                              default=RefDefaultValue(pth('build_presets'),
+                                                      relative=True),
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption('build_args',
+                              "Extra arguments passed to the build step.",
+                              "build_args = [\"-j\"]",
+                              default=NoDefaultValue()),
+        ListOfStrConfigOption('build_tool_args',
+                              "Extra arguments passed to the build tool in the "
+                              "build step (e.g. to Make or Ninja).",
+                              "build_tool_args = [\"VERBOSE=1\"]",
+                              default=NoDefaultValue()),
+        ListOfStrConfigOption('install_args',
+                              "Extra arguments passed to the install step.",
+                              "install_args = [\"--strip\"]",
+                              default=NoDefaultValue()),
+        ListOfStrConfigOption("install_components",
+                              "List of components to install, the install step "
+                              "is executed once for each component, with the "
+                              "option --component <?>.",
+                              default=RequiredValue()),
+    ]) # yapf: disable
+
+    return root

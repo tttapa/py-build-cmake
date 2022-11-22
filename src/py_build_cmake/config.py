@@ -2,14 +2,14 @@ from dataclasses import dataclass, field
 import re
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 from pathlib import Path
 from flit_core.config import ConfigError, read_pep621_metadata  # type: ignore
 from flit_core.config import _check_glob_patterns  # type: ignore
 from distlib.util import normalize_name  # type: ignore
 
 from .config_options import ConfigNode, OverrideConfigOption
-from .pyproject_options import get_options, get_cross_path, get_tool_pbc_path
+from .pyproject_options import get_options, get_cross_path, get_tool_pbc_path, get_component_options
 
 try:
     import tomllib as toml_  # type: ignore
@@ -25,7 +25,7 @@ class Config:
     referenced_files: List[str] = field(default_factory=list)
     package_name: str = field(default='')
     module: Dict[str, str] = field(default_factory=dict)
-    sdist: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    sdist: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     license: Dict[str, str] = field(default_factory=dict)
     cmake: Optional[Dict[str, Any]] = field(default=None)
     stubgen: Optional[Dict[str, Any]] = field(default=None)
@@ -107,12 +107,15 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
 
     # Create our own config data structure using flit's output
     cfg = Config()
-    cfg.dynamic_metadata = flit_cfg.dynamic_metadata
+    cfg.dynamic_metadata = set(flit_cfg.dynamic_metadata)
     cfg.entrypoints = flit_cfg.entrypoints
     cfg.metadata = flit_cfg.metadata
     cfg.referenced_files = flit_cfg.referenced_files
     cfg.license = pyproject['project'].setdefault('license', {})
     cfg.package_name = normalize_name_wheel(cfg.metadata["name"])
+
+    if 'file' in cfg.license and Path(cfg.license['file']).is_absolute():
+        raise ConfigError("License path must be relative")
 
     opts = get_options(pyproject_path.parent)
     for o in extra_options:
@@ -123,7 +126,7 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     opts.override_all(tree_config)
     opts.inherit_all(tree_config)
     opts.update_default_all(tree_config)
-    dictcfg = tree_config.to_dict()
+    dictcfg = cast(dict, tree_config.to_dict())
     tool_cfg = dictcfg['pyproject.toml']['tool']['py-build-cmake']
 
     # Store the module configuration
@@ -178,6 +181,72 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
         cfg.cmake.update({
             'cross': cfg.cross.pop('cmake', {}),
         })
+
+    return cfg
+
+
+@dataclass
+class ComponentConfig:
+    dynamic_metadata: Set[str] = field(default_factory=set)
+    entrypoints: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    referenced_files: List[str] = field(default_factory=list)
+    package_name: str = field(default='')
+    component: Dict[str, Any] = field(default_factory=dict)
+    license: Dict[str, str] = field(default_factory=dict)
+
+
+def read_component_config(pyproject_path) -> ComponentConfig:
+    # Load the pyproject.toml file
+    pyproject_path = Path(pyproject_path)
+    pyproject = toml_.loads(pyproject_path.read_text('utf-8'))
+    if 'project' not in pyproject:
+        raise ConfigError('Missing [project] table')
+
+    # File names mapping to the actual dict with the config
+    config_files = {
+        "pyproject.toml": pyproject,
+    }
+    return check_component_config(pyproject_path, pyproject, config_files)
+
+
+def check_component_config(pyproject_path, pyproject, config_files):
+    # Check the package/module name and normalize it
+    f = 'name'
+    if f in pyproject['project']:
+        normname = normalize_name(pyproject['project'][f])
+        if pyproject['project'][f] != normname:
+            warnings.warn(
+                f"Name changed from {pyproject['project'][f]} to {normname}")
+        pyproject['project'][f] = normname
+
+    # Parse the [project] section for metadata (using flit's parser)
+    flit_cfg = read_pep621_metadata(pyproject['project'], pyproject_path)
+
+    # Create our own config data structure using flit's output
+    cfg = ComponentConfig()
+    cfg.dynamic_metadata = set(flit_cfg.dynamic_metadata)
+    cfg.entrypoints = flit_cfg.entrypoints
+    cfg.metadata = flit_cfg.metadata
+    cfg.referenced_files = flit_cfg.referenced_files
+    cfg.license = pyproject['project'].setdefault('license', {})
+    cfg.package_name = normalize_name_wheel(cfg.metadata["name"])
+
+    if 'file' in cfg.license and Path(cfg.license['file']).is_absolute():
+        raise ConfigError("License path must be relative")
+
+    opts = get_component_options(pyproject_path.parent)
+
+    tree_config = ConfigNode.from_dict(config_files)
+    opts.verify_all(tree_config)
+    opts.override_all(tree_config)
+    opts.inherit_all(tree_config)
+    opts.update_default_all(tree_config)
+    dictcfg = cast(dict, tree_config.to_dict())
+    tool_cfg = dictcfg['pyproject.toml']['tool']['py-build-cmake']
+
+    # Store the component configuration
+    cfg.component = tool_cfg['component']
 
     return cfg
 
