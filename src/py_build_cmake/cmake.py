@@ -5,10 +5,9 @@ from string import Template
 import sys
 from typing import Dict, List, Optional
 import re
-from pprint import pprint
-from subprocess import run as sp_run
-from .datastructures import PackageInfo
 
+from .datastructures import PackageInfo
+from .cmd_runner import CommandRunner
 @dataclass
 class CMakeSettings:
     working_dir: Path
@@ -54,27 +53,17 @@ class CMaker:
                  build_settings: CMakeBuildSettings,
                  install_settings: CMakeInstallSettings,
                  package_info: PackageInfo,
-                 verbose: bool = False,
-                 dry: bool = False):
+                 runner: CommandRunner):
         self.cmake_settings = cmake_settings
         self.conf_settings = conf_settings
         self.build_settings = build_settings
         self.install_settings = install_settings
         self.package_info = package_info
-        self.verbose = verbose
-        self.dry = dry
+        self.runner = runner
         self.environment: Optional[dict] = None
 
     def run(self, *args, **kwargs):
-        """Wrapper around subprocess.run that optionally prints the command."""
-        if self.verbose:
-            pprint([*args])
-            pprint(kwargs)
-        elif self.dry:
-            from shlex import join
-            print(join(args[0]))
-        if not self.dry:
-            return sp_run(*args, **kwargs)
+        return self.runner.run(*args, **kwargs)
 
     def prepare_environment(self):
         """Copy of the current environment with the variables defined in the

@@ -1,6 +1,5 @@
 import platform
 from pprint import pprint
-import sys
 import os
 from pathlib import Path
 import re
@@ -8,12 +7,12 @@ import shutil
 import textwrap
 from typing import Any, Dict, List, Optional
 import tempfile
-from subprocess import CalledProcessError, run as sp_run
 from glob import glob
 
 from . import config
 from . import cmake
 from .datastructures import BuildPaths, PackageInfo
+from .cmd_runner import CommandRunner
 
 import flit_core.common  # type: ignore
 import flit_core.config  # type: ignore
@@ -27,24 +26,23 @@ class _BuildBackend(object):
     # --- Constructor ---------------------------------------------------------
 
     def __init__(self) -> None:
-        self.verbose: bool = False
+        self.runner: CommandRunner = CommandRunner()
+
+    @property
+    def verbose(self):
+        return self.runner.verbose
 
     # --- Methods required by PEP 517 -----------------------------------------
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
         self.parse_config_settings(config_settings)
+
         pyproject = Path('pyproject.toml').resolve()
-        cfg = self.read_config(pyproject, config_settings, self.verbose)
-        deps = []
-        # Check if we need CMake
-        if cfg.cmake:
-            self.check_cmake_program(cfg, deps)
-        if cfg.stubgen:
-            self.check_stubgen_program(cfg, deps)
-        if self.verbose:
-            print('Dependencies for build:', deps)
-        return deps
+        cfg = _BuildBackend.read_config(pyproject, config_settings,
+                                        self.verbose)
+        return self.get_requires_build_project(config_settings, cfg,
+                                               self.runner)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -137,7 +135,7 @@ class _BuildBackend(object):
         return False
 
     def parse_config_settings(self, config_settings: Optional[Dict]):
-        self.verbose = self.is_verbose_enabled(config_settings)
+        self.runner.verbose = self.is_verbose_enabled(config_settings)
 
     @staticmethod
     def read_config(pyproject_path: Path, config_settings: Optional[Dict],
@@ -179,6 +177,19 @@ class _BuildBackend(object):
         if verbose:
             _BuildBackend.print_config_verbose(cfg)
         return cfg
+
+    @staticmethod
+    def get_requires_build_project(config_settings: Optional[dict],
+                                   cfg: config.Config, runner: CommandRunner):
+        deps: List[str] = []
+        # Check if we need CMake
+        if cfg.cmake:
+            _BuildBackend.check_cmake_program(cfg, deps, runner)
+        if cfg.stubgen:
+            _BuildBackend.check_stubgen_program(deps, runner)
+        if runner.verbose:
+            print('Dependencies for build:', deps)
+        return deps
 
     # --- Building wheels -----------------------------------------------------
 
@@ -225,7 +236,7 @@ class _BuildBackend(object):
         # Write or copy license
         self.write_license_files(cfg.license, paths.source_dir, distinfo_dir)
         # Write entrypoints/scripts
-        self.write_entrypoints(distinfo_dir, cfg)
+        self.write_entrypoints(distinfo_dir, cfg.entrypoints)
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
@@ -247,9 +258,11 @@ class _BuildBackend(object):
         pkg = Module(cfg.module['name'], src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
         metadata.version = _BuildBackend.normalize_version(metadata.version)
+        # TODO: patch metadata.name to distribution name instead of package name
         return cfg, pkg, metadata
 
-    def create_wheel(self, paths, cfg, package_info):
+    @staticmethod
+    def create_wheel(paths, cfg, package_info):
         """Create a wheel package from the build directory."""
         from distlib.wheel import Wheel  # type: ignore
         whl = Wheel()
@@ -263,9 +276,9 @@ class _BuildBackend(object):
         if pure:
             tags = {'pyver': ['py3']}
         elif cfg.cross:
-            tags = self.get_cross_tags(cfg.cross)
+            tags = _BuildBackend.get_cross_tags(cfg.cross)
         else:
-            tags = self.get_native_tags()
+            tags = _BuildBackend.get_native_tags()
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, paths.wheel_dir)
         return whl_name
@@ -324,8 +337,8 @@ class _BuildBackend(object):
 
     # --- Files installation --------------------------------------------------
 
-    def copy_pkg_source_to(self, staging_dir: Path,
-                           pkg: flit_core.common.Module):
+    @staticmethod
+    def copy_pkg_source_to(staging_dir: Path, pkg: flit_core.common.Module):
         """Copy the files of a Python package to the build directory."""
         for mod_file in pkg.iter_files():
             rel_path = os.path.relpath(mod_file, pkg.path.parent)
@@ -333,19 +346,23 @@ class _BuildBackend(object):
             os.makedirs(dst.parent, exist_ok=True)
             shutil.copy2(mod_file, dst, follow_symlinks=False)
 
-    def write_license_files(self, license, srcdir: Path, distinfo_dir: Path):
+    @staticmethod
+    def write_license_files(license, srcdir: Path, distinfo_dir: Path):
         """Write the LICENSE file from pyproject.toml to the distinfo
         directory."""
         if 'text' in license:
             with (distinfo_dir / 'LICENSE').open('w', encoding='utf-8') as f:
                 f.write(license['text'])
         elif 'file' in license:
+            assert not Path(license['file']).is_absolute()
             shutil.copy2(srcdir / license['file'], distinfo_dir)
 
-    def write_entrypoints(self, distinfo: Path, cfg: config.Config):
+    @staticmethod
+    def write_entrypoints(distinfo: Path, entrypoints: Dict[str, Dict[str,
+                                                                      str]]):
         from flit_core.common import write_entry_points
         with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
-            write_entry_points(cfg.entrypoints, f)
+            write_entry_points(entrypoints, f)
 
     # --- Editable installs ---------------------------------------------------
 
@@ -399,7 +416,7 @@ class _BuildBackend(object):
                                  cross_cfg,
                                  native_install_dir,
                                  package_info,
-                                 verbose=self.verbose)
+                                 runner=self.runner)
 
         cmaker.configure()
         cmaker.build()
@@ -479,7 +496,7 @@ class _BuildBackend(object):
         env = os.environ.copy()
         env.setdefault('MYPY_CACHE_DIR', str(paths.temp_dir))
         # Call mypy stubgen in a subprocess
-        self.run(args, cwd=pkg.path.parent, check=True, env=env)
+        self.runner.run(args, cwd=pkg.path.parent, check=True, env=env)
 
     # --- Misc helper functions -----------------------------------------------
 
@@ -512,13 +529,6 @@ class _BuildBackend(object):
         from distlib.version import NormalizedVersion
         norm_version = str(NormalizedVersion(version))
         return norm_version
-
-    def run(self, *args, **kwargs):
-        """Wrapper around subprocess.run that optionally prints the command."""
-        if self.verbose:
-            pprint([*args])
-            pprint(kwargs)
-        return sp_run(*args, **kwargs)
 
     @staticmethod
     def get_native_tags():
@@ -581,11 +591,13 @@ class _BuildBackend(object):
 
     # --- Helper functions for finding programs like CMake --------------------
 
-    def check_cmake_program(self, cfg: config.Config, deps: List[str]):
+    @staticmethod
+    def check_cmake_program(cfg: config.Config, deps: List[str],
+                            runner: CommandRunner):
         assert cfg.cmake
         # Do we need to perform a native build?
-        native = not cfg.cross or self.needs_cross_native_build(cfg)
-        native_cfg = cfg.cmake[self.get_os_name()] if native else {}
+        native = not cfg.cross or _BuildBackend.needs_cross_native_build(cfg)
+        native_cfg = cfg.cmake[_BuildBackend.get_os_name()] if native else {}
         # Do we need to perform a cross build?
         cross = cfg.cross
         cross_cfg = cfg.cmake.get('cross', {})
@@ -597,7 +609,7 @@ class _BuildBackend(object):
         )
         # If CMake in PATH doesn't work or is too old, add it as a build
         # requirement
-        if not self.check_program_version('cmake', min_cmake_ver, "CMake"):
+        if not runner.check_program_version('cmake', min_cmake_ver, "CMake"):
             deps.append("cmake>=" + str(min_cmake_ver))
 
         # Check if we need Ninja
@@ -610,50 +622,13 @@ class _BuildBackend(object):
         if need_ninja:
             # If so, check if a working version exists in the PATH, otherwise,
             # add it as a build requirement
-            if not self.check_program_version('ninja', None, "Ninja"):
+            if not runner.check_program_version('ninja', None, "Ninja"):
                 deps.append("ninja")
 
-    def check_stubgen_program(self, cfg: config.Config, deps: List[str]):
-        if not self.check_program_version('stubgen', None, None, False):
+    @staticmethod
+    def check_stubgen_program(deps: List[str], runner: CommandRunner):
+        if not runner.check_program_version('stubgen', None, None, False):
             deps.append("mypy")
-
-    def check_program_version(
-        self,
-        program: str,
-        minimum_version: Optional[NormalizedVersion],
-        name: Optional[str],
-        check_version: bool = True,
-    ):
-        """Check if there's a new enough version of the given command available
-        in PATH."""
-        name = name or program
-        try:
-            # Try running the command
-            cmd = [program, '--version'] if check_version else [program, '-h']
-            res = self.run(cmd, check=True, capture_output=True)
-            # Try finding the version
-            if check_version:
-                m = re.search(r'\d+(\.\d+){1,}', res.stdout.decode('utf-8'))
-                if not m:
-                    raise RuntimeError(f"Unexpected {name} version output")
-                program_version = NormalizedVersion(m.group(0))
-                if self.verbose: print("Found", name, program_version)
-                # Check if the version is new enough
-                if minimum_version is not None:
-                    if program_version < minimum_version:
-                        raise RuntimeError(f"{name} too old")
-        except CalledProcessError as e:
-            if self.verbose:
-                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
-                sys.stdout.buffer.write(e.stdout)
-                sys.stdout.buffer.write(e.stderr)
-            return False
-        except Exception as e:
-            # If any of that failed, return False
-            if self.verbose:
-                print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
-            return False
-        return True
 
 
 _BACKEND = _BuildBackend()
