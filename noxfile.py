@@ -11,7 +11,7 @@ def example_projects(session: nox.Session):
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-    session.install("py-build-cmake~=0.0.16a2")
+    session.install("py-build-cmake~=0.1.0")
     with session.chdir("examples/minimal"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         session.run("python", "-m", "build", ".")
@@ -37,7 +37,7 @@ def editable(session: nox.Session):
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-    session.install("py-build-cmake~=0.0.16a2")
+    session.install("py-build-cmake~=0.1.0")
     with session.chdir("examples/pybind11-project"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         session.install("-e", ".")
@@ -50,7 +50,7 @@ def tests(session: nox.Session):
     dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
     if dist_dir:
         session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-        session.install("py-build-cmake~=0.0.16a2")
+        session.install("py-build-cmake~=0.1.0")
     else:
         session.install(".")
     session.run('pytest')
