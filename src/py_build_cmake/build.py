@@ -449,7 +449,7 @@ class _BuildBackend(object):
                    package_info: PackageInfo, **kwargs):
         toolchain_file = None
         if cross_cfg:
-            toolchain_file = (pkg_dir / cross_cfg['toolchain_file']).resolve()
+            toolchain_file = cross_cfg['toolchain_file']
 
         # Add some CMake configure options
         options = cmake_cfg.get('options', {})
