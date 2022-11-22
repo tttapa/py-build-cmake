@@ -252,13 +252,33 @@ class _BuildBackend(object):
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        from flit_core.common import Module, make_metadata
+        from flit_core.common import Module, make_metadata, ProblemInModule
         cfg = _BuildBackend.read_config(src_dir / 'pyproject.toml',
                                         config_settings, verbose)
         pkg = Module(cfg.module['name'], src_dir / cfg.module['directory'])
-        metadata = make_metadata(pkg, cfg)
+        try:
+            metadata = make_metadata(pkg, cfg)
+        except ImportError as e:
+            if hasattr(e, "msg"):
+                e.msg = (
+                    "\n"
+                    "\n"
+                    f"\t❌ Error importing {pkg.name} for reading metadata:\n"
+                    "\n"
+                    f"\t\t{e.msg}\n"
+                    "\n")
+            raise
+        except ProblemInModule as e:
+            e.args = ("\n"
+                      "\n"
+                      f"\t❌ Error reading metadata from {pkg.name}:"
+                      "\n"
+                      "\n"
+                      f"\t\t{e}\n"
+                      "\n", )
+            raise
         metadata.version = _BuildBackend.normalize_version(metadata.version)
-        # TODO: patch metadata.name to distribution name instead of package name
+        metadata.name = cfg.package_name
         return cfg, pkg, metadata
 
     @staticmethod
@@ -505,7 +525,7 @@ class _BuildBackend(object):
         return {
             "Linux": "linux",
             "Windows": "windows",
-            "Darwin": "mac",  # TODO: untested
+            "Darwin": "mac",
         }[platform.system()]
 
     @staticmethod
