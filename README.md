@@ -36,10 +36,10 @@ The documentation can be found on <https://tttapa.github.io/py-build-cmake>.
 The format of the configuration file is explained in 
 [Config.md](https://tttapa.github.io/py-build-cmake/Config.html).
 
-Alternatively, use the following command to get the documentation for all
-supported options:
+Alternatively, use the [command-line interface](https://tttapa.github.io/py-build-cmake/CLI.html)
+to get the documentation for all supported options:
 ```sh
-python -m py_build_cmake.help
+py-build-cmake config format
 ```
 
 ## Usage
