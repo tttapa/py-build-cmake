@@ -8,6 +8,7 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     def get_cmaker():
         from .build import _BuildBackend as backend
         from .datastructures import PackageInfo
+        from .cmd_runner import CommandRunner
         source_dir = Path(directory or '.').resolve()
         config_settings = {
             "--cross": cross,
@@ -41,8 +42,8 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
                                   cross_cfg=cross_cfg,
                                   native_install_dir=None,
                                   package_info=pkg_info,
-                                  verbose=verbose,
-                                  dry=dry)
+                                  runner=CommandRunner(verbose=verbose,
+                                                       dry=dry))
 
     return get_cmaker
 
