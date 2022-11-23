@@ -29,9 +29,6 @@ def help_print_md(pbc_opts: ConfigOption):
     """
     Prints the top-level options in `pbc_opts` as MarkDown tables.
     """
-    print("# py-build-cmake configuration options\n")
-    print("These options go in the `[tool.py-build-cmake]` section of "
-          "the `pyproject.toml` configuration file.\n")
     for k, v in pbc_opts.sub.items():
         print('##', k)
         print(_get_full_description(v), '\n')
@@ -42,44 +39,6 @@ def help_print_md(pbc_opts: ConfigOption):
                   vv.get_typename() or '', '|', f'`{get_default_str(vv)}`',
                   '|')
         print()
-    print("# Local overrides\n")
-    print("Additionally, two extra configuration files can be placed in "
-          "the same directory as `pyproject.toml` to override some "
-          "options for your specific use case:\n\n"
-          "- `py-build-cmake.local.toml`: the options in this file "
-          "override the values in the `tool.py-build-cmake` section of "
-          "`pyproject.toml`.<br/>This is useful if you need specific "
-          "arguments or CMake options to compile the package on your "
-          "system.\n"
-          "- `py-build-cmake.cross.toml`: the options in this file "
-          "override the values in the `tool.py-build-cmake.cross` section "
-          "of `pyproject.toml`.<br/>Useful for cross-compiling the "
-          "package without having to edit the main configuration file.\n")
-    print("# Command line overrides\n")
-    print("Instead of using the `py-build-cmake.local.toml` and "
-          "`py-build-cmake.cross.toml` files, you can also include "
-          "additional config files using command line options:\n\n"
-          "- `--local`: specifies a toml file that overrides the "
-          "`tool.py-build-cmake` section of `pyproject.toml`, "
-          "similar to `py-build-cmake.local.toml`\n"
-          "- `--cross`: specifies a toml file that overrides the "
-          "`tool.py-build-cmake.cross` section of `pyproject.toml`, "
-          "similar to `py-build-cmake.cross.toml`\n\n"
-          "These command line overrides are applied after the "
-          "`py-build-cmake.local.toml` and `py-build-cmake.cross.toml` "
-          "files in the project folder (if any).\n\n"
-          "When using PyPA build, these flags can be specified using "
-          "the `-C` or `--config-setting` flag: \n"
-          "```sh\n"
-          "python -m build . -C--cross=/path/to/my-cross-config.toml\n"
-          "```\n"
-          "The same flag may appear multiple times, for example: \n"
-          "```sh\n"
-          "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
-          "```\n"
-          "For PyPA pip, you can use the `--config-settings` flag "
-          "instead.")
-
 
 def _get_full_description(vv: ConfigOption):
     descr = _md_escape(vv.description)
@@ -144,6 +103,5 @@ def _describe_path_option(v: PathConfigOption):
 
 
 def help_print(pbc_opts: ConfigOption):
-    print("List of py-build-cmake pyproject.toml options:")
     recursive_help_print(pbc_opts)
     print()

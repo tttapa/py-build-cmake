@@ -179,17 +179,79 @@ def config():
 
 @config.command(help="Print documentation for the config file format.")
 @click.option("--md", is_flag=True, help="Use the MarkDown format.")
-def format(md):
-    from .pyproject_options import get_options
+@click.option("--component",
+              is_flag=True,
+              help="Documentation for the build_component backend.")
+def format(md, component):
+    from .pyproject_options import get_options, get_component_options
     from .config_options import pth
-    opts = get_options(Path('/'))
-    help_pth = pth('pyproject.toml/tool/py-build-cmake')
-    pbc_opts = opts[help_pth]
     if md:
         from .help import help_print_md as help_print
     else:
         from .help import help_print as help_print
-    help_print(pbc_opts)
+    help_pth = pth('pyproject.toml/tool/py-build-cmake')
+    pr_md = print if md else lambda *args, **kwargs: None
+    pr_tx = lambda *args, **kwargs: None if md else print
+    if component:
+        pr_tx("List of py-build-cmake pyproject.toml options for the "
+              "build_component backend:")
+        pr_md("# py-build-cmake component build backend\n"
+              "The `py_build_cmake.build_component` build backend allows "
+              "building packages containing additional binaries that are not "
+              "included with the main distribution.\n")
+        pr_md("A possible use case is distributing debug symbols: these files "
+              "can be large, and most users don't need them, so distributing "
+              "them in a separate package makes sense.\n")
+        pr_md(
+            "You can find an example in the "
+            "[alpaqa](https://pypi.org/project/alpaqa) package: "
+            "<https://github.com/kul-optec/alpaqa/blob/main/python/alpaqa-debug/pyproject.toml>"
+        )
+        help_print(get_component_options(Path('/'))[help_pth])
+
+    else:
+        pr_tx("List of py-build-cmake pyproject.toml options:")
+        pr_md("# py-build-cmake configuration options\n")
+        pr_md("These options go in the `[tool.py-build-cmake]` section of "
+              "the `pyproject.toml` configuration file.\n")
+        help_print(get_options(Path('/'))[help_pth])
+        pr_md("# Local overrides\n")
+        pr_md("Additionally, two extra configuration files can be placed in "
+              "the same directory as `pyproject.toml` to override some "
+              "options for your specific use case:\n\n"
+              "- `py-build-cmake.local.toml`: the options in this file "
+              "override the values in the `tool.py-build-cmake` section of "
+              "`pyproject.toml`.<br/>This is useful if you need specific "
+              "arguments or CMake options to compile the package on your "
+              "system.\n"
+              "- `py-build-cmake.cross.toml`: the options in this file "
+              "override the values in the `tool.py-build-cmake.cross` section "
+              "of `pyproject.toml`.<br/>Useful for cross-compiling the "
+              "package without having to edit the main configuration file.\n")
+        pr_md("# Command line overrides\n")
+        pr_md("Instead of using the `py-build-cmake.local.toml` and "
+              "`py-build-cmake.cross.toml` files, you can also include "
+              "additional config files using command line options:\n\n"
+              "- `--local`: specifies a toml file that overrides the "
+              "`tool.py-build-cmake` section of `pyproject.toml`, "
+              "similar to `py-build-cmake.local.toml`\n"
+              "- `--cross`: specifies a toml file that overrides the "
+              "`tool.py-build-cmake.cross` section of `pyproject.toml`, "
+              "similar to `py-build-cmake.cross.toml`\n\n"
+              "These command line overrides are applied after the "
+              "`py-build-cmake.local.toml` and `py-build-cmake.cross.toml` "
+              "files in the project folder (if any).\n\n"
+              "When using PyPA build, these flags can be specified using "
+              "the `-C` or `--config-setting` flag: \n"
+              "```sh\n"
+              "python -m build . -C--cross=/path/to/my-cross-config.toml\n"
+              "```\n"
+              "The same flag may appear multiple times, for example: \n"
+              "```sh\n"
+              "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
+              "```\n"
+              "For PyPA pip, you can use the `--config-settings` flag "
+              "instead.")
 
 
 if __name__ == '__main__':
