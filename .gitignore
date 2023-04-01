@@ -1,4 +1,5 @@
 py*-venv
+.venv
 build
 .build
 .*cache
@@ -6,3 +7,4 @@ __pycache__
 *.pyc
 dist
 .nox
+old
