@@ -15,6 +15,6 @@ Options for a separately packaged component.
 | `build_presets` | CMake presets to use for building. Passed as --preset &lt;?&gt; during the build phase, once for each preset. | list | `none` |
 | `install_presets` | CMake presets to use for installing. Passed as --preset &lt;?&gt; during the installation phase, once for each preset. | list | `build_presets` |
 | `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j"]` | list | `none` |
-| `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["VERBOSE=1"]` | list | `none` |
+| `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list | `none` |
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list | `none` |
 | `install_components` | List of components to install, the install step is executed once for each component, with the option --component &lt;?&gt;. | list | `required` |
