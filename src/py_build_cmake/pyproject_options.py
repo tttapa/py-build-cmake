@@ -138,6 +138,14 @@ def get_options(project_path: Path, *, test: bool = False):
                               "step.",
                               "args = [\"--debug-find\", \"-Wdev\"]",
                               default=DefaultValueValue([])),
+        BoolConfigOption('find_python',
+                         "Specify hints for CMake's FindPython module.",
+                         "find_python = true",
+                         default=DefaultValueValue(False)),
+        BoolConfigOption('find_python3',
+                         "Specify hints for CMake's FindPython3 module.",
+                         "find_python3 = false",
+                         default=DefaultValueValue(True)),
         ListOfStrConfigOption('build_args',
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\"]",
@@ -145,7 +153,8 @@ def get_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption('build_tool_args',
                               "Extra arguments passed to the build tool in the "
                               "build step (e.g. to Make or Ninja).",
-                              "build_tool_args = [\"VERBOSE=1\"]",
+                              "build_tool_args = "
+                              "[\"--verbose\", \"-d\", \"explain\"]",
                               default=DefaultValueValue([])),
         ListOfStrConfigOption('install_args',
                               "Extra arguments passed to the install step.",
@@ -325,7 +334,8 @@ def get_component_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption('build_tool_args',
                               "Extra arguments passed to the build tool in the "
                               "build step (e.g. to Make or Ninja).",
-                              "build_tool_args = [\"VERBOSE=1\"]",
+                              "build_tool_args = "
+                              "[\"--verbose\", \"-d\", \"explain\"]",
                               default=NoDefaultValue()),
         ListOfStrConfigOption('install_args',
                               "Extra arguments passed to the install step.",

@@ -13,7 +13,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from flit_core.config import ConfigError  # type: ignore
 
 ConfPath = Tuple[str, ...]
-ConfValue = Optional[Union[str, List[str], Dict[str, Any]]]
+ConfValue = Optional[Union[bool, str, List[str], Dict[str, Any]]]
 Conf = Dict[str, Any]
 
 
@@ -143,6 +143,8 @@ class DefaultValueValue(DefaultValue):
         return DefaultValueWrapper(self.value)
 
     def get_name(self):
+        if isinstance(self.value, bool):
+            return str(self.value).lower()
         return repr(self.value)
 
 
@@ -489,6 +491,28 @@ class StrConfigOption(ConfigOption):
         elif not isinstance(cfg[cfgpath].value, str):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{str}, not {type(cfg[cfgpath].value)}')
+
+class BoolConfigOption(ConfigOption):
+
+    def get_typename(self):
+        return 'bool'
+
+    def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
+                          selfpth: ConfPath, overridecfg: ConfigNode,
+                          overridepath: ConfPath):
+        assert not self.sub
+        assert not selfcfg.sub
+        assert not overridecfg.sub
+        selfcfg.value = deepcopy(overridecfg.value)
+
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        if cfg[cfgpath].sub:
+            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                              f'{bool}, not {dict}')
+        elif not isinstance(cfg[cfgpath].value, bool):
+            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                              f'{bool}, not {type(cfg[cfgpath].value)}')
 
 
 @dataclass

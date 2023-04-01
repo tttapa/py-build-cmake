@@ -551,6 +551,8 @@ def test_real_config_inherit_cross_cmake():
                             "foo": "bar"
                         },
                         "args": ["arg1", "arg2"],
+                        "find_python": False,
+                        "find_python3": True,
                     },
                     "cross": {
                         "implementation": "cp",
@@ -602,6 +604,8 @@ def test_real_config_inherit_cross_cmake():
                         "env": {
                             "foo": "bar"
                         },
+                        "find_python": False,
+                        "find_python3": True,
                     },
                     "cross": {
                         "implementation":
@@ -619,6 +623,8 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Unix Makefiles",
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2", "arg3", "arg4"],
+                            "find_python": False,
+                            "find_python3": True,
                             "env": {
                                 "foo": "bar",
                                 "crosscompiling": "true",
@@ -634,7 +640,9 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
-                            "install_components": ["linux_install"]
+                            "install_components": ["linux_install"],
+                            "find_python": False,
+                            "find_python3": True,
                         }
                     },
                     "windows": {
@@ -646,7 +654,9 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
-                            "install_components": ["win_install"]
+                            "install_components": ["win_install"],
+                            "find_python": False,
+                            "find_python3": True,
                         }
                     },
                     "mac": {
@@ -658,6 +668,8 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
+                            "find_python": False,
+                            "find_python3": True,
                         }
                     },
                 }
@@ -695,6 +707,8 @@ def test_real_config_inherit_cross_cmake():
                         os.path.normpath("/project/.py-build-cmake_cache"),
                         "options": {},
                         "args": ["arg1", "arg2"],
+                        "find_python": False,
+                        "find_python3": True,
                         "build_args": [],
                         "build_tool_args": [],
                         "install_args": [],
@@ -730,6 +744,8 @@ def test_real_config_inherit_cross_cmake():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2", "arg3", "arg4"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -757,6 +773,8 @@ def test_real_config_inherit_cross_cmake():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -783,6 +801,8 @@ def test_real_config_inherit_cross_cmake():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -809,6 +829,8 @@ def test_real_config_inherit_cross_cmake():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -842,6 +864,8 @@ def test_real_config_no_cross():
                             "foo": "bar"
                         },
                         "args": ["arg1", "arg2"],
+                        "find_python": False,
+                        "find_python3": True,
                     },
                     "linux": {
                         "cmake": {
@@ -891,6 +915,8 @@ def test_real_config_no_cross():
                         os.path.normpath("/project/.py-build-cmake_cache"),
                         "options": {},
                         "args": ["arg1", "arg2"],
+                        "find_python": False,
+                        "find_python3": True,
                         "build_args": [],
                         "build_tool_args": [],
                         "install_args": [],
@@ -916,6 +942,8 @@ def test_real_config_no_cross():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -942,6 +970,8 @@ def test_real_config_no_cross():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
@@ -968,6 +998,8 @@ def test_real_config_no_cross():
                             os.path.normpath("/project/.py-build-cmake_cache"),
                             "options": {},
                             "args": ["arg1", "arg2"],
+                            "find_python": False,
+                            "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],

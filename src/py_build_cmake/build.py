@@ -470,6 +470,8 @@ class _BuildBackend(object):
                 source_path=Path(cmake_cfg["source_path"]),
                 build_path=Path(cmake_cfg['build_path']) / build_cfg_name,
                 os=_BuildBackend.get_os_name(),
+                find_python=bool(cmake_cfg["find_python"]),
+                find_python3=bool(cmake_cfg["find_python3"]),
                 command=Path("cmake"),
             ),
             conf_settings=cmake.CMakeConfigureSettings(

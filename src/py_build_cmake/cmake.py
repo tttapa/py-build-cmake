@@ -14,6 +14,8 @@ class CMakeSettings:
     source_path: Path
     build_path: Path
     os: str
+    find_python: bool
+    find_python3: bool
     command: Path = Path("cmake")
 
 
@@ -92,13 +94,15 @@ class CMaker:
 
     def get_configure_options_python(self) -> List[str]:
         """Flags to help CMake find the right version of Python."""
-        opts = ['Python3_EXECUTABLE:FILEPATH=' + sys.executable]
-        if not self.cross_compiling():
-            opts += [
-                'Python3_ROOT_DIR:PATH=' + sys.prefix,
-                'Python3_FIND_REGISTRY=NEVER',
-                'Python3_FIND_STRATEGY=LOCATION',
-            ]
+        def get_opts(prefix):
+            yield prefix + '_EXECUTABLE:FILEPATH=' + sys.executable
+            if not self.cross_compiling():
+                yield prefix + '_ROOT_DIR:PATH=' + sys.prefix
+                yield prefix + '_FIND_REGISTRY=NEVER'
+                yield prefix + '_FIND_STRATEGY=LOCATION'
+        opts = []
+        if self.cmake_settings.find_python: opts += list(get_opts('Python'))
+        if self.cmake_settings.find_python3: opts += list(get_opts('Python3'))
         return opts
 
     def get_configure_options_env(self, env) -> List[str]:
