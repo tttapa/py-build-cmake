@@ -32,6 +32,22 @@
                 }
             ],
             "preLaunchTask": "Install package (development)",
-        }
+        },
+        {
+            "name": "(Windows) Launch Python",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${command:python.interpreterPath}",
+            "args": [
+                "examples/add_example.py"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {"name": "NANOBIND_PROJECT_PYTHON_DEBUG", "value": "1"}
+            ],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Install package (development)",
+        },
     ]
 }

@@ -54,6 +54,18 @@ config = ["Debug", "Release"]
 options = { "CMAKE_DEBUG_POSTFIX" = "_d" }
 env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }
 
+[tool.py-build-cmake.mac.cmake] # macOS-specific options
+generator = "Ninja Multi-Config"
+config = ["Debug", "Release"]
+options = { "CMAKE_DEBUG_POSTFIX" = "_d" }
+
+[tool.py-build-cmake.windows.cmake] # Windows-specific options
+config = ["RelWithDebInfo", "Release"]
+[tool.py-build-cmake.windows.cmake.options]
+CMAKE_CXX_FLAGS_RELWITHDEBINFO = "/Zi /Ob0 /Od /RTC1"
+CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO = "/INCREMENTAL:NO /OPT:REF /DEBUG:FULL"
+CMAKE_RELWITHDEBINFO_POSTFIX = "_d"
+
 [tool.py-build-cmake.stubgen]
 args = ["-v"]
 

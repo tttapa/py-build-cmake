@@ -21,7 +21,10 @@ target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
 )
-set_target_properties(_add_module PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+# Hide all symbols by default (including external libraries on Linux)
+set_target_properties(_add_module PROPERTIES
+    CXX_VISIBILITY_PRESET "hidden"
+    VISIBILITY_INLINES_HIDDEN true)
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_options(_add_module PRIVATE "LINKER:--exclude-libs,ALL")
 endif()
@@ -31,6 +34,12 @@ install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
         DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
+# Install the debug file for the Python module (Windows only)
+install(FILES $<TARGET_PDB_FILE:_add_module>
+        EXCLUDE_FROM_ALL
+        COMPONENT python_modules
+        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME}
+        OPTIONAL)
 
 # Generate stubs for the Python module
 option(WITH_PY_STUBS
