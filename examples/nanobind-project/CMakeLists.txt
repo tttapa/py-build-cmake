@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18...3.22)
-project(py-build-cmake VERSION 0.1.3)
+project(nanobind-project VERSION 0.1.3)
 set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
