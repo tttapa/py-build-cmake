@@ -1,6 +1,7 @@
 import shutil
 import nox
 import os
+import sys
 
 
 @nox.session
@@ -22,11 +23,12 @@ def example_projects(session: nox.Session):
         session.run("python", "-m", "build", ".")
         session.install(".")
         session.run("pytest")
-    with session.chdir("examples/nanobind-project"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        session.run("python", "-m", "build", ".")
-        session.install(".")
-        session.run("pytest")
+    if sys.version_info >= (3, 8):
+        with session.chdir("examples/nanobind-project"):
+            shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+            session.run("python", "-m", "build", ".")
+            session.install(".")
+            session.run("pytest")
     with session.chdir("examples/minimal-program"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         session.run("python", "-m", "build", ".")
