@@ -13,7 +13,7 @@ backend for building Python packages with extensions built using CMake.
  - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/)), compatible with
    [flit](https://github.com/pypa/flit)
  - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
- - Compatible with [pybind11](https://github.com/pybind/pybind11)
+ - Compatible with [pybind11](https://github.com/pybind/pybind11) and [nanobind](https://github.com/wjakob/nanobind)
  - Generate stubs for type checking and autocompletion
  - Customizable CMake configuration, build and installation options
  - Support for multiple installation configurations and components
