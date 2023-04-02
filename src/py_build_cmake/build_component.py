@@ -205,7 +205,8 @@ class _BuildComponentBackend(object):
         if 'install_components' in comp:
             cmaker.install_settings.components = comp['install_components']
 
-        cmaker.build()
+        if not comp_cfg.component["install_only"]:
+            cmaker.build()
         cmaker.install()
 
     # --- Misc helper functions -----------------------------------------------

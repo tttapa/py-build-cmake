@@ -337,6 +337,10 @@ def get_component_options(project_path: Path, *, test: bool = False):
                               "build_tool_args = "
                               "[\"--verbose\", \"-d\", \"explain\"]",
                               default=NoDefaultValue()),
+        BoolConfigOption('install_only',
+                         "Do not build the project, only install it.",
+                         "install_only = true",
+                         default=DefaultValueValue(False)),
         ListOfStrConfigOption('install_args',
                               "Extra arguments passed to the install step.",
                               "install_args = [\"--strip\"]",
