@@ -163,7 +163,6 @@ function(install_debug_syms target component dest_lib dest_bin)
     if (MSVC)
         install(FILES "$<TARGET_PDB_FILE:${target}>"
             DESTINATION ${dest_bin}
-            RENAME "$<PATH:REPLACE_EXTENSION,LAST_ONLY,$<TARGET_FILE_NAME:${target}>,pdb>"
             CONFIGURATIONS Debug RelWithDebInfo
             COMPONENT ${component} 
             OPTIONAL EXCLUDE_FROM_ALL)
@@ -194,6 +193,12 @@ information.
 
 Most of the points touched upon in the previous sections also apply to Windows,
 but there are some differences you need to keep in mind.
+
+### Python installation
+
+When installing Python, be sure to install the debug symbols.
+
+![Python installation Windows debugging symbols](images/python-install-windows-debug-symbols.png)
 
 ### Different Python ABIs
 
@@ -282,3 +287,10 @@ macOS: change the installation `COMPONENT` and use the
 
 The `install_debug_syms` function listed in the section [Distributing debug information separately](#distributing-debug-information-separately)
 also includes the necessary code to install the Windows PDB files.
+
+### Virtual environments
+
+On Windows, the `.venv/Scripts/python.exe` binary is not actually the Python
+interpreter itself, but a wrapper program called `venvlauncher.exe`. It does
+not seem like the debug symbols for this program are installed automatically,
+so debugging inside of a virtual environment is not possible out of the box.
