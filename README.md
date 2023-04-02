@@ -5,7 +5,7 @@
 # py-build-cmake
 
 Modern, [PEP 517](https://www.python.org/dev/peps/pep-0517/) compliant build
-backend for building Python packages with extensions built using CMake.
+backend for creating Python packages with extensions built using CMake.
 
 ## Features
 
