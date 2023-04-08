@@ -55,8 +55,8 @@ class CommandRunner:
         except CalledProcessError as e:
             if self.verbose:
                 print(f'{type(e).__module__}.{type(e).__name__}', e, sep=': ')
-                sys.stdout.buffer.write(e.stdout)
-                sys.stdout.buffer.write(e.stderr)
+                print(e.stdout)
+                print(e.stderr, file=sys.stderr)
             return False
         except Exception as e:
             # If any of that failed, return False
