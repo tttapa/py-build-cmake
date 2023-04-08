@@ -33,22 +33,22 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `minimum_version` | Minimum required CMake version. If this version is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `minimum_version = "3.18"` | string | `none` |
-| `build_type` | Build type passed to the configuration step, as `-DCMAKE\_BUILD\_TYPE=&lt;?&gt;`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
-| `config` | Configuration type passed to the build and install steps, as `--config &lt;?&gt;`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `config = ["Debug", "Release"]` | list | `build_type` |
-| `preset` | CMake preset to use for configuration. Passed as `--preset &lt;?&gt;` during the configuration phase. | string | `none` |
-| `build_presets` | CMake presets to use for building. Passed as `--preset &lt;?&gt;` during the build phase, once for each preset. | list | `preset` |
-| `install_presets` | CMake presets to use for installing. Passed as `--preset &lt;?&gt;` during the installation phase, once for each preset. | list | `build_presets` |
-| `generator` | CMake generator to use, passed to the configuration step, as `-G &lt;?&gt;`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
+| `build_type` | Build type passed to the configuration step, as `-DCMAKE\_BUILD\_TYPE=<?>`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
+| `config` | Configuration type passed to the build and install steps, as `--config <?>`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `config = ["Debug", "Release"]` | list | `build_type` |
+| `preset` | CMake preset to use for configuration. Passed as `--preset <?>` during the configuration phase. | string | `none` |
+| `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `preset` |
+| `install_presets` | CMake presets to use for installing. Passed as `--preset <?>` during the installation phase, once for each preset. | list | `build_presets` |
+| `generator` | CMake generator to use, passed to the configuration step, as `-G <?>`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache'` |
-| `options` | Extra options passed to the configuration step, as `-D&lt;option&gt;=&lt;value&gt;`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
+| `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
 | `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = true` | bool | `false` |
 | `find_python3` | Specify hints for CMake&#x27;s FindPython3 module.<br/>For example: `find_python3 = false` | bool | `true` |
 | `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list | `[]` |
 | `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list | `[]` |
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list | `[]` |
-| `install_components` | List of components to install, the install step is executed once for each component, with the option `--component &lt;?&gt;`.<br/>Use an empty string to specify the default component. | list | `['']` |
+| `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`.<br/>Use an empty string to specify the default component. | list | `['']` |
 | `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}` (but not `$VAR`).<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
 
 ## stubgen

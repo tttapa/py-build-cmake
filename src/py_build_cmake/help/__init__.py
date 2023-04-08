@@ -2,6 +2,7 @@ import html
 import itertools
 import shutil
 import textwrap
+import re
 
 from ..config_options import ConfigOption, PathConfigOption, RequiredValue, pth2str
 
@@ -56,6 +57,9 @@ def _md_escape(descr):
     descr = descr.replace('\n', '<br/>')
     descr = descr.replace('*', '\\*')
     descr = descr.replace('_', '\\_')
+    def unescape(m: re.Match):
+        return html.unescape(m.group(0))
+    descr = re.sub(r'`.*`', unescape, descr)
     return descr
 
 
