@@ -12,6 +12,13 @@ Defines the name and the directory of the module to package.
 | `name` | Import name in Python (can be different from the name on PyPI, which is defined in the [project] section). | string | `/pyproject.toml/project/name` |
 | `directory` | Directory containing the Python package.<br/>Relative to project directory. | path | `'.'` |
 
+## editable
+Defines how to perform an editable install (PEP 660). 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| `mode` | Mechanism to use for editable installations. Either write a wrapper \_\_init\_\_.py file, install an import hook, or install symlinks to the original files. See https://tttapa.github.io/py-build-cmake/Editable-install.html for more information. | 'wrapper' \| 'hook' \| 'symlink' | `'wrapper'` |
+
 ## sdist
 Specifies the files that should be included in the source distribution for this package. 
 
