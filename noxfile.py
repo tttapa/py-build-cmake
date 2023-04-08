@@ -2,7 +2,6 @@ import shutil
 import nox
 import os
 import sys
-import tempfile
 
 @nox.session
 def example_projects(session: nox.Session):
@@ -36,6 +35,19 @@ def example_projects(session: nox.Session):
         session.run("pytest")
 
 
+def test_editable(session: nox.Session, mode: str):
+    tmpdir = os.path.realpath(session.create_tmp())
+    try:
+        with session.chdir("examples/pybind11-project"):
+            shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+            with open(os.path.join(tmpdir, f"{mode}.toml"), "w") as f:
+                f.write(f"[editable]\nmode = \"{mode}\"")
+            session.install("-e", ".", "--config-settings=--local=" + f.name)
+            session.run("pytest")
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 @nox.session
 def editable(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
@@ -45,27 +57,8 @@ def editable(session: nox.Session):
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
     session.install("py-build-cmake~=0.1.4")
-    with session.chdir("examples/pybind11-project"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\nmode = \"wrapper\"")
-            f.flush()
-            session.install("-e", ".", "--config-settings=--local=" + f.name)
-        session.run("pytest")
-    with session.chdir("examples/pybind11-project"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\nmode = \"hook\"")
-            f.flush()
-            session.install("-e", ".", "--config-settings=--local=" + f.name)
-        session.run("pytest")
-    with session.chdir("examples/pybind11-project"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\nmode = \"symlink\"")
-            f.flush()
-            session.install("-e", ".", "--config-settings=--local=" + f.name)
-        session.run("pytest")
+    for mode in ("wrapper", "hook", "symlink"):
+        test_editable(session, mode)
 
 
 @nox.session
