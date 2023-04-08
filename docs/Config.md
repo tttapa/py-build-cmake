@@ -5,19 +5,19 @@
 These options go in the `[tool.py-build-cmake]` section of the `pyproject.toml` configuration file.
 
 ## module
-Defines the name and the directory of the module to package. 
+Defines the import name of the module or package, and the directory where it can be found. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `name` | Import name in Python (can be different from the name on PyPI, which is defined in the [project] section). | string | `/pyproject.toml/project/name` |
-| `directory` | Directory containing the Python package.<br/>Relative to project directory. | path | `'.'` |
+| `directory` | Directory containing the Python module/package.<br/>Relative to project directory. | path | `'.'` |
 
 ## editable
-Defines how to perform an editable install (PEP 660). 
+Defines how to perform an editable install (PEP 660). See https://tttapa.github.io/py-build-cmake/Editable-install.html for more information. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `mode` | Mechanism to use for editable installations. Either write a wrapper \_\_init\_\_.py file, install an import hook, or install symlinks to the original files. See https://tttapa.github.io/py-build-cmake/Editable-install.html for more information. | `'wrapper'` \| `'hook'` \| `'symlink'` | `'wrapper'` |
+| `mode` | Mechanism to use for editable installations. Either write a wrapper \_\_init\_\_.py file, install an import hook, or install symlinks to the original files. | `'wrapper'` \| `'hook'` \| `'symlink'` | `'wrapper'` |
 
 ## sdist
 Specifies the files that should be included in the source distribution for this package. 
@@ -32,24 +32,24 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `minimum_version` | Minimum required CMake version.<br/>For example: `minimum_version = "3.18"` | string | `none` |
-| `build_type` | Build type passed to the configuration step, as -DCMAKE\_BUILD\_TYPE=&lt;?&gt;.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
-| `config` | Configuration type passed to the build and install steps, as --config &lt;?&gt;. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package. | list | `build_type` |
-| `preset` | CMake preset to use for configuration. Passed as --preset &lt;?&gt; during the configuration phase. | string | `none` |
-| `build_presets` | CMake presets to use for building. Passed as --preset &lt;?&gt; during the build phase, once for each preset. | list | `preset` |
-| `install_presets` | CMake presets to use for installing. Passed as --preset &lt;?&gt; during the installation phase, once for each preset. | list | `build_presets` |
-| `generator` | CMake generator to use, passed to the configuration step, as -G &lt;?&gt;. | string | `none` |
+| `minimum_version` | Minimum required CMake version. If this version is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `minimum_version = "3.18"` | string | `none` |
+| `build_type` | Build type passed to the configuration step, as `-DCMAKE\_BUILD\_TYPE=&lt;?&gt;`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
+| `config` | Configuration type passed to the build and install steps, as `--config &lt;?&gt;`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `config = ["Debug", "Release"]` | list | `build_type` |
+| `preset` | CMake preset to use for configuration. Passed as `--preset &lt;?&gt;` during the configuration phase. | string | `none` |
+| `build_presets` | CMake presets to use for building. Passed as `--preset &lt;?&gt;` during the build phase, once for each preset. | list | `preset` |
+| `install_presets` | CMake presets to use for installing. Passed as `--preset &lt;?&gt;` during the installation phase, once for each preset. | list | `build_presets` |
+| `generator` | CMake generator to use, passed to the configuration step, as `-G &lt;?&gt;`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache'` |
-| `options` | Extra options passed to the configuration step, as -D&lt;option&gt;=&lt;value&gt;.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
+| `options` | Extra options passed to the configuration step, as `-D&lt;option&gt;=&lt;value&gt;`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
 | `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = true` | bool | `false` |
 | `find_python3` | Specify hints for CMake&#x27;s FindPython3 module.<br/>For example: `find_python3 = false` | bool | `true` |
-| `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j"]` | list | `[]` |
+| `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list | `[]` |
 | `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list | `[]` |
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list | `[]` |
-| `install_components` | List of components to install, the install step is executed once for each component, with the option --component &lt;?&gt;.<br/>Use an empty string to specify the default component. | list | `['']` |
-| `env` | Environment variables to set when running CMake. | dict | `{}` |
+| `install_components` | List of components to install, the install step is executed once for each component, with the option `--component &lt;?&gt;`.<br/>Use an empty string to specify the default component. | list | `['']` |
+| `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}` (but not `$VAR`).<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
 
 ## stubgen
 If specified, mypy&#x27;s stubgen utility will be used to generate typed stubs for the Python files in the package. 
@@ -66,6 +66,7 @@ Override options for Linux.
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
+| `editable` | Linux-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Linux-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Linux-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 
@@ -74,6 +75,7 @@ Override options for Windows.
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
+| `editable` | Windows-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Windows-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Windows-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 
@@ -82,11 +84,12 @@ Override options for Mac.
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
+| `editable` | Mac-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Mac-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Mac-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 
 ## cross
-Causes py-build-cmake to cross-compile the project. 
+Causes py-build-cmake to cross-compile the project. See https://tttapa.github.io/py-build-cmake/Cross-compilation.html for more information. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
@@ -94,7 +97,7 @@ Causes py-build-cmake to cross-compile the project.
 | `version` | Python version, major and minor, without dots.<br/>For example: `version = '310' # 3.10` | string | `same as current interpreter` |
 | `abi` | Python ABI.<br/>For example: `abi = 'cp310'` | string | `same as current interpreter` |
 | `arch` | Operating system and architecture (no dots or dashes, only underscores, all lowercase).<br/>For example: `arch = 'linux_x86_64'` | string | `same as current interpreter` |
-| `toolchain_file` | CMake toolchain file to use.<br/>Absolute or relative to current configuration file. | filepath | `required` |
+| `toolchain_file` | CMake toolchain file to use. See https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html for more information.<br/>Absolute or relative to current configuration file. | filepath | `required` |
 | `copy_from_native_build` | If set, this will cause a native version of the CMake project to be built and installed in a temporary directory first, and the files in this list will be copied to the final cross-compiled package. This is useful if you need binary utilities that run on the build system while cross-compiling, or for things like stubs for extension modules that cannot be generated while cross-compiling.<br/>May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `none` |
 | `sdist` | Override sdist options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Override CMake options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |

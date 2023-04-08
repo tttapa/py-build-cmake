@@ -28,7 +28,8 @@ def get_options(project_path: Path, *, test: bool = False):
     module = pbc.insert(
         ConfigOption(
             "module",
-            "Defines the name and the directory of the module to package.",
+            "Defines the import name of the module or package, and the "
+            "directory where it can be found.",
             default=DefaultValueValue({}),
         ))
     pbc_pth = get_tool_pbc_path()
@@ -39,7 +40,7 @@ def get_options(project_path: Path, *, test: bool = False):
                         "section).",
                         default=RefDefaultValue(name_pth)),
         PathConfigOption('directory',
-                         "Directory containing the Python package.",
+                         "Directory containing the Python module/package.",
                          default=DefaultValueValue("."),
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
@@ -49,17 +50,18 @@ def get_options(project_path: Path, *, test: bool = False):
     editable = pbc.insert(
         ConfigOption(
             "editable",
-            "Defines how to perform an editable install (PEP 660).",
+            "Defines how to perform an editable install (PEP 660). See "
+            "https://tttapa.github.io/py-build-cmake/Editable-install.html "
+            "for more information.",
             default=DefaultValueValue({}),
         ))
+    editable_pth = pth('pyproject.toml/tool/py-build-cmake/editable')
     editable.insert_multiple([
         EnumConfigOption('mode',
                          "Mechanism to use for editable installations. "
                          "Either write a wrapper __init__.py file, install an "
                          "import hook, or install symlinks to the original "
-                         "files. See https://tttapa.github.io/py-build-cmake"
-                         "/Editable-install.html for more "
-                         "information.",
+                         "files.",
                          default=DefaultValueValue("wrapper"),
                          options=["wrapper", "hook", "symlink"]),
     ])
@@ -97,36 +99,39 @@ def get_options(project_path: Path, *, test: bool = False):
     cmake_pth = pth('pyproject.toml/tool/py-build-cmake/cmake')
     cmake.insert_multiple([
         StrConfigOption('minimum_version',
-                        "Minimum required CMake version.",
+                        "Minimum required CMake version. If this version is "
+                        "not available in the system PATH, it will be "
+                        "installed automatically as a build dependency.",
                         "minimum_version = \"3.18\"",
                         default=NoDefaultValue()),
         StrConfigOption('build_type',
                         "Build type passed to the configuration step, as "
-                        "-DCMAKE_BUILD_TYPE=<?>.",
+                        "`-DCMAKE_BUILD_TYPE=<?>`.",
                         "build_type = \"RelWithDebInfo\""),
         ListOfStrConfigOption('config',
                               "Configuration type passed to the build and "
-                              "install steps, as --config <?>. You can "
+                              "install steps, as `--config <?>`. You can "
                               "specify either a single string, or a list of "
                               "strings. If a multi-config generator is used, "
                               "all configurations in this list will be "
                               "included in the package.",
+                              "config = [\"Debug\", \"Release\"]",
                               default=RefDefaultValue(pth('build_type'),
                                                       relative=True),
                               convert_str_to_singleton=True),
         StrConfigOption('preset',
                         "CMake preset to use for configuration. Passed as "
-                        "--preset <?> during the configuration phase."),
+                        "`--preset <?>` during the configuration phase."),
         ListOfStrConfigOption('build_presets',
                               "CMake presets to use for building. Passed as "
-                              "--preset <?> during the build phase, once for "
-                              "each preset.",
+                              "`--preset <?>` during the build phase, once "
+                              "for each preset.",
                               default=RefDefaultValue(pth('preset'),
                                                       relative=True),
                               convert_str_to_singleton=True),
         ListOfStrConfigOption('install_presets',
                               "CMake presets to use for installing. Passed as "
-                              "--preset <?> during the installation phase, "
+                              "`--preset <?>` during the installation phase, "
                               "once for each preset.",
                               default=RefDefaultValue(pth('build_presets'),
                                                       relative=True),
@@ -134,7 +139,10 @@ def get_options(project_path: Path, *, test: bool = False):
         StrConfigOption('generator',
                         "CMake generator to use, passed to the "
                         "configuration step, as "
-                        "-G <?>."),
+                        "`-G <?>`. If Ninja is used, and if it is not "
+                        "available in the system PATH, it will be installed "
+                        "automatically as a build dependency.",
+                        "generator = \"Ninja Multi-Config\""),
         PathConfigOption('source_path',
                          "Folder containing CMakeLists.txt.",
                          default=DefaultValueValue("."),
@@ -149,7 +157,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          must_exist=False),
         DictOfStrConfigOption('options',
                               "Extra options passed to the configuration step, "
-                              "as -D<option>=<value>.",
+                              "as `-D<option>=<value>`.",
                               "options = {\"WITH_FEATURE_X\" = \"On\"}",
                               default=DefaultValueValue({})),
         ListOfStrConfigOption('args',
@@ -167,7 +175,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          default=DefaultValueValue(True)),
         ListOfStrConfigOption('build_args',
                               "Extra arguments passed to the build step.",
-                              "build_args = [\"-j\"]",
+                              "build_args = [\"-j\", \"--target\", \"foo\"]",
                               default=DefaultValueValue([])),
         ListOfStrConfigOption('build_tool_args',
                               "Extra arguments passed to the build tool in the "
@@ -182,13 +190,16 @@ def get_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption("install_components",
                               "List of components to install, the install step "
                               "is executed once for each component, with the "
-                              "option --component <?>.\n"
+                              "option `--component <?>`.\n"
                               "Use an empty string to specify the default "
                               "component.",
                               default=DefaultValueValue([""])),
         DictOfStrConfigOption("env",
                               "Environment variables to set when running "
-                              "CMake.",
+                              "CMake. Supports variable expansion using "
+                              "`${VAR}` (but not `$VAR`).",
+                              "env = { \"CMAKE_PREFIX_PATH\" "
+                              "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({})),
     ])# yapf: disable
 
@@ -225,6 +236,10 @@ def get_options(project_path: Path, *, test: bool = False):
                 default=DefaultValueValue({}),
             ))
         opt.insert_multiple([
+            ConfigOption("editable",
+                         f"{system}-specific editable options.",
+                         inherit_from=editable_pth,
+                         create_if_inheritance_target_exists=True),
             ConfigOption("sdist",
                          f"{system}-specific sdist options.",
                          inherit_from=sdist_pth,
@@ -239,7 +254,9 @@ def get_options(project_path: Path, *, test: bool = False):
     cross = pbc.insert(
         ConfigOption(
             "cross",
-            "Causes py-build-cmake to cross-compile the project.",
+            "Causes py-build-cmake to cross-compile the project. See "
+            "https://tttapa.github.io/py-build-cmake/Cross-compilation.html "
+            "for more information.",
         ))
     cross_pth = get_cross_path()
     cross.insert_multiple([
@@ -261,7 +278,10 @@ def get_options(project_path: Path, *, test: bool = False):
                         "arch = 'linux_x86_64'",
                         default=NoDefaultValue('same as current interpreter')),
         PathConfigOption('toolchain_file',
-                         "CMake toolchain file to use.",
+                         "CMake toolchain file to use. See "
+                         "https://cmake.org/cmake/help/book/mastering-cmake"
+                         "/chapter/Cross%20Compiling%20With%20CMake.html for "
+                         "more information.",
                          default=RequiredValue(),
                          base_path=RelativeToCurrentConfig(project_path),
                          must_exist=not test,
@@ -335,20 +355,20 @@ def get_component_options(project_path: Path, *, test: bool = False):
                          must_exist=not test),
         ListOfStrConfigOption('build_presets',
                               "CMake presets to use for building. Passed as "
-                              "--preset <?> during the build phase, once for "
-                              "each preset.",
+                              "`--preset <?>` during the build phase, once "
+                              "for each preset.",
                               default=NoDefaultValue(),
                               convert_str_to_singleton=True),
         ListOfStrConfigOption('install_presets',
                               "CMake presets to use for installing. Passed as "
-                              "--preset <?> during the installation phase, "
+                              "`--preset <?>` during the installation phase, "
                               "once for each preset.",
                               default=RefDefaultValue(pth('build_presets'),
                                                       relative=True),
                               convert_str_to_singleton=True),
         ListOfStrConfigOption('build_args',
                               "Extra arguments passed to the build step.",
-                              "build_args = [\"-j\"]",
+                              "build_args = [\"-j\", \"--target\", \"foo\"]",
                               default=NoDefaultValue()),
         ListOfStrConfigOption('build_tool_args',
                               "Extra arguments passed to the build tool in the "
@@ -367,7 +387,7 @@ def get_component_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption("install_components",
                               "List of components to install, the install step "
                               "is executed once for each component, with the "
-                              "option --component <?>.",
+                              "option `--component <?>`.",
                               default=RequiredValue()),
     ]) # yapf: disable
 
