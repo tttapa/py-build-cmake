@@ -223,7 +223,7 @@ class ConfigOption:
         self.inherit_from: Optional[ConfPath] = inherit_from
         self.create_if_inheritance_target_exists = create_if_inheritance_target_exists
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return None
 
     def insert(self, opt: 'ConfigOption'):
@@ -472,7 +472,7 @@ class UncheckedConfigOption(ConfigOption):
 
 class StrConfigOption(ConfigOption):
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return 'string'
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
@@ -505,8 +505,11 @@ class EnumConfigOption(ConfigOption):
         super().__init__(name, description, example, default, inherit_from, create_if_inheritance_target_exists)
         self.options = options
 
-    def get_typename(self):
-        return "'" + "' | '".join(self.options) + "'"
+    def get_typename(self, md: bool = False):
+        if md:
+            return "`'" + "'` \| `'".join(self.options) + "'`"
+        else:
+            return "'" + "' | '".join(self.options) + "'"
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
                           selfpth: ConfPath, overridecfg: ConfigNode,
@@ -530,7 +533,7 @@ class EnumConfigOption(ConfigOption):
 
 class BoolConfigOption(ConfigOption):
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return 'bool'
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
@@ -585,7 +588,7 @@ class PathConfigOption(StrConfigOption):
         if self.base_path:
             assert os.path.isabs(self.base_path.project_path)
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return 'path' if self.is_folder else 'filepath'
 
     def check_path(self, cfg: ConfigNode, cfgpath):
@@ -651,7 +654,7 @@ class ListOfStrConfigOption(ConfigOption):
                          create_if_inheritance_target_exists)
         self.convert_str_to_singleton = convert_str_to_singleton
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return 'list'
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
@@ -686,7 +689,7 @@ class ListOfStrConfigOption(ConfigOption):
 
 class DictOfStrConfigOption(ConfigOption):
 
-    def get_typename(self):
+    def get_typename(self, md: bool = False):
         return 'dict'
 
     def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,

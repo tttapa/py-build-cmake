@@ -35,7 +35,7 @@ def help_print_md(pbc_opts: ConfigOption):
         print('| Option | Description | Type | Default |')
         print('|--------|-------------|------|---------|')
         for kk, vv in v.sub.items() or {}:
-            typename = (vv.get_typename() or '').replace('|', '\|')
+            typename = vv.get_typename(md=True) or ''
             print('|', f'`{kk}`', '|', _get_full_description(vv), '|',
                   typename, '|', f'`{get_default_str(vv)}`', '|')
         print()
