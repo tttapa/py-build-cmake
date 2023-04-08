@@ -110,6 +110,7 @@ have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-c
 If you need more examples, you can look at the following projects using
 py-build-cmake as their Python build backend:
 
+- [alpaqa](https://github.com/kul-optec/alpaqa/tree/develop)
 - [QPALM](https://github.com/kul-optec/QPALM)
 
 ## Planned features
