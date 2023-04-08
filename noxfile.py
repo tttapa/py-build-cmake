@@ -48,21 +48,21 @@ def editable(session: nox.Session):
     with session.chdir("examples/pybind11-project"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\ntype = \"wrapper\"")
+            f.write("[editable]\nmode = \"wrapper\"")
             f.flush()
             session.install("-e", ".", "--config-settings=--local=" + f.name)
         session.run("pytest")
     with session.chdir("examples/pybind11-project"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\ntype = \"hook\"")
+            f.write("[editable]\nmode = \"hook\"")
             f.flush()
             session.install("-e", ".", "--config-settings=--local=" + f.name)
         session.run("pytest")
     with session.chdir("examples/pybind11-project"):
         shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
         with tempfile.NamedTemporaryFile('w') as f:
-            f.write("[editable]\ntype = \"symlink\"")
+            f.write("[editable]\nmode = \"symlink\"")
             f.flush()
             session.install("-e", ".", "--config-settings=--local=" + f.name)
         session.run("pytest")

@@ -16,14 +16,14 @@ example:
 
 ```toml
 [tool.py-build-cmake.editable]
-type = "symlink"
+mode = "symlink"
 ```
 Alternatively, you can add it to your local configuration,
 `py-build-cmake.local.toml`:
 
 ```toml
 [editable]
-type = "symlink"
+mode = "symlink"
 ```
 
 > **Note**: only Python files are made “editable”. You'll still have to run

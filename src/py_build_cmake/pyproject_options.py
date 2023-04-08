@@ -53,11 +53,13 @@ def get_options(project_path: Path, *, test: bool = False):
             default=DefaultValueValue({}),
         ))
     editable.insert_multiple([
-        EnumConfigOption('type',
-                         "Mechanism for editable installations. "
+        EnumConfigOption('mode',
+                         "Mechanism to use for editable installations. "
                          "Either write a wrapper `__init__.py` file, install "
                          "an import hook, or install symlinks to the "
-                         "original files.",
+                         "original files. See https://tttapa.github.io"
+                         "/py-build-cmake/Editable-install.html for more "
+                         "information.",
                          default=DefaultValueValue("wrapper"),
                          options=["wrapper", "hook", "symlink"]),
     ])

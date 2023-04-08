@@ -692,7 +692,7 @@ def test_real_config_inherit_cross_cmake():
                         "directory": os.path.normpath("/project"),
                     },
                     "editable": {
-                        "type": "wrapper",
+                        "mode": "wrapper",
                     },
                     "sdist": {
                         "include": [],
@@ -903,7 +903,7 @@ def test_real_config_no_cross():
                         "directory": os.path.normpath("/project"),
                     },
                     "editable": {
-                        "type": "wrapper",
+                        "mode": "wrapper",
                     },
                     "sdist": {
                         "include": [],
@@ -1053,7 +1053,7 @@ def test_real_config_no_cmake():
                         "directory": os.path.normpath("/project"),
                     },
                     "editable": {
-                        "type": "wrapper",
+                        "mode": "wrapper",
                     },
                     "sdist": {
                         "include": [],
@@ -1121,7 +1121,7 @@ def test_real_config_local_override():
                         "directory": os.path.normpath("/project"),
                     },
                     "editable": {
-                        "type": "wrapper",
+                        "mode": "wrapper",
                     },
                     "sdist": {
                         "include": ["somefile*"],
@@ -1198,7 +1198,7 @@ def test_real_config_local_override_windows():
                         "directory": os.path.normpath("/project"),
                     },
                     "editable": {
-                        "type": "wrapper",
+                        "mode": "wrapper",
                     },
                     "sdist": {
                         "include": [],

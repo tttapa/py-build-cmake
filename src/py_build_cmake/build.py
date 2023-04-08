@@ -393,15 +393,15 @@ class _BuildBackend(object):
 
     def do_editable_install(self, cfg, paths: BuildPaths,
                             pkg: flit_core.common.Module):
-        type = cfg.editable["type"]
-        if type == "wrapper":
+        mode = cfg.editable["mode"]
+        if mode == "wrapper":
             self.write_editable_wrapper(paths.staging_dir, pkg)
-        elif type == "hook":
+        elif mode == "hook":
             self.write_editable_hook(paths.staging_dir, pkg),
-        elif type == "symlink":
+        elif mode == "symlink":
             self.write_editable_links(paths.staging_dir, pkg)
         else:
-            assert False, "Invalid editable type"
+            assert False, "Invalid editable mode"
 
     def write_editable_wrapper(self, staging_dir: Path,
                                pkg: flit_core.common.Module):
