@@ -34,7 +34,7 @@ The following sections go into the details of the different modes.
 
 ## Wrapper (default)
 
-The wrapper mode installs all files generated using CMake, but not the Python
+The `wrapper` mode installs all files generated using CMake, but not the Python
 source files in your package. To make these Python files available, a wrapper
 `__init__.py` file is installed that adds the source directory of your package
 to the `submodule_search_locations` path of the package, and then loads the
@@ -42,7 +42,7 @@ actual `__init__.py` script (the one in your source directory).
 Additionally, a `.pth` file is installed, containing the path to your source
 directory, so external tools and IDEs can locate the necessary files as well,
 without actually executing the wrapper script (although not all tools support
-packages spread out over multiple folders).
+packages spread out over multiple folders, see the `symlink` mode below).
 
 The file structure after installation is the following:
 
@@ -94,15 +94,20 @@ And the `my_package.pth` file contains the path to the source directory:
 
 ## Hook
 
-The hook mode does not install a “fake” `__init__.py` wrapper file. Instead, it
-uses a `.pth` file to point to the source directory. For pure-python packages,
-this suffices, but for packages that contain C extension modules, an extra step
-is required. The reason for this is that the package will be split up into two
-directories, the source directory where the Python source files live, and a
-directory in Python's `site-packages` directory where the C extension modules
-and other generated files are installed. To be able to locate these generated
-files, hook mode inserts a “path finder” hook into `sys.meta_path`. For more
-information, see https://docs.python.org/3/reference/import.html#the-meta-path.
+The `hook` mode uses a `.pth` file to point to the source directory. For
+pure-Python packages, this suffices, but for packages that contain C extension
+modules, an extra step is required. The reason for this is that the package
+will be split up into two directories, the source directory where the Python
+source files live, and a directory in Python's `site-packages` directory where
+the C extension modules and other generated files are installed. To be able to
+locate these generated files, `hook` mode inserts a “path finder” hook into
+`sys.meta_path`. For more information, see
+https://docs.python.org/3/reference/import.html#the-meta-path.
+
+The advantage of `hook` mode is that does not install a “fake” `__init__.py`
+wrapper file that might confuse some tools. The disadvantage is that the
+installed package does not include an `__init__.py` file at all, which might
+confuse some other tools.
 
 The file structure after installation is the following:
 
@@ -165,10 +170,11 @@ import my_package_editable_hook
 
 The disadvantage of the previous two methods is that they split up the package
 across different folders, and not all external tools and IDEs deal with this
-correctly. An alternative is to use the symlink mode, which installs all files
+correctly. An alternative is to use the `symlink` mode, which installs all files
 in the same folder, but uses symbolic links to the Python source files, rather
-than copying them. This mode only works if your operating system and file system
-support symbolic links.
+than copying them. While this mode avoids the tooling disadvantages of `wrapper`
+and `hook` mode, it only works if your operating system and file system support
+symbolic links.\*
 
 The file structure after installation is the following:
 ```text
@@ -191,3 +197,12 @@ site-packages                  (no .pth file here)
   │   └── ...
   └── ...
 ```
+
+---
+
+<small>
+
+(\*) Specifically, to create symbolic links on Windows without administrator
+rights, you need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+
+</small>
