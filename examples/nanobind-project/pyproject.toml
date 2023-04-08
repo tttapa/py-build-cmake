@@ -25,7 +25,7 @@ dynamic = ["version", "description"]
 add = "nanobind_project.add:main"
 
 [build-system]
-requires = ["py-build-cmake~=0.1.4", "nanobind@git+https://github.com/tttapa/nanobind.git@98bfa0df2cb93aa5596f85f121c2b4839f621b4a", "pybind11-stubgen"]
+requires = ["py-build-cmake~=0.1.4", "nanobind~=1.1.0", "pybind11-stubgen"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
