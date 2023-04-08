@@ -25,6 +25,7 @@ class Config:
     referenced_files: List[str] = field(default_factory=list)
     package_name: str = field(default='')
     module: Dict[str, str] = field(default_factory=dict)
+    editable: Dict[str, Any] = field(default_factory=dict)
     sdist: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     license: Dict[str, str] = field(default_factory=dict)
     cmake: Optional[Dict[str, Any]] = field(default=None)
@@ -141,6 +142,10 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
         cfg.module = tool_cfg[s]
     else:
         assert False, "Missing [tools.py-build-cmake.module] section"
+
+    s = 'editable'
+    if s in tool_cfg:
+        cfg.editable = tool_cfg[s]
 
     # Store the sdist folders (this is based on flit)
     def get_sdist_cludes(cfg):

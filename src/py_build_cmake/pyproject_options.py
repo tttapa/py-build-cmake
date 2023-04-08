@@ -45,6 +45,23 @@ def get_options(project_path: Path, *, test: bool = False):
                          must_exist=not test),
     ])
 
+    # [tool.py-build-cmake.editable]
+    editable = pbc.insert(
+        ConfigOption(
+            "editable",
+            "Defines how to perform an editable install (PEP 660).",
+            default=DefaultValueValue({}),
+        ))
+    editable.insert_multiple([
+        EnumConfigOption('type',
+                         "Mechanism for editable installations. "
+                         "Either write a wrapper `__init__.py` file, install "
+                         "an import hook, or install symlinks to the "
+                         "original files.",
+                         default=DefaultValueValue("wrapper"),
+                         options=["wrapper", "hook", "symlink"]),
+    ])
+
     # [tool.py-build-cmake.sdist]
     sdist = pbc.insert(
         ConfigOption(

@@ -52,7 +52,7 @@ class ConfigNode:
 
     def __init__(self,
                  value: ConfValue = None,
-                 sub: Dict[str, 'ConfigNode'] = None) -> None:
+                 sub: Optional[Dict[str, 'ConfigNode']] = None) -> None:
         self.value: ConfValue = value
         self.sub: Optional[Dict[str, 'ConfigNode']] = sub
 
@@ -491,6 +491,42 @@ class StrConfigOption(ConfigOption):
         elif not isinstance(cfg[cfgpath].value, str):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{str}, not {type(cfg[cfgpath].value)}')
+
+class EnumConfigOption(ConfigOption):
+
+    def __init__(self,
+                 name: str,
+                 description: str = '',
+                 example: str = '',
+                 default: DefaultValue = NoDefaultValue(),
+                 inherit_from: Optional[ConfPath] = None,
+                 create_if_inheritance_target_exists: bool = False,
+                 options: List[str] = []) -> None:
+        super().__init__(name, description, example, default, inherit_from, create_if_inheritance_target_exists)
+        self.options = options
+
+    def get_typename(self):
+        return "'" + "' | '".join(self.options) + "'"
+
+    def explicit_override(self, opts: 'ConfigOption', selfcfg: ConfigNode,
+                          selfpth: ConfPath, overridecfg: ConfigNode,
+                          overridepath: ConfPath):
+        assert not self.sub
+        assert not selfcfg.sub
+        assert not overridecfg.sub
+        selfcfg.value = deepcopy(overridecfg.value)
+
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        if cfg[cfgpath].sub:
+            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                              f'{str}, not {dict}')
+        elif not isinstance(cfg[cfgpath].value, str):
+            raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
+                              f'{str}, not {type(cfg[cfgpath].value)}')
+        if cfg[cfgpath].value not in self.options:
+            raise ConfigError(f'Value of {pth2str(cfgpath)} should be '
+                              'one of \'' + "', '".join(self.options) + '\'')
 
 class BoolConfigOption(ConfigOption):
 

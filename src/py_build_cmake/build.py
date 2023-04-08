@@ -222,7 +222,7 @@ class _BuildBackend(object):
         if not editable:
             self.copy_pkg_source_to(paths.staging_dir, pkg)
         else:
-            self.write_editable_wrapper(paths.staging_dir, pkg)
+            self.do_editable_install(cfg, paths, pkg)
 
         # Create dist-info folder
         distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
@@ -333,7 +333,8 @@ class _BuildBackend(object):
                        cfg.cross, package_info, native_install_dir)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
-            self.copy_native_install(paths.staging_dir, native_install_dir,
+            self.copy_native_install(paths.staging_dir,
+                                     native_install_dir,
                                      cfg.cross['copy_from_native_build'])
 
     def copy_native_install(self, staging_dir, native_install_dir,
@@ -358,13 +359,17 @@ class _BuildBackend(object):
     # --- Files installation --------------------------------------------------
 
     @staticmethod
-    def copy_pkg_source_to(staging_dir: Path, pkg: flit_core.common.Module):
+    def copy_pkg_source_to(staging_dir: Path, pkg: flit_core.common.Module,
+                           symlink: bool = False):
         """Copy the files of a Python package to the build directory."""
         for mod_file in pkg.iter_files():
             rel_path = os.path.relpath(mod_file, pkg.path.parent)
             dst = staging_dir / rel_path
             os.makedirs(dst.parent, exist_ok=True)
-            shutil.copy2(mod_file, dst, follow_symlinks=False)
+            if symlink:
+                dst.symlink_to(mod_file, target_is_directory=False)
+            else:
+                shutil.copy2(mod_file, dst, follow_symlinks=False)
 
     @staticmethod
     def write_license_files(license, srcdir: Path, distinfo_dir: Path):
@@ -385,6 +390,18 @@ class _BuildBackend(object):
             write_entry_points(entrypoints, f)
 
     # --- Editable installs ---------------------------------------------------
+
+    def do_editable_install(self, cfg, paths: BuildPaths,
+                            pkg: flit_core.common.Module):
+        type = cfg.editable["type"]
+        if type == "wrapper":
+            self.write_editable_wrapper(paths.staging_dir, pkg)
+        elif type == "hook":
+            self.write_editable_hook(paths.staging_dir, pkg),
+        elif type == "symlink":
+            self.write_editable_links(paths.staging_dir, pkg)
+        else:
+            assert False, "Invalid editable type"
 
     def write_editable_wrapper(self, staging_dir: Path,
                                pkg: flit_core.common.Module):
@@ -423,6 +440,49 @@ class _BuildBackend(object):
             shutil.copy2(py_typed, tmp_pkg)
         # Write a path file so IDEs find the correct files as well
         (staging_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
+
+    def write_editable_hook(self, staging_dir: Path,
+                            pkg: flit_core.common.Module):
+        # Write a hook that finds the installed compiled extension modules
+        pkg_hook: Path = staging_dir / (pkg.name + '_editable_hook')
+        os.makedirs(pkg_hook, exist_ok=True)
+        content = f"""\
+            import sys, inspect, os
+            from importlib.machinery import PathFinder
+
+            class EditablePathFinder(PathFinder):
+                def __init__(self, name, extra_path):
+                    self.name = name
+                    self.extra_path = extra_path
+                def find_spec(self, name, path=None, target=None):
+                    if name.split('.', 1)[0] != self.name:
+                        return None
+                    path = (path or []) + [self.extra_path]
+                    return super().find_spec(name, path, target)
+
+            def install(name: str):
+                source_path = os.path.abspath(inspect.getsourcefile(EditablePathFinder))
+                source_dir = os.path.dirname(source_path)
+                installed_path = os.path.join(source_dir, '..', name)
+                sys.meta_path.insert(0, EditablePathFinder(name, installed_path))
+
+            install('{pkg.name}')
+            """
+        (pkg_hook / '__init__.py').write_text(textwrap.dedent(content),
+                                              encoding='utf-8')
+        # Write a path file to find the development files
+        content = f"""\
+            {str(pkg.path.parent)}
+            import {pkg.name}_editable_hook"""
+        (staging_dir / f'{pkg.name}.pth').write_text(
+            textwrap.dedent(content))
+        
+    def write_editable_links(self, staging_dir: Path,
+                             pkg: flit_core.common.Module):
+        self.copy_pkg_source_to(staging_dir, pkg, symlink=True)
+        pth_file = staging_dir / f'{pkg.name}.pth'
+        pth_file.parent.mkdir(exist_ok=True)
+        pth_file.write_text(str(staging_dir))
 
     # --- Invoking CMake builds -----------------------------------------------
 
@@ -532,10 +592,14 @@ class _BuildBackend(object):
 
     @staticmethod
     def print_config_verbose(cfg):
-        print("\npy-build-cmake options")
-        print("======================")
+        from . import __version__
+        print("\npy-build-cmake (" + __version__ + ")")
+        print("options")
+        print("================================")
         print("module:")
         pprint(cfg.module)
+        print("editable:")
+        pprint(cfg.editable)
         print("sdist:")
         pprint(cfg.sdist)
         print("cmake:")
@@ -544,7 +608,7 @@ class _BuildBackend(object):
         pprint(cfg.stubgen)
         print("cross:")
         pprint(cfg.cross)
-        print("======================\n")
+        print("================================\n")
 
     @staticmethod
     def normalize_version(version):
