@@ -1,7 +1,22 @@
 # Minimal
 
-Minimal example using CMake and py-build-cmake to build a Python extension 
-module in C.
+Minimal example using CMake and py-build-cmake to build and package a Python
+extension module in C. It defines a simple C function that adds two
+integers together, and exposes this function in a Python module:
+
+```c
+/* This is the addition function we wish to expose to Python. */
+long add(long a, long b) {
+    return a + b;
+}
+```
+```py
+# This is how we call the addition function from Python
+from minimal.add_module import add
+
+def test_add_positive():
+    assert add(1, 2) == 3
+```
 
 > **Note**: While useful as an example, I don't recommend writing extension
 > modules by hand.  
