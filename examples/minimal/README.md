@@ -13,10 +13,13 @@ The remainder of this tutorial first goes over the directory structure of the
 package and the necessary files ([§ Package structure](#package-structure)),
 then it explains the options in the `pyproject.toml` configuration file for
 specifying metadata and build options ([§ Configuration](#configuration)),
-and concludes with instructions to use `build` and `pip` to build and install
-the package ([§ Building and installing](#building-and-installing)).
+and it concludes with instructions to use PyPA `build` and `pip` to build and
+install the package ([§ Building and installing](#building-and-installing)).
 
 ## Package structure
+
+We'll quickly describe the purpose of all files in this example package.
+More general information about Python packages can be found at https://packaging.python.org/.
 
 ```text
 minimal
@@ -37,45 +40,37 @@ minimal
    └── README.md
 ```
 
-### README.md
-
+`README.md`  
 This file. Will be included in the Python package as the long description and 
 will be shown on your PyPI project page.
 
-### pyproject.toml
-
+`pyproject.toml`  
 Defines how the project is built and contains all the necessary metadata for
 your package. Specifies CMake options, which files to include in the package,
 as well as options for other tools. This file is covered in much more detail
 below, because it is the main way you will interact with py-build-cmake's build
 process.
 
-### LICENSE
-
+`LICENSE`  
 The software license for your package. Is included in the Python package.
 
-### CMakeLists.txt
-
+`CMakeLists.txt`  
 The CMake script for developer builds (used by e.g. your IDE while you're
 developing your package).
 
-### src
-
+`src`  
 The folder containing all C, C++ and Fortran code, built using CMake.
 
-### src/CMakeLists.txt
-
+`src/CMakeLists.txt`  
 The main CMake script for the C, C++ and Fortran code. It defines how the 
 Python extension module will be built and installed. This is the entry point
 used by py-build-cmake (as defined in pyproject.toml).
 
-### src/add\_module.c
-
+`src/add_module.c`  
 The source file to be compiled. In practice, this can be much more involved,
 e.g. multiple directories, separate libraries, etc.
 
-### src/\_add\_module.pyi
-
+`src/_add_module.pyi`  
 Python stub file ([PEP 561](https://peps.python.org/pep-0561/)). Defines the
 types and signatures of the functions and classes in your C extension module.
 It is used by IDEs and other tools for type checking and autocompletion.
@@ -84,34 +79,34 @@ consider using a tool to generate stubs automatically, as demonstrated in the
 [pybind11-project](../pybind11-project) and [nanobind-project](../nanobind-project)
 examples.
 
-### src-python
+`src-python`  
+Directory for the Python source files of your package.
 
-The Python source files of your package.
+`src-python/minimal/__init__.py`  
+Makes this folder a Python package. Also contains the brief description and the
+version number that will be read by py-build-cmake and included in the package
+metadata.
 
-### src-python/minimal/\_\_init\_\_.py
-
-Makes this a Python package. Also contains the brief description and the version
-number that will be read by py-build-cmake and included in the package metadata.
-
-### src-python/minimal/add\_module.py
-
+`src-python/minimal/add_module.py`  
 Python module that just wraps the C extension module and imports all its
 contents.
 
-### src-python/minimal/py.typed
-
+`src-python/minimal/py.typed`  
 Tells [mypy](https://github.com/python/mypy) to provide type checking for your
 package, and to look at the stub files.
 
-### test/test\_add\_module.py
-
+`test/test_add_module.py`  
 Unit tests for testing the extension module using
 [pytest](https://github.com/pytest-dev/pytest).
+
+---
 
 ## Configuration
 
 We'll now go over the contents of the contents of pyproject.toml in a bit more
-detail.
+detail. Keep in mind that you can always consult the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html)
+for more information about specific options. More information about the
+`pyproject.toml` format can be found at https://packaging.python.org/en/latest/specifications/declaring-project-metadata/.
 
 ```toml
 [build-system]
@@ -120,8 +115,8 @@ build-backend = "py_build_cmake.build"
 ```
 
 The `build-system` section defines how tools like `pip` and `build` (called
-build front-ends) should build your package. We state that the package should be
-built using the `build` module of the `py_build_cmake` package as a backend,
+_build front-ends_) should build your package. We state that the package should
+be built using the `build` module of the `py_build_cmake` package as a backend,
 and that this package should be installed before building by using the 
 `requires` option.
 If you have other build-time requirements, you can add them to the list.
@@ -158,7 +153,7 @@ https://packaging.python.org/en/latest/specifications/declaring-project-metadata
 for the full documentation. This metadata will be displayed on PyPI when you
 publish your package.
 
-Note that the README.md and LICENSE files are referenced here, this will cause
+Note that the README.md and LICENSE files are referenced here: this will cause
 them to be included in the final package.
 
 The `version` and `description` options are set to `dynamic`, which will cause
@@ -169,7 +164,9 @@ for an example.
 
 If your package has runtime dependencies, you can specify them here as well.
 When a user installs your package, e.g. using `pip install`, `pip` will install
-these dependencies as well.
+these dependencies as well.  
+It is recommended to add version ranges for your dependencies, see [PEP 631](https://peps.python.org/pep-0631)
+for details.
 
 ```toml
 [tool.py-build-cmake.module]
@@ -208,7 +205,7 @@ The `minimum_version` option defines which version of CMake is required to build
 this project. If this version or newer is not found in the PATH, it is added as
 a build requirement and installed by the build frontend (e.g. pip) before 
 building.  
-There are many other options, see the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html)
+There are many other options, see the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
 for more details.
 
 ```toml
@@ -227,6 +224,8 @@ testpaths = ["test"]
 You can also add configuration options for other Python tools, for example, for
 `pytest`. See https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml for
 details.
+
+---
 
 ## Building and installing
 
