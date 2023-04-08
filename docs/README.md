@@ -7,6 +7,7 @@ backend for creating Python packages with extensions built using CMake.
 - [Installation](Installation.md)
 - [Configuration options](Config.md)
 - [Package structure](Package-structure.md)
+- [Editable Install / Development Mode](Editable-install.md)
 - [Command-line interface](CLI.md)
 - [Debugging](Debug.md)
 - [Extra component build backend](Components.md)
