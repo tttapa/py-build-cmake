@@ -33,7 +33,7 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `minimum_version` | Minimum required CMake version. If this version is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `minimum_version = "3.18"` | string | `none` |
-| `build_type` | Build type passed to the configuration step, as `-DCMAKE\_BUILD\_TYPE=<?>`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
+| `build_type` | Build type passed to the configuration step, as `-DCMAKE_BUILD_TYPE=<?>`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
 | `config` | Configuration type passed to the build and install steps, as `--config <?>`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `config = ["Debug", "Release"]` | list | `build_type` |
 | `preset` | CMake preset to use for configuration. Passed as `--preset <?>` during the configuration phase. | string | `none` |
 | `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `preset` |

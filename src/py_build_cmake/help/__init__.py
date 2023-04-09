@@ -52,14 +52,15 @@ def _get_full_description(vv: ConfigOption):
     return descr
 
 
-def _md_escape(descr):
+def _md_escape(descr: str):
     descr = html.escape(descr)
-    descr = descr.replace('\n', '<br/>')
     descr = descr.replace('*', '\\*')
     descr = descr.replace('_', '\\_')
     def unescape(m: re.Match):
-        return html.unescape(m.group(0))
+        m0 = m.group(0)
+        return html.unescape(m0.replace('\\_', '_').replace('\\*', '*'))
     descr = re.sub(r'`.*`', unescape, descr)
+    descr = descr.replace('\n', '<br/>')
     return descr
 
 
