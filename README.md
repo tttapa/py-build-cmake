@@ -19,6 +19,7 @@ backend for creating Python packages with extensions built using CMake.
  - Support for multiple installation configurations and components
  - Cross-compilation support
  - No dependency on [setuptools](https://github.com/pypa/setuptools)
+ - Compatible with [cibuildwheel](https://github.com/pypa/cibuildwheel) for building Wheels
 
 ## Installation
 
