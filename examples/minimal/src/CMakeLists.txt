@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 project(minimal)
 
 # Find the Python development files
-find_package(Python3 REQUIRED COMPONENTS Development)
+find_package(Python3 REQUIRED COMPONENTS Development.Module)
 
 # Add the module to compile
 Python3_add_library(_add_module MODULE "add_module.c")

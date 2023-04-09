@@ -4,7 +4,7 @@
 function(find_pybind11_python_first)
 
     # Query Python to see if it knows where the headers are
-    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
     if (NOT pybind11_ROOT OR NOT EXISTS ${pybind11_ROOT})
         message(STATUS "Detecting pybind11 CMake location")
         execute_process(COMMAND ${Python3_EXECUTABLE}
