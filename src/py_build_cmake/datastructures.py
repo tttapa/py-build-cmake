@@ -15,3 +15,4 @@ class BuildPaths:
     wheel_dir: Path
     temp_dir: Path
     staging_dir: Path
+    pkg_staging_dir: Path

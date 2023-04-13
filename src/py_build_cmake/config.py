@@ -143,9 +143,12 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     else:
         assert False, "Missing [tools.py-build-cmake.module] section"
 
-    s = 'editable'
-    if s in tool_cfg:
-        cfg.editable = tool_cfg[s]
+    # Store the editable configuration
+    cfg.editable = {
+        os: tool_cfg[os]['editable']
+        for os in ("linux", "windows", "mac")
+        if os in tool_cfg and 'editable' in tool_cfg[os]
+    }
 
     # Store the sdist folders (this is based on flit)
     def get_sdist_cludes(cfg):

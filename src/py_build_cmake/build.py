@@ -2,7 +2,7 @@ import platform
 from pprint import pprint
 import os
 from pathlib import Path
-import re
+from copy import copy
 import shutil
 import textwrap
 from typing import Any, Dict, List, Optional
@@ -206,6 +206,7 @@ class _BuildBackend(object):
             wheel_dir=Path(wheel_directory_),
             temp_dir=Path(tmp_build_dir),
             staging_dir=Path(tmp_build_dir) / 'staging',
+            pkg_staging_dir=Path(tmp_build_dir) / 'staging',
         )
 
         # Load metadata from the pyproject.toml file
@@ -222,11 +223,11 @@ class _BuildBackend(object):
         if not editable:
             self.copy_pkg_source_to(paths.staging_dir, pkg)
         else:
-            self.do_editable_install(cfg, paths, pkg)
+            paths = self.do_editable_install(cfg, paths, pkg)
 
         # Create dist-info folder
         distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
-        distinfo_dir = paths.staging_dir / distinfo_dir
+        distinfo_dir = paths.pkg_staging_dir / distinfo_dir
         os.makedirs(distinfo_dir, exist_ok=True)
 
         # Write metadata
@@ -290,7 +291,7 @@ class _BuildBackend(object):
         whl.version = package_info.version
         pure = not cfg.cmake
         libdir = 'purelib' if pure else 'platlib'
-        staging_dir = paths.staging_dir
+        staging_dir = paths.pkg_staging_dir
         whl_paths = {'prefix': str(staging_dir), libdir: str(staging_dir)}
         whl.dirname = paths.wheel_dir
         if pure:
@@ -393,15 +394,16 @@ class _BuildBackend(object):
 
     def do_editable_install(self, cfg, paths: BuildPaths,
                             pkg: flit_core.common.Module):
-        mode = cfg.editable["mode"]
+        mode = cfg.editable[self.get_os_name()]["mode"]
         if mode == "wrapper":
             self.write_editable_wrapper(paths.staging_dir, pkg)
         elif mode == "hook":
             self.write_editable_hook(paths.staging_dir, pkg),
         elif mode == "symlink":
-            self.write_editable_links(paths.staging_dir, pkg)
+            paths = self.write_editable_links(paths, pkg)
         else:
             assert False, "Invalid editable mode"
+        return paths
 
     def write_editable_wrapper(self, staging_dir: Path,
                                pkg: flit_core.common.Module):
@@ -477,12 +479,19 @@ class _BuildBackend(object):
         (staging_dir / f'{pkg.name}.pth').write_text(
             textwrap.dedent(content))
         
-    def write_editable_links(self, staging_dir: Path,
+    def write_editable_links(self, paths: BuildPaths,
                              pkg: flit_core.common.Module):
-        self.copy_pkg_source_to(staging_dir, pkg, symlink=True)
-        pth_file = staging_dir / f'{pkg.name}.pth'
+        paths = copy(paths)
+        cache_dir = paths.source_dir / '.py-build-cmake_cache'
+        cache_dir.mkdir(exist_ok=True)
+        paths.staging_dir = cache_dir / 'editable'
+        shutil.rmtree(paths.staging_dir, ignore_errors=True)
+        paths.staging_dir.mkdir()
+        self.copy_pkg_source_to(paths.staging_dir, pkg, symlink=True)
+        pth_file = paths.pkg_staging_dir / f'{pkg.name}.pth'
         pth_file.parent.mkdir(exist_ok=True)
-        pth_file.write_text(str(staging_dir))
+        pth_file.write_text(str(paths.staging_dir))
+        return paths
 
     # --- Invoking CMake builds -----------------------------------------------
 

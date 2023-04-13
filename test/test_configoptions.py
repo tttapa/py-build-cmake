@@ -760,6 +760,9 @@ def test_real_config_inherit_cross_cmake():
                         },
                     },
                     "linux": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -788,6 +791,9 @@ def test_real_config_inherit_cross_cmake():
                         },
                     },
                     "windows": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -816,6 +822,9 @@ def test_real_config_inherit_cross_cmake():
                         }
                     },
                     "mac": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -932,6 +941,9 @@ def test_real_config_no_cross():
                         },
                     },
                     "linux": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -960,6 +972,9 @@ def test_real_config_no_cross():
                         },
                     },
                     "windows": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -988,6 +1003,9 @@ def test_real_config_no_cross():
                         }
                     },
                     "mac": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -1060,18 +1078,27 @@ def test_real_config_no_cmake():
                         "exclude": [],
                     },
                     "linux": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
                         },
                     },
                     "windows": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
                         },
                     },
                     "mac": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -1128,18 +1155,27 @@ def test_real_config_local_override():
                         "exclude": [],
                     },
                     "linux": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": ["somefile*"],
                             "exclude": [],
                         },
                     },
                     "windows": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": ["somefile*"],
                             "exclude": [],
                         },
                     },
                     "mac": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": ["somefile*"],
                             "exclude": [],
@@ -1166,12 +1202,16 @@ def test_real_config_local_override_windows():
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
+                    # "editable":{},
                     # "sdist":{},
                 }
             }
         },
         "py-build-cmake.local.toml": {
             "windows": {
+                "editable": {
+                    "mode": "hook",
+                },
                 "sdist": {
                     "include": ["somefile*"]
                 },
@@ -1205,18 +1245,27 @@ def test_real_config_local_override_windows():
                         "exclude": [],
                     },
                     "linux": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
                         },
                     },
                     "windows": {
+                        "editable": {
+                            "mode": "hook",
+                        },
                         "sdist": {
                             "include": ["somefile*"],
                             "exclude": [],
                         },
                     },
                     "mac": {
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -1227,6 +1276,9 @@ def test_real_config_local_override_windows():
         },
         "py-build-cmake.local.toml": {
             "windows": {
+                "editable": {
+                    "mode": "hook",
+                },
                 "sdist": {
                     "include": ["somefile*"]
                 }
