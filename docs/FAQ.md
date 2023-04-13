@@ -83,5 +83,51 @@ use a tool like `twine` to upload them to PyPI:
 - [Python Packaging User Guide: Uploading the distribution archives](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)
 - https://twine.readthedocs.io/en/latest/
 
-For each Python version, you'll have to upload a single source distribution, and
-one binary wheel for each platform you wish to support.
+You'll have to upload a single source distribution, and one binary wheel for
+each combination of Python version and platform you wish to support
+(see next section).
+
+## How to build my package for many Python versions, operating systems, and architectures?
+
+You can use a tool like [cibuildwheel](https://github.com/pypa/cibuildwheel) to
+automate the build process for this large matrix of platform/version
+combinations. Continuous integration providers like GitHub Actions also provide
+job matrix capabilities. For example, the [alpaqa](https://github.com/kul-optec/alpaqa/blob/c8c1d5d37a770428ae4785356110af874567d3ce/.github/workflows/wheel.yml#L75-L166)
+library uses the following matrix to build the package for multiple
+architectures and Python versions:
+
+```yaml
+strategy:
+  matrix:
+    pypy: ['', pypy]
+    python-version: ['3.8', '3.9', '3.10', '3.11']
+    host: [x86_64-centos7-linux-gnu, armv7-neon-linux-gnueabihf, armv6-rpi-linux-gnueabihf, aarch64-rpi3-linux-gnu]
+    exclude:
+      - pypy: pypy
+        python-version: '3.10'
+      - pypy: pypy
+        python-version: '3.11'
+      - pypy: pypy
+        host: armv7-neon-linux-gnueabihf
+      - pypy: pypy
+        host: armv6-rpi-linux-gnueabihf
+```
+
+The same workflow file also contains some steps test the resulting wheels and
+upload them to to PyPI. It's a good idea to check that the package version
+matches the Git tag before uploading anything. Also note the use of a [secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+for the PyPI access token.
+
+To build Universal Wheels for macOS (that work on both Intel- and ARM-based
+machines), you can [set the following environment variables](https://github.com/pypa/cibuildwheel/blob/d018570bc4bdc792a1c7ba1e720d118686fa145b/cibuildwheel/macos.py#L250-L252):
+
+```sh
+export MACOSX_DEPLOYMENT_TARGET='10.14'
+export _PYTHON_HOST_PLATFORM='macosx-10.14-universal2'
+export ARCHFLAGS='-arch arm64 -arch x86_64'
+```
+
+To build packages for multiple architectures on Linux, I recommend [cross-compilation](./Cross-compilation.html).
+This ensures that your packge doesn't depend on any libraries (including GLIBC) from the build server.
+You can use the cross-compilers from <https://github.com/tttapa/docker-cross-python>, which also include
+pre-built cross-compiled versions of Python.

@@ -176,7 +176,11 @@ than copying them. While this mode avoids the tooling disadvantages of `wrapper`
 and `hook` mode, it only works if your operating system and file system support
 symbolic links.\*
 
+The files and symlinks are installed in a hidden
+`.py-build-cmake_cache/editable` folder inside of the project's source directory,
+and a `.pth` file is installed so Python can locate them.
 The file structure after installation is the following:
+
 ```text
 my_project
   ├── pyproject.toml
@@ -184,19 +188,26 @@ my_project
   │   └── my_package
   │       ├── __init__.py
   │       └── my_module.py
+  ├── .py-build-cmake_cache
+  │   └── editable
+  │       └── my_package
+  │           ├── __init__.py -> /full/path/to/my_project/src/__init__.py
+  │           ├── my_module.py -> /full/path/to/my_project/src/my_module.py
+  │           ├── _my_c_extension.pyi
+  │           └── _my_c_extension.so
   └── ...
 ```
 ```text
-site-packages                  (no .pth file here)
-  ├── my_package
-  │   ├── __init__.py -> /full/path/to/my_project/src/__init__.py
-  │   ├── my_module.py -> /full/path/to/my_project/src/my_module.py
-  │   ├── _my_c_extension.pyi
-  │   └── _my_c_extension.so
+site-packages
+  ├── my_package.pth           (no my_package folder here)
   ├── my_package-1.2.3.dist-info
   │   └── ...
   └── ...
 ```
+
+The Wheel package format does not support symbolic links, so only a `.pth` file
+is included in the Wheel, and the actual files and symlinks are copied to a
+hidden folder in the project's source directory, [as proposed by PEP 660](https://peps.python.org/pep-0660/#what-to-put-in-the-wheel).
 
 ---
 
