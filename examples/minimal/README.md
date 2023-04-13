@@ -125,7 +125,7 @@ for more information about specific options. More information about the
 
 ```toml
 [build-system]
-requires = ["py-build-cmake~=0.1.5"]
+requires = ["py-build-cmake~=0.1.6"]
 build-backend = "py_build_cmake.build"
 ```
 
@@ -237,7 +237,7 @@ minversion = "6.0"
 testpaths = ["test"]
 ```
 You can also add configuration options for other Python tools, for example, for
-`pytest`. See https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml for
+`pytest`. See https://docs.pytest.org/en/7.2.x/reference/customize.html#pyproject-toml for
 details.
 
 ---

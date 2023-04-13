@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(pybind11-project VERSION 0.1.5)
+project(pybind11-project VERSION 0.1.6)
 set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
