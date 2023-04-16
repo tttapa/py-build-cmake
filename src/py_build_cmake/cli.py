@@ -11,8 +11,8 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         from .cmd_runner import CommandRunner
         source_dir = Path(directory or '.').resolve()
         config_settings = {
-            "--cross": cross,
-            "--local": local,
+            "--cross": list(cross),
+            "--local": list(local),
         }
         # Read configuration and package metadata
         cfg, pkg, metadata = backend.read_all_metadata(source_dir,
@@ -76,12 +76,14 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
 @click.option("--local",
               type=click.Path(exists=False, file_okay=True, dir_okay=False),
               required=False,
+              multiple=True,
               help="Specifies a toml file that overrides the "
               "tool.py-build-cmake section of pyproject.toml, "
               "similar to py-build-cmake.local.toml.")
 @click.option("--cross",
               type=click.Path(exists=False, file_okay=True, dir_okay=False),
               required=False,
+              multiple=True,
               help="Specifies a toml file that overrides the "
               "tool.py-build-cmake.cross section of pyproject.toml, "
               "similar to py-build-cmake.cross.toml.")
