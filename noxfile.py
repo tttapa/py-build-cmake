@@ -35,6 +35,22 @@ def example_projects(session: nox.Session):
         session.run("pytest")
 
 
+@nox.session
+def component(session: nox.Session):
+    session.install("-U", "pip", "build", "pytest")
+    dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
+    if dist_dir is None:
+        session.run("python", "-m", "build", ".")
+        dist_dir = "dist"
+    session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
+    session.install("py-build-cmake~=0.1.7")
+    with session.chdir("examples/minimal-debug-component"):
+        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+        session.install(".")
+        session.install("./debug")
+        session.run("pytest")
+
+
 def test_editable(session: nox.Session, mode: str):
     tmpdir = os.path.realpath(session.create_tmp())
     try:

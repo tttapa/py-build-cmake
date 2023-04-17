@@ -1,0 +1,3 @@
+# Python stub file for the _add_module extension module
+
+def add(a: int, b: int) -> int: ...
