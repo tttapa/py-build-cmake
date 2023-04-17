@@ -19,6 +19,10 @@
 - `nanobind-project`: Very similar to `pybind11_project`, but using the more
     modern [nanobind](https://github.com/wjakob/nanobind) library to generate
     the Python bindings instead of pybind11.
+- [`minimal-debug-component`](./minimal-debug-component):
+    Largely the same as the [minimal](../minimal) example, but uses 
+    py-build-cmake's `build_component` backend to package the debugging symbols
+    in a separate, optional package.
 
 To see how py-build-cmake is used in real-world projects, have a look at the
 following packages:

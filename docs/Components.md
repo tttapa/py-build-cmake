@@ -5,7 +5,8 @@ The `py_build_cmake.build_component` build backend allows building packages cont
 
 A possible use case is distributing debug symbols: these files can be large, and most users don't need them, so distributing them in a separate package makes sense.
 
-You can find an example in the [alpaqa](https://pypi.org/project/alpaqa) package: <https://github.com/kul-optec/alpaqa/blob/main/python/alpaqa-debug/pyproject.toml>
+See [examples/minimal-debug-component](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-debug-component) for more information.
+
 ## component
 Options for a separately packaged component. 
 

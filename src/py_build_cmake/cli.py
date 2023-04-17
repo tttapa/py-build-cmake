@@ -206,9 +206,9 @@ def format(md, component):
               "can be large, and most users don't need them, so distributing "
               "them in a separate package makes sense.\n")
         pr_md(
-            "You can find an example in the "
-            "[alpaqa](https://pypi.org/project/alpaqa) package: "
-            "<https://github.com/kul-optec/alpaqa/blob/main/python/alpaqa-debug/pyproject.toml>"
+            "See [examples/minimal-debug-component](https://github.com/tttapa/"
+            "py-build-cmake/tree/main/examples/minimal-debug-component) "
+            "for more information.\n"
         )
         help_print(get_component_options(Path('/'))[help_pth])
 
