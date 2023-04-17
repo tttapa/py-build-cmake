@@ -1,1 +1,1 @@
-from minimal._add_module import *
+from ._add_module import *
