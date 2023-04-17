@@ -142,6 +142,7 @@ class _BuildComponentBackend(object):
             wheel_dir=Path(wheel_directory_),
             temp_dir=Path(tmp_build_dir),
             staging_dir=Path(tmp_build_dir) / 'staging',
+            pkg_staging_dir=Path(tmp_build_dir) / 'staging',
         )
 
         # Load the config from the main pyproject.toml file
@@ -156,7 +157,7 @@ class _BuildComponentBackend(object):
 
         # Create dist-info folder
         distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
-        distinfo_dir = paths.staging_dir / distinfo_dir
+        distinfo_dir = paths.pkg_staging_dir / distinfo_dir
         os.makedirs(distinfo_dir, exist_ok=True)
 
         # Write metadata
