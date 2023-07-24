@@ -14,12 +14,27 @@ def python_sysconfig_platform_to_cmake_platform_win(
     https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html"""
     cmake_platform = {
         None: None,
-        'win32': 'x86',
+        'win32': 'Win32',
         'win-amd64': 'x64',
-        'win-arm32': 'arm',
-        'win-arm64': 'arm64',
+        'win-arm32': 'ARM',
+        'win-arm64': 'ARM64',
     }.get(plat_name)
     return cmake_platform
+
+
+def python_sysconfig_platform_to_cmake_processor_win(
+        plat_name: Optional[str]) -> Optional[str]:
+    """Convert a sysconfig platform string to the corresponding value of
+    https://cmake.org/cmake/help/latest/variable/CMAKE_HOST_SYSTEM_PROCESSOR.html"""
+    # The value of %PROCESSOR_ARCHITECTURE% on Windows
+    cmake_proc = {
+        None: None,
+        'win32': 'x86',
+        'win-amd64': 'AMD64',
+        'win-arm32': 'ARM',
+        'win-arm64': 'ARM64',
+    }.get(plat_name)
+    return cmake_proc
 
 
 def platform_to_platform_tag(plat: str) -> str:
@@ -56,7 +71,8 @@ def get_python_lib(
         return None
 
 
-def cross_compile_win(config: ConfigNode, plat_name, library_dirs, cmake_platform):
+def cross_compile_win(config: ConfigNode, plat_name, library_dirs,
+                      cmake_platform, cmake_proc):
     warnings.warn(
         f"DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. Automatically enabling cross-compilation for {cmake_platform}"
     )
@@ -67,7 +83,7 @@ def cross_compile_win(config: ConfigNode, plat_name, library_dirs, cmake_platfor
         'cmake': {
             'options': {
                 'CMAKE_SYSTEM_NAME': 'Windows',
-                'CMAKE_SYSTEM_PROCESSOR': cmake_platform,
+                'CMAKE_SYSTEM_PROCESSOR': cmake_proc,
                 'CMAKE_GENERATOR_PLATFORM': cmake_platform,
             }
         },
@@ -87,9 +103,14 @@ def cross_compile_win(config: ConfigNode, plat_name, library_dirs, cmake_platfor
 
 def handle_cross_win(config: ConfigNode, plat_name: str,
                      library_dirs: Optional[Union[str, List[str]]]):
-    cmake_platform = python_sysconfig_platform_to_cmake_platform_win(plat_name)
-    if cmake_platform is not None:
-        cross_compile_win(config, plat_name, library_dirs, cmake_platform)
+    plat_proc = (python_sysconfig_platform_to_cmake_platform_win(plat_name),
+                 python_sysconfig_platform_to_cmake_processor_win(plat_name))
+    if all(plat_proc):
+        cross_compile_win(config, plat_name, library_dirs, *plat_proc)
+    else:
+        warnings.warn(
+            f"Cross-compilation setup skipped because the platform {plat_name} is unknown"
+        )
 
 
 def handle_dist_extra_config_win(config: ConfigNode, dist_extra_conf: str):
