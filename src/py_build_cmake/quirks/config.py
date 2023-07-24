@@ -8,6 +8,20 @@ from typing import Optional, Union, List
 from ..config_options import ConfigNode, pth
 
 
+def python_sysconfig_platform_to_cmake_platform_win(
+        plat_name: Optional[str]) -> Optional[str]:
+    """Convert a sysconfig platform string to the corresponding value of
+    https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html"""
+    cmake_platform = {
+        None: None,
+        'win32': 'x86',
+        'win-amd64': 'x64',
+        'win-arm32': 'arm',
+        'win-arm64': 'arm64',
+    }.get(plat_name)
+    return cmake_platform
+
+
 def platform_to_platform_tag(plat: str) -> str:
     """https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-tag"""
     return plat.replace('.', '_').replace('-', '_')
@@ -42,7 +56,7 @@ def get_python_lib(
         return None
 
 
-def cross_compile_win(config, plat_name, library_dirs, cmake_platform):
+def cross_compile_win(config: ConfigNode, plat_name, library_dirs, cmake_platform):
     warnings.warn(
         f"DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. Automatically enabling cross-compilation for {cmake_platform}"
     )
@@ -74,12 +88,7 @@ def cross_compile_win(config, plat_name, library_dirs, cmake_platform):
 
 def handle_cross_win(config: ConfigNode, plat_name: str,
                      library_dirs: Optional[Union[str, List[str]]]):
-    cmake_platform = {
-        'win32': 'x86',
-        'win-amd64': 'x64',
-        'win-arm32': 'arm',
-        'win-arm64': 'arm64',
-    }.get(plat_name)
+    cmake_platform = python_sysconfig_platform_to_cmake_platform_win(plat_name)
     if cmake_platform is not None:
         cross_compile_win(config, plat_name, library_dirs, cmake_platform)
 

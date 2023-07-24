@@ -3,11 +3,15 @@ from dataclasses import dataclass
 import os
 from string import Template
 import sys
+import sysconfig
 from typing import Dict, List, Optional
 import re
+import warnings
 
 from .datastructures import PackageInfo
 from .cmd_runner import CommandRunner
+from .quirks.config import python_sysconfig_platform_to_cmake_platform_win
+
 @dataclass
 class CMakeSettings:
     working_dir: Path
@@ -22,12 +26,14 @@ class CMakeSettings:
 @dataclass
 class CMakeConfigureSettings:
     environment: dict
-    toolchain_file: Optional[Path]
     build_type: Optional[str]
     options: Dict[str, str]
     args: List[str]
     preset: Optional[str]
     generator: Optional[str]
+    toolchain_file: Optional[Path]
+    python_prefix: Optional[Path]
+    python_library: Optional[Path]
 
 
 @dataclass
@@ -102,6 +108,13 @@ class CMaker:
             if not self.cross_compiling():
                 pfx = sys.prefix + ';' + sys.base_prefix
                 yield prefix + '_ROOT_DIR=' + pfx
+            else:
+                if self.conf_settings.python_prefix:
+                    pfx = str(self.conf_settings.python_prefix)
+                    yield prefix + '_ROOT_DIR=' + pfx
+                if self.conf_settings.python_library:
+                    lib = str(self.conf_settings.python_library)
+                    yield prefix + '_LIBRARY=' + lib
         opts = []
         if self.cmake_settings.find_python: opts += list(get_opts('Python'))
         if self.cmake_settings.find_python3: opts += list(get_opts('Python3'))
@@ -133,6 +146,17 @@ class CMaker:
                 self.get_configure_options_env(env) +
                 self.get_configure_options_toolchain() +
                 self.get_configure_options_settings())
+    
+    def get_cmake_generator_platform(self) -> List[str]:
+        if self.cmake_settings.os == "windows" and not self.cross_compiling():
+            plat = sysconfig.get_platform()
+            cmake_plat = python_sysconfig_platform_to_cmake_platform_win(plat)
+            if cmake_plat:
+                return ['-A', cmake_plat]
+            else:
+                warnings.warn("Unknown platform, CMake generator platform "
+                              "option (-A) will not be set")
+        return []
 
     def get_configure_command(self, env):
         options = self.get_configure_options(env)
@@ -144,6 +168,7 @@ class CMaker:
             cmd += ['-B', str(self.cmake_settings.build_path)]
         if self.conf_settings.generator:
             cmd += ['-G', self.conf_settings.generator]
+        cmd += self.get_cmake_generator_platform()
         cmd += [f for opt in options for f in ('-D', opt)]
         cmd += self.conf_settings.args
         return cmd
