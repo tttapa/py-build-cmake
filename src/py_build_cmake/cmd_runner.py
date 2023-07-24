@@ -18,6 +18,7 @@ class CommandRunner:
         if self.verbose:
             pprint([*args])
             pprint(kwargs)
+            print(flush=True)
         elif self.dry:
             from shlex import join
             print(join(args[0]))
