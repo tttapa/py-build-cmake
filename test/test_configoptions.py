@@ -510,7 +510,7 @@ def test_config_node():
     }
     nodes = co.ConfigNode.from_dict(d)
     for pth, val in nodes.iter_dfs():
-        print(pth, val)
+        print(pth, val.value)
     assert nodes[co.pth('')] is nodes
     assert nodes[co.pth('')].value is None
     assert nodes[co.pth('trunk')].value is None
@@ -731,6 +731,9 @@ def test_real_config_inherit_cross_cmake():
                         "linux_aarch64",
                         "toolchain_file":
                         os.path.normpath("/project/aarch64-linux-gnu.cmake"),
+                        "editable": {
+                            "mode": "wrapper",
+                        },
                         "sdist": {
                             "include": [],
                             "exclude": [],
@@ -1219,11 +1222,19 @@ def test_real_config_local_override_windows():
         }
     }
     cfg = co.ConfigNode.from_dict(d)
+    print("\ninitial")
+    pprint(cfg.to_dict())
     opts.verify_all(cfg)
+    print("\nverified")
+    pprint(cfg.to_dict())
     opts.override_all(cfg)
+    print("\noverridden")
+    pprint(cfg.to_dict())
     opts.inherit_all(cfg)
+    print("\ninherited")
     pprint(cfg.to_dict())
     opts.update_default_all(cfg)
+    print("\ndefaulted")
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {

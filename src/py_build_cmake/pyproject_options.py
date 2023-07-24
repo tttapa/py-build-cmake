@@ -260,6 +260,9 @@ def get_options(project_path: Path, *, test: bool = False):
         ))
     cross_pth = get_cross_path()
     cross.insert_multiple([
+        EnumConfigOption('os',
+                         "Operating system configuration to inherit from.",
+                         options=["linux", "mac", "windows"]),
         StrConfigOption('implementation',
                         "Identifier for the Python implementation.",
                         "implementation = 'cp' # CPython",
@@ -277,6 +280,20 @@ def get_options(project_path: Path, *, test: bool = False):
                         "dashes, only underscores, all lowercase).",
                         "arch = 'linux_x86_64'",
                         default=NoDefaultValue('same as current interpreter')),
+        PathConfigOption('prefix',
+                         "Root path of the Python installation.",
+                         base_path=RelativeToCurrentConfig(project_path),
+                         allow_abs=True,
+                         is_folder=True,
+                         must_exist=True,
+                         default=NoDefaultValue()),
+        PathConfigOption('library',
+                         "Python library file (.so on Linux, .lib on Windows).",
+                         base_path=RelativeToCurrentConfig(project_path),
+                         allow_abs=True,
+                         is_folder=False,
+                         must_exist=True,
+                         default=NoDefaultValue()),
         PathConfigOption('toolchain_file',
                          "CMake toolchain file to use. See "
                          "https://cmake.org/cmake/help/book/mastering-cmake"
@@ -299,6 +316,10 @@ def get_options(project_path: Path, *, test: bool = False):
                               "cross-compiling.\n"
                               "May include the '*' wildcard "
                               "(but not '**' for recursive patterns)."),
+        ConfigOption("editable",
+                     f"Override editable options when cross-compiling.",
+                     inherit_from=editable_pth,
+                     create_if_inheritance_target_exists=True),
         ConfigOption("sdist",
                      "Override sdist options when cross-compiling.",
                      inherit_from=sdist_pth,

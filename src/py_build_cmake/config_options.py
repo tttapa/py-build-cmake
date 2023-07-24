@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 import os
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
@@ -55,6 +56,7 @@ class ConfigNode:
                  sub: Optional[Dict[str, 'ConfigNode']] = None) -> None:
         self.value: ConfValue = value
         self.sub: Optional[Dict[str, 'ConfigNode']] = sub
+        self.inherited = False
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -73,7 +75,7 @@ class ConfigNode:
         return {k: v.to_dict() for k, v in self.sub.items()}
 
     def iter_dfs(self, path: ConfPath = ()):
-        yield path, self.value
+        yield path, self
         if self.sub is not None:
             for name, sub in self.sub.items():
                 for y in sub.iter_dfs(path + (name, )):
@@ -106,7 +108,7 @@ class ConfigNode:
             tgt.sub = {}
         return tgt.sub.setdefault(basename(path), default)
 
-    def contains(self, path: ConfPath):
+    def contains(self, path: Union[str, ConfPath]):
         try:
             self[path]
             return True
@@ -302,20 +304,38 @@ class ConfigOption:
             # options
             selfcfg = self.create_parent_config_for_inheritance(
                 rootopts, cfg, selfpth)
+            # If this option still does not exist, our work is done.
             if selfcfg is None:
+                return
+            # If we already inherited, don't do it again
+            if selfcfg.inherited:
                 return
 
             # Find the option we inherit from and make sure it exists
             superopt = rootopts.get(superpth)
             if superopt is None:
                 raise ValueError(f'{pth2str(superpth)} is not a valid option')
+            
+            # If our super option inherits from other options, carry out that
+            # inheritance first
+            # TODO: this doesn't work if we inherit from a subtree whose
+            # parent inherits from something else, we might need to traverse
+            # up the tree until we find a parent of our superopt that also
+            # inherits. This is stretching it for the current implementation,
+            # though, so I'll keep this for the future rewrite.
+            superopt.inherit(rootopts, cfg, superpth)
 
             # Create a copy of the config of our super-option and override it
             # with our own config
             supercfg = deepcopy(supercfg)
+            # Clear the inherited flags from the copied tree
+            for _, s in supercfg.iter_dfs():
+                if s is not None:
+                    s.inherited = False
             superopt.explicit_override(self, supercfg, superpth, selfcfg,
                                        selfpth)
             selfcfg.sub = supercfg.sub
+            selfcfg.inherited = True
         if self.sub:
             for name, sub in self.sub.items():
                 sub.inherit(rootopts, cfg, selfpth + (name, ))
@@ -352,23 +372,31 @@ class ConfigOption:
                           overridepath: ConfPath):
         # The default ConfigOption simply overrides all of its sub-options, but
         # this function is overridden by specific subclasses.
-        if overridecfg.sub is None:
-            return  # No sub-options, so nothing to override
+
+        # If this option inherits from another, we have to use that other
+        # option's option tree, because this one is empty
+        if self.inherit_from is not None:
+            assert not self.sub, "Inheriting options should not have sub-options"
+            actual_opts = rootopts[self.inherit_from]
+            return actual_opts.explicit_override(rootopts, selfcfg, selfpth, overridecfg, overridepath)
+        # If no sub-options are set in the config, there is nothing to override
+        if not overridecfg.sub:
+            return
+        # Actually override all sub-options
         for name, subopt in self.sub.items():
             assert isinstance(selfcfg, ConfigNode)
             assert isinstance(overridecfg, ConfigNode)
+            # Only override sub-options that are present in the overrider's config
             if name not in overridecfg.sub:
                 continue
+            # Add the overrider's option to our own config
             subselfcfg = selfcfg.setdefault((name, ), ConfigNode())
             subpath = selfpth + (name, )
             suboverridepath = overridepath + (name, )
             suboverridecfg = overridecfg.sub[name]
+            # Override our subconfig by the overrider's subconfig
             subopt.explicit_override(rootopts, subselfcfg, subpath,
                                      suboverridecfg, suboverridepath)
-        if self.inherit_from is not None:
-            superopt = rootopts[self.inherit_from]
-            superopt.explicit_override(rootopts, selfcfg, selfpth, overridecfg,
-                                       overridepath)
 
     def override(self, rootopts: 'ConfigOption', cfg: ConfigNode,
                  selfpath: ConfPath):
@@ -418,7 +446,8 @@ class ConfigOption:
             rootopts: 'ConfigOption',
             cfg: ConfigNode,
             cfgpath: ConfPath,
-            selfpath: Optional[ConfPath] = None
+            selfpath: Optional[ConfPath] = None,
+            max_depth: int = 5,
     ) -> Optional[DefaultValueWrapper]:
         if selfpath is None:
             selfpath = cfgpath
@@ -434,7 +463,7 @@ class ConfigOption:
             # Find the default value for this option
             default = self.default.get_default(rootopts, self, cfg, cfgpath,
                                                selfpath)
-            # If the parent is set in the config, set this value as well
+            # Only set our value if our parent exists
             if default is not None and cfg.contains(parent(cfgpath)):
                 cfgval = cfg.setdefault(cfgpath, ConfigNode())
                 cfgval.value = default.value
@@ -442,6 +471,8 @@ class ConfigOption:
                     self.verify(rootopts, cfg, cfgpath)
             result = default
 
+        # If we inherited from another option, apply the defaults of our
+        # target to our own config
         if self.inherit_from is not None:
             targetopt = rootopts.get(self.inherit_from)
             if targetopt is None:
@@ -449,13 +480,15 @@ class ConfigOption:
                                  f"nonexisting option "
                                  f"{pth2str(self.inherit_from)}")
             for p, opt in targetopt.iter_dfs():
-                if opt.inherit_from is not None:
-                    # TODO: this might be too restrictive, but we need to break
-                    # the recursion somehow ...
+                inherits = opt.inherit_from is None
+                max_depth_left = max_depth if inherits else max_depth - 1
+                if max_depth_left == 0:
+                    warnings.warn("Maximum inheritance reached")
                     continue
                 optpth = joinpth(self.inherit_from, p)
                 newcfgpth = joinpth(cfgpath, p)
-                opt.update_default(rootopts, cfg, newcfgpth, optpth)
+                opt.update_default(rootopts, cfg, newcfgpth, optpth,
+                                   max_depth=max_depth_left)
 
         return result
 
@@ -507,7 +540,7 @@ class EnumConfigOption(ConfigOption):
 
     def get_typename(self, md: bool = False):
         if md:
-            return "`'" + "'` \| `'".join(self.options) + "'`"
+            return "`'" + "'` \\| `'".join(self.options) + "'`"
         else:
             return "'" + "' | '".join(self.options) + "'"
 
@@ -747,20 +780,20 @@ class OverrideConfigOption(ConfigOption):
         pass
 
     def override(self, rootopts: ConfigOption, cfg: ConfigNode,
-                 cfgpath: ConfPath):
-        selfcfg = cfg.get(cfgpath, None)
+                 selfpth: ConfPath):
+        selfcfg = cfg.get(selfpth, None)
         if selfcfg is None:
             return
         elif selfcfg.value is None and selfcfg.sub is None:
             return
-        super().override(rootopts, cfg, cfgpath)
+        super().override(rootopts, cfg, selfpth)
         curropt = rootopts[self.targetpath]
         self.create_parent_config(cfg, self.targetpath)
         currcfg = cfg[self.targetpath]
-        overridecfg = cfg[cfgpath]
+        overridecfg = cfg[selfpth]
         # Override the config at those paths by our own config
         curropt.explicit_override(rootopts, currcfg, self.targetpath,
-                                  overridecfg, cfgpath)
+                                  overridecfg, selfpth)
 
     @staticmethod
     def create_parent_config(cfg: ConfigNode, path: ConfPath):

@@ -107,7 +107,7 @@ class _BuildBackend(object):
         from flit_core.sdist import SdistBuilder  # type: ignore
         rel_pyproject = os.path.relpath(pyproject, src_dir)
         extra_files = [str(rel_pyproject)] + cfg.referenced_files
-        sdist_cfg = cfg.sdist[self.get_os_name()]
+        sdist_cfg = cfg.sdist['cross' if cfg.cross else self.get_os_name()]
         sdist_builder = SdistBuilder(
             pkg,
             metadata=metadata,
@@ -394,7 +394,8 @@ class _BuildBackend(object):
 
     def do_editable_install(self, cfg, paths: BuildPaths,
                             pkg: flit_core.common.Module):
-        mode = cfg.editable[self.get_os_name()]["mode"]
+        edit_cfg = cfg.editable['cross' if cfg.cross else self.get_os_name()]
+        mode = edit_cfg["mode"]
         if mode == "wrapper":
             self.write_editable_wrapper(paths.staging_dir, pkg)
         elif mode == "hook":

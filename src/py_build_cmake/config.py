@@ -125,6 +125,12 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     tree_config = ConfigNode.from_dict(config_files)
     opts.verify_all(tree_config)
     opts.override_all(tree_config)
+
+    from .quirks.config import config_quirks
+    tool_tree_cfg = tree_config[('pyproject.toml', 'tool', 'py-build-cmake')]
+    config_quirks(tool_tree_cfg)
+
+    set_up_os_specific_cross_inheritance(opts, tool_tree_cfg)
     opts.inherit_all(tree_config)
     opts.update_default_all(tree_config)
     dictcfg = cast(dict, tree_config.to_dict())
@@ -159,18 +165,14 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
 
     cfg.sdist = {
         os: get_sdist_cludes(tool_cfg[os])
-        for os in ("linux", "windows", "mac")
+        for os in ("linux", "windows", "mac", "cross")
+        if os in tool_cfg
     }
-    s = 'cross'
-    if s in tool_cfg:
-        cfg.sdist.update({
-            'cross': get_sdist_cludes(tool_cfg[s]),
-        })
 
     # Store the CMake configuration
     cfg.cmake = {
         os: tool_cfg[os]['cmake']
-        for os in ("linux", "windows", "mac")
+        for os in ("linux", "windows", "mac", "cross")
         if os in tool_cfg and 'cmake' in tool_cfg[os]
     }
 
@@ -186,11 +188,23 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
         f = 'copy_from_native_build'
         if f in cfg.cross:
             cfg.cross[f] = _check_glob_patterns(cfg.cross[f], f'cross.{f}')
-        cfg.cmake.update({
-            'cross': cfg.cross.pop('cmake', {}),
-        })
 
     return cfg
+
+
+def set_up_os_specific_cross_inheritance(opts, tool_tree_cfg):
+    """Update the cross-compilation configuration to inherit from the
+    corresponding OS configuration."""
+    cross_os = None
+    try:
+        cross_os = tool_tree_cfg[('cross', 'os')].value
+    except KeyError:
+        pass
+    if cross_os is not None:
+        for s in ('cmake', 'sdist', 'editable'):
+            inherit_from = get_tool_pbc_path() + (cross_os, s)
+            print(opts[get_cross_path() + (s, )].inherit_from, '->', inherit_from)
+            opts[get_cross_path() + (s, )].inherit_from = inherit_from
 
 
 @dataclass
