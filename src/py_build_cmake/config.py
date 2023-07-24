@@ -5,7 +5,6 @@ import warnings
 from typing import Any, Dict, List, Optional, Set, cast
 from pathlib import Path
 from flit_core.config import ConfigError, read_pep621_metadata  # type: ignore
-from flit_core.config import _check_glob_patterns  # type: ignore
 from distlib.util import normalize_name  # type: ignore
 
 from .config_options import ConfigNode, OverrideConfigOption
@@ -159,8 +158,8 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     # Store the sdist folders (this is based on flit)
     def get_sdist_cludes(cfg):
         return {
-            cl + '_patterns': _check_glob_patterns(cfg['sdist'][cl], cl)
-            for cl in ('include', 'exclude')
+            clude + '_patterns': cfg['sdist'][clude]
+            for clude in ('include', 'exclude')
         }
 
     cfg.sdist = {
@@ -185,9 +184,6 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
     s = 'cross'
     if s in tool_cfg:
         cfg.cross = tool_cfg[s]
-        f = 'copy_from_native_build'
-        if f in cfg.cross:
-            cfg.cross[f] = _check_glob_patterns(cfg.cross[f], f'cross.{f}')
 
     return cfg
 

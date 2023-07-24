@@ -9,7 +9,7 @@ from .build import _BuildBackend
 from .datastructures import BuildPaths, PackageInfo
 from .cmd_runner import CommandRunner
 
-import flit_core.config
+from flit_core.config import ConfigError  # type: ignore
 
 
 class _BuildComponentBackend(object):
@@ -86,9 +86,9 @@ class _BuildComponentBackend(object):
         try:
             cfg = config.read_component_config(pyproject_path)
             if cfg.dynamic_metadata:
-                raise flit_core.config.ConfigError(
+                raise ConfigError(
                     "Dynamic metadata not supported for components.")
-        except flit_core.config.ConfigError as e:
+        except ConfigError as e:
             e.args = ("\n"
                       "\n"
                       "\t❌ Error in user configuration:\n"

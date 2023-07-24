@@ -8,6 +8,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 import os
 import warnings
+import re
+import os.path as osp
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
@@ -315,7 +317,7 @@ class ConfigOption:
             superopt = rootopts.get(superpth)
             if superopt is None:
                 raise ValueError(f'{pth2str(superpth)} is not a valid option')
-            
+
             # If our super option inherits from other options, carry out that
             # inheritance first
             # TODO: this doesn't work if we inherit from a subtree whose
@@ -378,7 +380,8 @@ class ConfigOption:
         if self.inherit_from is not None:
             assert not self.sub, "Inheriting options should not have sub-options"
             actual_opts = rootopts[self.inherit_from]
-            return actual_opts.explicit_override(rootopts, selfcfg, selfpth, overridecfg, overridepath)
+            return actual_opts.explicit_override(rootopts, selfcfg, selfpth,
+                                                 overridecfg, overridepath)
         # If no sub-options are set in the config, there is nothing to override
         if not overridecfg.sub:
             return
@@ -442,12 +445,12 @@ class ConfigOption:
         self.inherit(self, cfg, ())
 
     def update_default(
-            self,
-            rootopts: 'ConfigOption',
-            cfg: ConfigNode,
-            cfgpath: ConfPath,
-            selfpath: Optional[ConfPath] = None,
-            max_depth: int = 5,
+        self,
+        rootopts: 'ConfigOption',
+        cfg: ConfigNode,
+        cfgpath: ConfPath,
+        selfpath: Optional[ConfPath] = None,
+        max_depth: int = 5,
     ) -> Optional[DefaultValueWrapper]:
         if selfpath is None:
             selfpath = cfgpath
@@ -487,7 +490,10 @@ class ConfigOption:
                     continue
                 optpth = joinpth(self.inherit_from, p)
                 newcfgpth = joinpth(cfgpath, p)
-                opt.update_default(rootopts, cfg, newcfgpth, optpth,
+                opt.update_default(rootopts,
+                                   cfg,
+                                   newcfgpth,
+                                   optpth,
                                    max_depth=max_depth_left)
 
         return result
@@ -525,6 +531,7 @@ class StrConfigOption(ConfigOption):
             raise ConfigError(f'Type of {pth2str(cfgpath)} should be '
                               f'{str}, not {type(cfg[cfgpath].value)}')
 
+
 class EnumConfigOption(ConfigOption):
 
     def __init__(self,
@@ -535,7 +542,8 @@ class EnumConfigOption(ConfigOption):
                  inherit_from: Optional[ConfPath] = None,
                  create_if_inheritance_target_exists: bool = False,
                  options: List[str] = []) -> None:
-        super().__init__(name, description, example, default, inherit_from, create_if_inheritance_target_exists)
+        super().__init__(name, description, example, default, inherit_from,
+                         create_if_inheritance_target_exists)
         self.options = options
 
     def get_typename(self, md: bool = False):
@@ -563,6 +571,7 @@ class EnumConfigOption(ConfigOption):
         if cfg[cfgpath].value not in self.options:
             raise ConfigError(f'Value of {pth2str(cfgpath)} should be '
                               'one of \'' + "', '".join(self.options) + '\'')
+
 
 class BoolConfigOption(ConfigOption):
 
@@ -718,6 +727,45 @@ class ListOfStrConfigOption(ConfigOption):
         elif not all(isinstance(el, str) for el in cfg[cfgpath].value):
             raise ConfigError(f'Type of elements in {pth2str(cfgpath)} should '
                               f'be {str}')
+
+
+class DirPatternsConfigOption(ListOfStrConfigOption):
+
+    def __init__(self,
+                 name: str,
+                 description: str = '',
+                 example: str = '',
+                 default: DefaultValue = NoDefaultValue(),
+                 inherit_from: Optional[ConfPath] = None,
+                 create_if_inheritance_target_exists: bool = False,
+                 convert_str_to_singleton=False) -> None:
+        super().__init__(name, description, example, default, inherit_from,
+                         create_if_inheritance_target_exists,
+                         convert_str_to_singleton)
+
+    def verify(self, rootopts: 'ConfigOption', cfg: ConfigNode,
+               cfgpath: ConfPath):
+        # Based on https://github.com/pypa/flit/blob/f7496a50debdfa393e39f8e51d328deabcd7ae7e/flit_core/flit_core/config.py#L215
+        super().verify(rootopts, cfg, cfgpath)
+        # Windows filenames can't contain these (nor * or ?, but they are part of
+        # glob patterns) - https://stackoverflow.com/a/31976060/434217
+        bad_chars = re.compile(r'[\000-\037<>:"\\]')
+        pattern_list = cfg[cfgpath].value
+        for i, pattern in enumerate(pattern_list):
+            if bad_chars.search(pattern):
+                raise ConfigError(f"Pattern '{pattern}' in {pth2str(cfgpath)} "
+                                  "contains bad characters (<>:\"\\ or "
+                                  "control characters)")
+            # Normalize the path
+            normp = osp.normpath(pattern)
+            # Make sure that the path is relative and inside of the project
+            if osp.isabs(normp):
+                raise ConfigError(f"Pattern '{pattern}' in {pth2str(cfgpath)} "
+                                  "should be relative")
+            if normp.startswith('..' + os.sep):
+                raise ConfigError(f"Pattern '{pattern}' in {pth2str(cfgpath)} "
+                                  "cannot refer to the parent directory (..)")
+            pattern_list[i] = normp
 
 
 class DictOfStrConfigOption(ConfigOption):

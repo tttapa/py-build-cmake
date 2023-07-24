@@ -77,16 +77,16 @@ def get_options(project_path: Path, *, test: bool = False):
         ))
     sdist_pth = pth('pyproject.toml/tool/py-build-cmake/sdist')
     sdist.insert_multiple([
-        ListOfStrConfigOption('include',
-                              "Files and folders to include in the source "
-                              "distribution. May include the '*' wildcard "
-                              "(but not '**' for recursive patterns).",
-                              default=DefaultValueValue([])),
-        ListOfStrConfigOption('exclude',
-                              "Files and folders to exclude from the source "
-                              "distribution. May include the '*' wildcard "
-                              "(but not '**' for recursive patterns).",
-                              default=DefaultValueValue([])),
+        DirPatternsConfigOption('include',
+                                "Files and folders to include in the source "
+                                "distribution. May include the '*' wildcard "
+                                "(but not '**' for recursive patterns).",
+                                default=DefaultValueValue([])),
+        DirPatternsConfigOption('exclude',
+                                "Files and folders to exclude from the source "
+                                "distribution. May include the '*' wildcard "
+                                "(but not '**' for recursive patterns).",
+                                default=DefaultValueValue([])),
     ])  # yapf: disable
 
     # [tool.py-build-cmake.cmake]
@@ -304,18 +304,18 @@ def get_options(project_path: Path, *, test: bool = False):
                          must_exist=not test,
                          allow_abs=True,
                          is_folder=False),
-        ListOfStrConfigOption('copy_from_native_build',
-                              "If set, this will cause a native version of the "
-                              "CMake project to be built and installed in a "
-                              "temporary directory first, and the files in this "
-                              "list will be copied to the final cross-compiled "
-                              "package. This is useful if you need binary "
-                              "utilities that run on the build system while "
-                              "cross-compiling, or for things like stubs for "
-                              "extension modules that cannot be generated while "
-                              "cross-compiling.\n"
-                              "May include the '*' wildcard "
-                              "(but not '**' for recursive patterns)."),
+        DirPatternsConfigOption('copy_from_native_build',
+                                "If set, this will cause a native version of "
+                                "the CMake project to be built and installed "
+                                "in a temporary directory first, and the "
+                                "files in this list will be copied to the "
+                                "final cross-compiled package. This is useful "
+                                "if you need binary utilities that run on the "
+                                "build system while cross-compiling, or for "
+                                "things like stubs for extension modules that "
+                                "cannot be generated while cross-compiling.\n"
+                                "May include the '*' wildcard "
+                                "(but not '**' for recursive patterns)."),
         ConfigOption("editable",
                      f"Override editable options when cross-compiling.",
                      inherit_from=editable_pth,

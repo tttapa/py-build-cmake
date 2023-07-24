@@ -14,8 +14,8 @@ from . import cmake
 from .datastructures import BuildPaths, PackageInfo
 from .cmd_runner import CommandRunner
 
-import flit_core.common  # type: ignore
-import flit_core.config  # type: ignore
+from flit_core.common import Module as flit_Module  # type: ignore
+from flit_core.config import ConfigError  # type: ignore
 from distlib.version import NormalizedVersion  # type: ignore
 
 _CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
@@ -95,11 +95,11 @@ class _BuildBackend(object):
         self.parse_config_settings(config_settings)
 
         # Load metadata
-        from flit_core.common import Module, make_metadata
+        from flit_core.common import make_metadata
         pyproject = src_dir / 'pyproject.toml'
         cfg = self.read_config(pyproject, config_settings, self.verbose)
         import_name = cfg.module['name']
-        pkg = Module(import_name, src_dir / cfg.module['directory'])
+        pkg = flit_Module(import_name, src_dir / cfg.module['directory'])
         metadata = make_metadata(pkg, cfg)
         metadata.version = self.normalize_version(metadata.version)
 
@@ -156,7 +156,7 @@ class _BuildBackend(object):
                       "cross-compilation overrides:")
                 pprint(overrides)
             cfg = config.read_config(pyproject_path, overrides)
-        except flit_core.config.ConfigError as e:
+        except ConfigError as e:
             e.args = ("\n"
                       "\n"
                       "\t❌ Error in user configuration:\n"
@@ -253,10 +253,10 @@ class _BuildBackend(object):
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        from flit_core.common import Module, make_metadata, ProblemInModule
+        from flit_core.common import make_metadata, ProblemInModule
         cfg = _BuildBackend.read_config(src_dir / 'pyproject.toml',
                                         config_settings, verbose)
-        pkg = Module(cfg.module['name'], src_dir / cfg.module['directory'])
+        pkg = flit_Module(cfg.module['name'], src_dir / cfg.module['directory'])
         try:
             metadata = make_metadata(pkg, cfg)
         except ImportError as e:
@@ -334,8 +334,7 @@ class _BuildBackend(object):
                        cfg.cross, package_info, native_install_dir)
         # Finally, move the files from the native build to the staging area
         if native_install_dir:
-            self.copy_native_install(paths.staging_dir,
-                                     native_install_dir,
+            self.copy_native_install(paths.staging_dir, native_install_dir,
                                      cfg.cross['copy_from_native_build'])
 
     def copy_native_install(self, staging_dir, native_install_dir,
@@ -360,7 +359,8 @@ class _BuildBackend(object):
     # --- Files installation --------------------------------------------------
 
     @staticmethod
-    def copy_pkg_source_to(staging_dir: Path, pkg: flit_core.common.Module,
+    def copy_pkg_source_to(staging_dir: Path,
+                           pkg: flit_Module,
                            symlink: bool = False):
         """Copy the files of a Python package to the build directory."""
         for mod_file in pkg.iter_files():
@@ -392,8 +392,7 @@ class _BuildBackend(object):
 
     # --- Editable installs ---------------------------------------------------
 
-    def do_editable_install(self, cfg, paths: BuildPaths,
-                            pkg: flit_core.common.Module):
+    def do_editable_install(self, cfg, paths: BuildPaths, pkg: flit_Module):
         edit_cfg = cfg.editable['cross' if cfg.cross else self.get_os_name()]
         mode = edit_cfg["mode"]
         if mode == "wrapper":
@@ -406,8 +405,7 @@ class _BuildBackend(object):
             assert False, "Invalid editable mode"
         return paths
 
-    def write_editable_wrapper(self, staging_dir: Path,
-                               pkg: flit_core.common.Module):
+    def write_editable_wrapper(self, staging_dir: Path, pkg: flit_Module):
         """Write a fake __init__.py file that points to the development 
         folder."""
         tmp_pkg: Path = staging_dir / pkg.name
@@ -444,8 +442,7 @@ class _BuildBackend(object):
         # Write a path file so IDEs find the correct files as well
         (staging_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
 
-    def write_editable_hook(self, staging_dir: Path,
-                            pkg: flit_core.common.Module):
+    def write_editable_hook(self, staging_dir: Path, pkg: flit_Module):
         # Write a hook that finds the installed compiled extension modules
         pkg_hook: Path = staging_dir / (pkg.name + '_editable_hook')
         os.makedirs(pkg_hook, exist_ok=True)
@@ -477,11 +474,9 @@ class _BuildBackend(object):
         content = f"""\
             {str(pkg.path.parent)}
             import {pkg.name}_editable_hook"""
-        (staging_dir / f'{pkg.name}.pth').write_text(
-            textwrap.dedent(content))
-        
-    def write_editable_links(self, paths: BuildPaths,
-                             pkg: flit_core.common.Module):
+        (staging_dir / f'{pkg.name}.pth').write_text(textwrap.dedent(content))
+
+    def write_editable_links(self, paths: BuildPaths, pkg: flit_Module):
         paths = copy(paths)
         cache_dir = paths.source_dir / '.py-build-cmake_cache'
         cache_dir.mkdir(exist_ok=True)
