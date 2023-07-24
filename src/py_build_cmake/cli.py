@@ -13,13 +13,16 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         cross_env = list()
         if os.getenv("PY_BUILD_CMAKE_CROSS"):
             cross_env = os.getenv("PY_BUILD_CMAKE_CROSS").split(';')
+        print(f'{cross_env = }')
         local_env = list()
         if os.getenv("PY_BUILD_CMAKE_LOCAL"):
             local_env = os.getenv("PY_BUILD_CMAKE_LOCAL").split(';')
+        print(f'{local_env = }')
         config_settings = {
             "--cross": list(cross) + cross_env,
             "--local": list(local) + local_env,
         }
+        print(config_settings)
         # Read configuration and package metadata
         cfg, pkg, metadata = backend.read_all_metadata(source_dir,
                                                        config_settings,
@@ -38,6 +41,7 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         cmake_cfg, native_cmake_cfg = backend.get_cmake_configs(cfg)
         cmake_cfg = native_cmake_cfg if native else cmake_cfg
         cross_cfg = None if native else cfg.cross
+        print(f'{cfg.cross = }')
         # Override the build folder
         if build_path is not None:
             cmake_cfg['build_path'] = str(build_path)
