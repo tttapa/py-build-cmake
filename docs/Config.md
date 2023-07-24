@@ -127,3 +127,13 @@ The same flag may appear multiple times, for example:
 python -m build . -C--local=conf-A.toml -C--local=conf-B.toml
 ```
 For PyPA pip, you can use the `--config-settings` flag instead.
+
+You may also use `PY_BUILD_CMAKE_LOCAL` or `PY_BUILD_CMAKE_CROSS` environmental variables to include additional config files:
+
+```sh
+PY_BUILD_CMAKE_CROSS=/path/to/my-cross-config.toml python -m build .
+```
+You may add multiple config files, using semicolon to separate their paths:
+```sh
+PY_BUILD_CMAKE_LOCAL=conf-A.toml;conf-B.toml python -m build .
+```
