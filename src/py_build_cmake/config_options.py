@@ -332,7 +332,7 @@ class ConfigOption:
             for _, s in supercfg.iter_dfs():
                 if s is not None:
                     s.inherited = False
-            superopt.explicit_override(self, supercfg, superpth, selfcfg,
+            superopt.explicit_override(rootopts, supercfg, superpth, selfcfg,
                                        selfpth)
             selfcfg.sub = supercfg.sub
             selfcfg.inherited = True
