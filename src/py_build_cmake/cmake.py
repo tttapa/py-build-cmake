@@ -96,10 +96,12 @@ class CMaker:
         """Flags to help CMake find the right version of Python."""
         def get_opts(prefix):
             yield prefix + '_EXECUTABLE:FILEPATH=' + sys.executable
+            yield prefix + '_FIND_REGISTRY=NEVER'
+            yield prefix + '_FIND_FRAMEWORK=NEVER'
+            yield prefix + '_FIND_STRATEGY=LOCATION'
             if not self.cross_compiling():
-                yield prefix + '_ROOT_DIR:PATH=' + sys.prefix
-                yield prefix + '_FIND_REGISTRY=NEVER'
-                yield prefix + '_FIND_STRATEGY=LOCATION'
+                pfx = sys.prefix + ';' + sys.base_prefix
+                yield prefix + '_ROOT_DIR=' + pfx
         opts = []
         if self.cmake_settings.find_python: opts += list(get_opts('Python'))
         if self.cmake_settings.find_python3: opts += list(get_opts('Python3'))
