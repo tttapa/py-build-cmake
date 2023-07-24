@@ -73,6 +73,11 @@ def get_python_lib(
 
 def cross_compile_win(config: ConfigNode, plat_name, library_dirs,
                       cmake_platform, cmake_proc):
+    """Update the configuration to include a cross-compilation configuration
+    that builds for the given platform and processor. If library_dirs contains
+    a compatible Python library, it is also included in the configuration, as
+    well as the path to the Python installation's root directory, so CMake is
+    able to locate Python correctly."""
     warnings.warn(
         f"DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. Automatically enabling cross-compilation for {cmake_platform}"
     )
@@ -103,6 +108,8 @@ def cross_compile_win(config: ConfigNode, plat_name, library_dirs,
 
 def handle_cross_win(config: ConfigNode, plat_name: str,
                      library_dirs: Optional[Union[str, List[str]]]):
+    """Try to configure cross-compilation for the given Windows platform.
+    library_dirs should contain the directory with the Python library."""
     plat_proc = (python_sysconfig_platform_to_cmake_platform_win(plat_name),
                  python_sysconfig_platform_to_cmake_processor_win(plat_name))
     if all(plat_proc):
@@ -114,6 +121,8 @@ def handle_cross_win(config: ConfigNode, plat_name: str,
 
 
 def handle_dist_extra_config_win(config: ConfigNode, dist_extra_conf: str):
+    """Read the given distutils configuration file and use it to configure
+    cross-compilation if appropriate."""
     distcfg = configparser.ConfigParser()
     distcfg.read(dist_extra_conf)
 
@@ -125,6 +134,17 @@ def handle_dist_extra_config_win(config: ConfigNode, dist_extra_conf: str):
 
 
 def config_quirks_win(config: ConfigNode):
+    """
+    Explanation:
+    The cibuildwheel tool sets the DIST_EXTRA_CONFIG environment variable when
+    cross-compiling. It points to a configuration file that contains the path
+    to the correct Python library (.lib), as well as the name of the platform
+    to compile for.
+    If the user did not specify a custom cross-compilation configuration,
+    we will automatically add a minimal cross-compilation configuration that
+    points CMake to the right Python library, and that selects the right
+    CMake/Visual Studio platform.
+    """
     dist_extra_conf = os.getenv('DIST_EXTRA_CONFIG')
     if dist_extra_conf is not None:
         if config.contains('cross'):
