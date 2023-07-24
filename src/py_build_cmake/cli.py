@@ -10,14 +10,16 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         from .datastructures import PackageInfo
         from .cmd_runner import CommandRunner
         source_dir = Path(directory or '.').resolve()
-        config_settings = {
-            "--cross": list(cross),
-            "--local": list(local),
-        }
+        cross_env = list()
         if os.getenv("PY_BUILD_CMAKE_CROSS"):
-            cross += os.getenv("PY_BUILD_CMAKE_CROSS").split(';')
+            cross_env = os.getenv("PY_BUILD_CMAKE_CROSS").split(';')
+        local_env = list()
         if os.getenv("PY_BUILD_CMAKE_LOCAL"):
-            local += os.getenv("PY_BUILD_CMAKE_LOCAL").split(';')
+            local_env = os.getenv("PY_BUILD_CMAKE_LOCAL").split(';')
+        config_settings = {
+            "--cross": list(cross) + cross_env,
+            "--local": list(local) + local_env,
+        }
         # Read configuration and package metadata
         cfg, pkg, metadata = backend.read_all_metadata(source_dir,
                                                        config_settings,
