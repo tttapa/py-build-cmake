@@ -35,7 +35,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
-        path: dist/py-build-cmake-*.tar.gz
+        path: dist/py_build_cmake-*.tar.gz
 
   test:
     needs: build
@@ -87,7 +87,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
-        path: dist/py-build-cmake-*.tar.gz
+        path: dist/py_build_cmake-*.tar.gz
 
   test-windows:
     needs: build-windows
@@ -139,7 +139,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
-        path: dist/py-build-cmake-*.tar.gz
+        path: dist/py_build_cmake-*.tar.gz
 
   test-macos:
     needs: build-macos
@@ -196,7 +196,7 @@ jobs:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist
     - name: Upload source to PyPI
-      run: python -m twine upload dist/py-build-cmake-*.tar.gz
+      run: python -m twine upload dist/py_build_cmake-*.tar.gz
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PyPI }}
