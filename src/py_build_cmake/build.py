@@ -151,14 +151,6 @@ class _BuildBackend(object):
                 key: listify(config_settings.get(key) or [])
                 for key in keys
             }
-            local_env = list()
-            if os.getenv("PY_BUILD_CMAKE_LOCAL"):
-                local_env = os.getenv("PY_BUILD_CMAKE_LOCAL").split(';')
-            cross_env = list()
-            if os.getenv("PY_BUILD_CMAKE_CROSS"):
-                cross_env = os.getenv("PY_BUILD_CMAKE_CROSS").split(';')
-            overrides['--local'] += local_env
-            overrides['--cross'] += cross_env
             if verbose:
                 print("Configuration settings for local and "
                       "cross-compilation overrides:")

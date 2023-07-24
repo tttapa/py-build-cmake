@@ -1,7 +1,7 @@
 from . import __version__
 from pathlib import Path
 import click
-
+import os
 
 def cmake_command(directory, build_path, verbose, dry, native, cross, local):
 
@@ -9,10 +9,20 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         from .build import _BuildBackend as backend
         from .datastructures import PackageInfo
         from .cmd_runner import CommandRunner
+        local_list = list(local)
+        if os.getenv("PY_BUILD_CMAKE_LOCAL"):
+            for i in os.getenv("PY_BUILD_CMAKE_LOCAL").split(';'):
+                local_list.append(Path(i))
+        
+        cross_list = list(cross)
+        if os.getenv("PY_BUILD_CMAKE_CROSS"):
+            for i in os.getenv("PY_BUILD_CMAKE_CROSS").split(';'):
+                cross_list.append(Path(i))
+
         source_dir = Path(directory or '.').resolve()
         config_settings = {
-            "--cross": list(cross),
-            "--local": list(local),
+            "--cross": cross_list,
+            "--local": local_list,
         }
         # Read configuration and package metadata
         cfg, pkg, metadata = backend.read_all_metadata(source_dir,
