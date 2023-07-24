@@ -281,14 +281,20 @@ def get_options(project_path: Path, *, test: bool = False):
                         "arch = 'linux_x86_64'",
                         default=NoDefaultValue('same as current interpreter')),
         PathConfigOption('prefix',
-                         "Root path of the Python installation.",
+                         "Root path of the Python installation. "
+                         "Used to set the `Python3_ROOT_DIR` CMake hint, "
+                         "see https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#hints.",
                          base_path=RelativeToCurrentConfig(project_path),
                          allow_abs=True,
                          is_folder=True,
                          must_exist=True,
                          default=NoDefaultValue()),
         PathConfigOption('library',
-                         "Python library file (.so on Linux, .lib on Windows).",
+                         "Python library file (.so on Linux, .lib on Windows). "
+                         "Used to set the `Python3_LIBRARY` CMake artifact, "
+                         "see https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#artifacts-specification.",
                          base_path=RelativeToCurrentConfig(project_path),
                          allow_abs=True,
                          is_folder=False,
