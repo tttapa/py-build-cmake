@@ -299,7 +299,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          "https://cmake.org/cmake/help/book/mastering-cmake"
                          "/chapter/Cross%20Compiling%20With%20CMake.html for "
                          "more information.",
-                         default=RequiredValue(),
+                         default=NoDefaultValue(),
                          base_path=RelativeToCurrentConfig(project_path),
                          must_exist=not test,
                          allow_abs=True,

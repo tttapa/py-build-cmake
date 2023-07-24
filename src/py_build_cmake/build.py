@@ -518,14 +518,17 @@ class _BuildBackend(object):
                    native_install_dir: Optional[Path],
                    package_info: PackageInfo, **kwargs):
         # Optionally include the cross-compilation settings
-        cross_opts = {k: None for k in
-                      ('toolchain_file', 'python_prefix', 'python_library')}
         if cross_cfg:
+            cross_compiling = True
             cross_opts = {
                 'toolchain_file': cross_cfg.get('toolchain_file'),
                 'python_prefix': cross_cfg.get('prefix'),
                 'python_library': cross_cfg.get('library'),
             }
+        else:
+            cross_compiling = False
+            cross_keys = 'toolchain_file', 'python_prefix', 'python_library'
+            cross_opts = {k: None for k in cross_keys}
 
         # Add some CMake configure options
         options = cmake_cfg.get('options', {})
@@ -557,6 +560,7 @@ class _BuildBackend(object):
                 args=cmake_cfg.get('args', []),
                 preset=cmake_cfg.get('preset'),
                 generator=cmake_cfg.get('generator'),
+                cross_compiling=cross_compiling,
                 **cross_opts,
             ),
             build_settings=cmake.CMakeBuildSettings(

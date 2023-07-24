@@ -63,7 +63,6 @@ def cross_compile_win(config: ConfigNode, plat_name, library_dirs, cmake_platfor
     assert not config.contains('cross')
     cross_cfg = {
         'os': 'windows',
-        'toolchain_file': '',
         'arch': platform_to_platform_tag(plat_name),
         'cmake': {
             'options': {

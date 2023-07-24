@@ -31,6 +31,7 @@ class CMakeConfigureSettings:
     args: List[str]
     preset: Optional[str]
     generator: Optional[str]
+    cross_compiling: bool
     toolchain_file: Optional[Path]
     python_prefix: Optional[Path]
     python_library: Optional[Path]
@@ -85,7 +86,7 @@ class CMaker:
         return self.environment
 
     def cross_compiling(self) -> bool:
-        return self.conf_settings.toolchain_file is not None
+        return self.conf_settings.cross_compiling
 
     def get_configure_options_package(self) -> List[str]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
