@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18...3.22)
 project(nanobind-project VERSION 0.1.9)
-set(PY_VERSION_SUFFIX "a1")
+set(PY_VERSION_SUFFIX "a2")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
 # Make sure that the Python and CMake versions match
