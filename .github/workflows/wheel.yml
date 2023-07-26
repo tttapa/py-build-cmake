@@ -186,6 +186,8 @@ jobs:
       shell: bash
     - name: Install Twine
       run: pip install twine
+    - name: Check Wheel metadata
+      run: python -m twine check dist/py_build_cmake-*.whl
     - name: Upload Wheel to PyPI
       run: python -m twine upload dist/py_build_cmake-*.whl
       env:
