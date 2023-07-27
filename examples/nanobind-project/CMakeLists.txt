@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18...3.22)
+cmake_minimum_required(VERSION 3.26)
 project(nanobind-project VERSION 0.1.9)
 set(PY_VERSION_SUFFIX "a2")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
@@ -16,7 +16,7 @@ include(cmake/QueryPythonForNanobind.cmake)
 find_nanobind_python_first()
 
 # Compile the example Python module
-nanobind_add_module(_add_module "src/add_module.cpp")
+nanobind_add_module(_add_module STABLE_ABI "src/add_module.cpp")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"

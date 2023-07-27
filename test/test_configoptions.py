@@ -721,6 +721,7 @@ def test_real_config_inherit_cross_cmake():
                         },
                         "pure_python": False,
                         "abi": "auto",
+                        "abi3_minimum_cpython_version": 32,
                     },
                     "cross": {
                         "implementation":
@@ -764,6 +765,7 @@ def test_real_config_inherit_cross_cmake():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         },
                     },
                     "linux": {
@@ -797,6 +799,7 @@ def test_real_config_inherit_cross_cmake():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         },
                     },
                     "windows": {
@@ -830,6 +833,7 @@ def test_real_config_inherit_cross_cmake():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         }
                     },
                     "mac": {
@@ -863,6 +867,7 @@ def test_real_config_inherit_cross_cmake():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         }
                     }
                 }
@@ -954,6 +959,7 @@ def test_real_config_no_cross():
                         },
                         "pure_python": False,
                         "abi": "auto",
+                        "abi3_minimum_cpython_version": 32,
                     },
                     "linux": {
                         "editable": {
@@ -986,6 +992,7 @@ def test_real_config_no_cross():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         },
                     },
                     "windows": {
@@ -1019,6 +1026,7 @@ def test_real_config_no_cross():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         }
                     },
                     "mac": {
@@ -1052,6 +1060,7 @@ def test_real_config_no_cross():
                             },
                             "pure_python": False,
                             "abi": "auto",
+                            "abi3_minimum_cpython_version": 32,
                         }
                     }
                 }

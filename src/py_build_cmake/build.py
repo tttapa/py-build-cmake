@@ -8,6 +8,7 @@ import textwrap
 from typing import Any, Dict, List, Optional
 import tempfile
 from glob import glob
+import re
 
 from . import config
 from . import cmake
@@ -645,7 +646,10 @@ class _BuildBackend(object):
             return 'none'
         elif cmake_cfg['abi'] == 'abi3':
             # Only use abi3 if we're actually building for CPython
-            return 'abi3' if abi_tag.startswith('cp') else abi_tag
+            m = re.match(r"^cp(\d+).*$", abi_tag)
+            if m and int(m[1]) >= cmake_cfg['abi3_minimum_cpython_version']:
+                return 'abi3'
+            return abi_tag
         else:
             assert False, "Unsupported abi"
 

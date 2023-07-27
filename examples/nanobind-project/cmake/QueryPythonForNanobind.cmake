@@ -11,7 +11,9 @@ mark_as_advanced(USE_GLOBAL_NANOBIND)
 # allows un-setting NB_SUFFIX when cross-compiling.
 macro(find_nanobind_python_first)
 
-    find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module)
+    find_package(Python 3.8 REQUIRED
+        COMPONENTS Interpreter Development.Module
+        OPTIONAL_COMPONENTS Development.SABIModule)
     if (NOT USE_GLOBAL_NANOBIND)
         # Query Python to see if it knows where the headers are
         if (NOT nanobind_ROOT OR NOT EXISTS ${nanobind_ROOT})

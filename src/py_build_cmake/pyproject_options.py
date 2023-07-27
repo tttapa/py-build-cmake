@@ -217,10 +217,18 @@ def get_options(project_path: Path, *, test: bool = False):
                          "'none'.\n"
                          "If your package only includes Python extension "
                          "modules that use the CPython stable ABI, set this "
-                         "'abi3'.",
+                         "'abi3' (see also 'abi3_minimum_cpython_version' "
+                         "below).",
                          "abi = 'none'",
                          default=DefaultValueValue("auto"),
                          options=["auto", "none", "abi3"]),
+        IntConfigOption("abi3_minimum_cpython_version",
+                        "If 'abi' is set to 'abi3', only use the stable "
+                        "CPython API for CPython version that are newer than "
+                        "'abi3_minimum_version'. Useful for nanobind, which "
+                        "supports the stable ABI for CPython 12 and later.",
+                        "abi3_minimum_cpython_version = 312",
+                        default=DefaultValueValue(32)),
     ])# yapf: disable
 
     # [tool.py-build-cmake.stubgen]
