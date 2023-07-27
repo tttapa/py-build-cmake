@@ -289,7 +289,7 @@ class _BuildBackend(object):
         whl = Wheel()
         whl.name = package_info.package_name
         whl.version = package_info.version
-        pure = not cfg.cmake
+        pure = _BuildBackend.is_pure(cfg)
         libdir = 'purelib' if pure else 'platlib'
         staging_dir = paths.pkg_staging_dir
         whl_paths = {'prefix': str(staging_dir), libdir: str(staging_dir)}
@@ -298,8 +298,10 @@ class _BuildBackend(object):
             tags = {'pyver': ['py3']}
         elif cfg.cross:
             tags = _BuildBackend.get_cross_tags(cfg.cross)
+            tags = _BuildBackend.convert_wheel_tags(tags, cfg)
         else:
             tags = _BuildBackend.get_native_tags()
+            tags = _BuildBackend.convert_wheel_tags(tags, cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         whl_name = os.path.relpath(wheel_path, paths.wheel_dir)
         return whl_name
@@ -630,6 +632,43 @@ class _BuildBackend(object):
         from distlib.version import NormalizedVersion
         norm_version = str(NormalizedVersion(version))
         return norm_version
+
+    @staticmethod
+    def convert_abi_tag(abi_tag: str, cmake_cfg: Optional[dict]):
+        """Set the ABI tag to 'none' or 'abi3', depending on the config options
+        specified by the user."""
+        if not cmake_cfg:
+            return 'none'
+        elif cmake_cfg['abi'] == 'auto':
+            return abi_tag
+        elif cmake_cfg['abi'] == 'none':
+            return 'none'
+        elif cmake_cfg['abi'] == 'abi3':
+            # Only use abi3 if we're actually building for CPython
+            return 'abi3' if abi_tag.startswith('cp') else abi_tag
+        else:
+            assert False, "Unsupported abi"
+
+    @staticmethod
+    def convert_wheel_tags(tags, cfg):
+        """Apply convert_abi_tag to each of the abi tags."""
+        assert cfg.cmake
+        tags = copy(tags)
+        cmake_cfg, _ = _BuildBackend.get_cmake_configs(cfg)
+        cvt_abi = lambda tag: _BuildBackend.convert_abi_tag(tag, cmake_cfg)
+        tags['abi'] = list(map(cvt_abi, tags['abi']))
+        if 'none' in tags['abi']:
+            tags['pyver'] = ['py3']
+        return tags
+
+    @staticmethod
+    def is_pure(cfg):
+        """Check if the package is a pure-Python package without platform-
+        specific binaries."""
+        if not cfg.cmake:
+            return True
+        cmake_cfg, _ = _BuildBackend.get_cmake_configs(cfg)
+        return cmake_cfg['pure_python']
 
     @staticmethod
     def get_native_tags():

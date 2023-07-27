@@ -201,6 +201,26 @@ def get_options(project_path: Path, *, test: bool = False):
                               "env = { \"CMAKE_PREFIX_PATH\" "
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({})),
+        BoolConfigOption("pure_python",
+                         "Indicate that this package contains no platform-"
+                         "specific binaries, only Python scripts and other "
+                         "platform-agnostic files. It causes the Wheel tags "
+                         "to be set to `py3-none-any`.",
+                         "pure_python = true",
+                         default=DefaultValueValue(False)),
+        EnumConfigOption("abi",
+                         "Override the default ABI tag for the Wheel package.\n"
+                         "If your package does not contain Python extension "
+                         "modules (e.g. because it only includes executables "
+                         "to run as a subprocess, or only shared library files "
+                         "to be loaded using ctypes), you can set this to "
+                         "'none'.\n"
+                         "If your package only includes Python extension "
+                         "modules that use the CPython stable ABI, set this "
+                         "'abi3'.",
+                         "abi = 'none'",
+                         default=DefaultValueValue("auto"),
+                         options=["auto", "none", "abi3"]),
     ])# yapf: disable
 
     # [tool.py-build-cmake.stubgen]

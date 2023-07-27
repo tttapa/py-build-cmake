@@ -719,6 +719,8 @@ def test_real_config_inherit_cross_cmake():
                         "env": {
                             "foo": "bar"
                         },
+                        "pure_python": False,
+                        "abi": "auto",
                     },
                     "cross": {
                         "implementation":
@@ -760,6 +762,8 @@ def test_real_config_inherit_cross_cmake():
                                 "foo": "bar",
                                 "crosscompiling": "true",
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         },
                     },
                     "linux": {
@@ -791,6 +795,8 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         },
                     },
                     "windows": {
@@ -822,6 +828,8 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         }
                     },
                     "mac": {
@@ -853,6 +861,8 @@ def test_real_config_inherit_cross_cmake():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         }
                     }
                 }
@@ -942,6 +952,8 @@ def test_real_config_no_cross():
                         "env": {
                             "foo": "bar"
                         },
+                        "pure_python": False,
+                        "abi": "auto",
                     },
                     "linux": {
                         "editable": {
@@ -972,6 +984,8 @@ def test_real_config_no_cross():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         },
                     },
                     "windows": {
@@ -1003,6 +1017,8 @@ def test_real_config_no_cross():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         }
                     },
                     "mac": {
@@ -1034,6 +1050,8 @@ def test_real_config_no_cross():
                             "env": {
                                 "foo": "bar"
                             },
+                            "pure_python": False,
+                            "abi": "auto",
                         }
                     }
                 }
