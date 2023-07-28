@@ -118,7 +118,7 @@ Unit tests for testing the extension module using
 
 ## Configuration
 
-We'll now go over the contents of the contents of pyproject.toml in a bit more
+We'll now go over the contents of the pyproject.toml file in a bit more
 detail. Keep in mind that you can always consult the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html)
 for more information about specific options. More information about the
 `pyproject.toml` format can be found at https://packaging.python.org/en/latest/specifications/declaring-project-metadata/.
@@ -189,7 +189,7 @@ directory = "src-python"
 ```
 This is the first py-build-cmake specific section: `module` defines the path
 where it should look for your Python package. You can also include the `name`
-option when your module or package name is different than the name of your 
+option when your module or package name is different from the name of your 
 project on PyPI.
 
 ```toml
@@ -201,7 +201,9 @@ distribution. You should include everything needed to build your package, so
 including the C and CMake files. The README.md and LICENSE files mentioned in
 the metadata are included automatically, and so is the entire Python package
 directory.  
-You can use the `exclude` option to exclude specific files.
+You can use the `exclude` option to exclude specific files. Referenced
+directories are always included/excluded recursively. The `'**'` glob pattern is
+not supported.
 
 ```toml
 [tool.py-build-cmake.cmake]
@@ -214,22 +216,23 @@ install_components = ["python_modules"]
 The `cmake` section defines the settings for invoking CMake when building your
 project. The most important option is the `source_path`, the folder containing
 your main CMakeLists.txt file. The `-j` flag enables parallel builds, and the 
-`install_components` option defines which CMake components to install. In this
-example, the `python_modules` component is defined in [src/CMakeLists.txt](src/CMakeLists.txt).  
+`install_components` option defines which CMake components to install into the
+Wheel package. In this example, the `python_modules` component is defined in
+[src/CMakeLists.txt](src/CMakeLists.txt).  
 The `minimum_version` option defines which version of CMake is required to build
-this project. If this version or newer is not found in the PATH, it is added as
-a build requirement and installed by the build frontend (e.g. pip) before 
-building.  
-There are many other options, see the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
-for more details.
+this project. If this version (or newer) is not found in the system PATH, it is
+automatically added as a build requirement and installed by the build frontend
+(e.g. pip) before building.  
+There are many other options, take a moment to look at the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
+for an overview and more detailed explanations.
 
 ```toml
 [tool.py-build-cmake.stubgen]
 ```
 This section enables stub file generation for Python source files using mypy's
-[`stubgen`](https://mypy.readthedocs.io/en/stable/stubgen.html). Refer to the
-py-build-cmake documentation for information about the optional options in this
-section.
+[`stubgen`](https://mypy.readthedocs.io/en/stable/stubgen.html) tool. Refer to
+the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
+for information about the optional options in this section.
 
 ```toml
 [tool.pytest.ini_options]
@@ -237,7 +240,7 @@ minversion = "6.0"
 testpaths = ["test"]
 ```
 You can also add configuration options for other Python tools, for example, for
-`pytest`. See https://docs.pytest.org/en/7.2.x/reference/customize.html#pyproject-toml for
+`pytest`. See https://docs.pytest.org/en/7.4.x/reference/customize.html#pyproject-toml for
 details.
 
 ---
@@ -259,11 +262,11 @@ pyproject.toml file), and start the build:
 ```sh
 python -m build .
 ```
-This will first package the source distribution, and then use that to build a
+This will first package the source distribution, and then use it to build a
 binary wheel package for your platform. While building the wheel, py-build-cmake
 will invoke CMake to build your extension modules, and include them in the 
 wheel.  
-The resulting packages can be found in the dist folder.
+The resulting packages can be found in the `dist` folder.
 
 You could upload these packages to PyPI, as explained in 
 https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives.
@@ -321,3 +324,15 @@ configuration (e.g. switching to a different generator), you might have to
 delete this folder.  
 There's no harm in just deleting it, and you should add it to your .gitignore
 to prevent checking it in to version control.
+
+---
+
+## Where to go next
+
+You may find the following resources useful:
+
+ - [Frequently asked questions](https://tttapa.github.io/py-build-cmake/FAQ.html)
+ - [Documentation index](https://tttapa.github.io/py-build-cmake)
+ - [More py-build-cmake example projects](https://github.com/tttapa/py-build-cmake/tree/main/examples)
+ - [Official PyPA Python Packaging User Guide](https://packaging.python.org/en/latest/)
+ - [cibuildwheel documentation](https://cibuildwheel.readthedocs.io/en/stable/)

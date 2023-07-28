@@ -10,14 +10,14 @@ backend for creating Python packages with extensions built using CMake.
 ## Features
 
  - Building and packaging C, C++ or Fortran extension modules for Python using CMake
- - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/)), compatible with
-   [flit](https://github.com/pypa/flit)
+ - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/))
  - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
- - Compatible with [pybind11](https://github.com/pybind/pybind11) and [nanobind](https://github.com/wjakob/nanobind)
+ - Easy integration with [pybind11](https://github.com/pybind/pybind11) and [nanobind](https://github.com/wjakob/nanobind), with stable ABI support
  - Stub generation for type checking and autocompletion
- - Customizable CMake configuration, build and installation options
- - Support for multiple installation configurations and components
- - Cross-compilation support
+ - Customizable CMake configuration, build, and installation options
+ - Support for multiple installation configurations and components, across different Wheel packages
+ - First-class cross-compilation support
+ - Reproducible source distributions
  - No dependency on [setuptools](https://github.com/pypa/setuptools)
  - Compatible with [cibuildwheel](https://github.com/pypa/cibuildwheel) for building Wheels
 
@@ -43,11 +43,15 @@ to get the documentation for all supported options:
 py-build-cmake config format
 ```
 
+To get started quickly, have a look at the following section and the README in
+[`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal),
+which goes over the project structure and the configuration files you'll need.
+
 ## Usage
 
 If you don't have one already, add a `pyproject.toml` configuration file to your
-project's repository. Specify the metadata required by [PEP 621](https://www.python.org/dev/peps/pep-0621/),
-and tell py-build-cmake how to build your project. For example:
+project's repository. Specify the mandatory project metadata ([PyPA: Declaring project metadata](https://packaging.python.org/en/latest/specifications/declaring-project-metadata)),
+and tell py-build-cmake how to build your CMake project. For example:
 
 ```toml
 [project] # Project metadata
@@ -106,7 +110,8 @@ using a very simple Python module as an example.
 For a more advanced, real-world example, see [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project)
 and [`examples/nanobind-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/nanobind-project).  
 If you are interested in packaging C/C++/Fortran programs using py-build-cmake,
-have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).
+have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).  
+See the [`examples`](https://github.com/tttapa/py-build-cmake/tree/main/examples) folder for a full list of examples.
 
 ## Projects using py-build-cmake
 
@@ -115,6 +120,15 @@ py-build-cmake as their Python build backend:
 
 - [alpaqa](https://github.com/kul-optec/alpaqa/tree/develop)
 - [QPALM](https://github.com/kul-optec/QPALM)
+
+## Alternatives and related tools
+
+- [scikit-build-core](https://github.com/scikit-build/scikit-build-core): alternative CMake build backend, successor of [scikit-build](https://github.com/scikit-build/scikit-build)
+- [meson-python](https://github.com/mesonbuild/meson-python): Meson build backend
+- [flit](https://github.com/pypa/flit): pure-Python packaging tool and build backend
+- [hatchling](https://hatch.pypa.io/latest/config/build/#build-system): build backend of the [Hatch](https://hatch.pypa.io/latest/) project manager, supports build hooks
+- [poetry-core](https://python-poetry.org/docs/pyproject/#poetry-and-pep-517): pure-Python build backend for the [Poetry](https://python-poetry.org/) package manager
+- [crossenv](https://github.com/benfogle/crossenv): tool to trick `setuptools` into cross-compiling by monkey patching the `sysconfig` and `distutils` modules
 
 ## Planned features
 
