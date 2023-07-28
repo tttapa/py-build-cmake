@@ -640,18 +640,18 @@ class _BuildBackend(object):
         specified by the user."""
         if not cmake_cfg:
             return 'none'
-        elif cmake_cfg['abi'] == 'auto':
+        elif cmake_cfg['python_extension_abi'] == 'auto':
             return abi_tag
-        elif cmake_cfg['abi'] == 'none':
+        elif cmake_cfg['python_extension_abi'] == 'none':
             return 'none'
-        elif cmake_cfg['abi'] == 'abi3':
+        elif cmake_cfg['python_extension_abi'] == 'abi3':
             # Only use abi3 if we're actually building for CPython
             m = re.match(r"^cp(\d+).*$", abi_tag)
             if m and int(m[1]) >= cmake_cfg['abi3_minimum_cpython_version']:
                 return 'abi3'
             return abi_tag
         else:
-            assert False, "Unsupported abi"
+            assert False, "Unsupported python_extension_abi"
 
     @staticmethod
     def convert_wheel_tags(tags, cfg):

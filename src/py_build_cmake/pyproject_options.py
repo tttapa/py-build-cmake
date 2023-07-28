@@ -208,25 +208,35 @@ def get_options(project_path: Path, *, test: bool = False):
                          "to be set to `py3-none-any`.",
                          "pure_python = true",
                          default=DefaultValueValue(False)),
-        EnumConfigOption("abi",
+        EnumConfigOption("python_extension_abi",
                          "Override the default ABI tag for the Wheel package.\n"
+                         "For packages with a Python extension module that "
+                         "make use of the full Python C API, this option "
+                         "should be set to `auto`.\n"
                          "If your package does not contain Python extension "
                          "modules (e.g. because it only includes executables "
                          "to run as a subprocess, or only shared library files "
-                         "to be loaded using ctypes), you can set this to "
-                         "'none'.\n"
+                         "to be loaded using `ctypes`), you can set this to "
+                         "`none`.\n"
                          "If your package only includes Python extension "
                          "modules that use the CPython stable ABI, set this "
-                         "'abi3' (see also 'abi3_minimum_cpython_version' "
-                         "below).",
-                         "abi = 'none'",
+                         "`abi3` (see also `abi3_minimum_cpython_version` "
+                         "below).\n"
+                         "For details about platform compatibility tags, see "
+                         "the PyPA specification: https://packaging.python.org/"
+                         "en/latest/specifications/platform-compatibility-tags",
+                         "python_extension_abi = 'none'",
                          default=DefaultValueValue("auto"),
                          options=["auto", "none", "abi3"]),
         IntConfigOption("abi3_minimum_cpython_version",
-                        "If 'abi' is set to 'abi3', only use the stable "
-                        "CPython API for CPython version that are newer than "
-                        "'abi3_minimum_version'. Useful for nanobind, which "
-                        "supports the stable ABI for CPython 12 and later.",
+                        "If `python_extension_abi` is set to `abi3`, only use "
+                        "the stable CPython API for CPython version that are "
+                        "newer than `abi3_minimum_version`. Useful for "
+                        "nanobind, which supports the stable ABI for CPython "
+                        "12 and later.\n"
+                        "The Python version is encoded as a single integer, "
+                        "consisting of the major and minor version numbers, "
+                        "without a dot.",
                         "abi3_minimum_cpython_version = 312",
                         default=DefaultValueValue(32)),
     ])# yapf: disable
@@ -292,20 +302,32 @@ def get_options(project_path: Path, *, test: bool = False):
                          "Operating system configuration to inherit from.",
                          options=["linux", "mac", "windows"]),
         StrConfigOption('implementation',
-                        "Identifier for the Python implementation.",
+                        "Identifier for the Python implementation.\n"
+                        "For details about platform compatibility tags, see "
+                        "the PyPA specification: https://packaging.python.org/"
+                        "en/latest/specifications/platform-compatibility-tags",
                         "implementation = 'cp' # CPython",
                         default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('version',
-                        "Python version, major and minor, without dots.",
+                        "Python version, major and minor, without dots.\n"
+                        "For details about platform compatibility tags, see "
+                        "the PyPA specification: https://packaging.python.org/"
+                        "en/latest/specifications/platform-compatibility-tags",
                         "version = '310' # 3.10",
                         default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('abi',
-                        "Python ABI.",
+                        "Python ABI.\n"
+                        "For details about platform compatibility tags, see "
+                        "the PyPA specification: https://packaging.python.org/"
+                        "en/latest/specifications/platform-compatibility-tags",
                         "abi = 'cp310'",
                         default=NoDefaultValue('same as current interpreter')),
         StrConfigOption('arch',
                         "Operating system and architecture (no dots or "
-                        "dashes, only underscores, all lowercase).",
+                        "dashes, only underscores, all lowercase).\n"
+                        "For details about platform compatibility tags, see "
+                        "the PyPA specification: https://packaging.python.org/"
+                        "en/latest/specifications/platform-compatibility-tags",
                         "arch = 'linux_x86_64'",
                         default=NoDefaultValue('same as current interpreter')),
         PathConfigOption('prefix',

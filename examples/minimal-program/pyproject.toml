@@ -39,7 +39,7 @@ build_type = "RelWithDebInfo"
 source_path = "src"
 build_args = ["-j"]
 install_components = ["python_binaries"]
-abi = "none"
+python_extension_abi = "none"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -41,6 +41,8 @@ should provide as well).
 
 The format for the values in this file is the same as the format used for the 
 tags in wheel filenames, for example `package-1.2.3-cp39-cp39-linux_aarch64.whl`.
+For details about platform compatibility tags, see the PyPA specification:
+https://packaging.python.org/en/latest/specifications/platform-compatibility-tags.
 
 For more information about cross-compilation, ready-to-use toolchains, and 
 example toolchain files, see <https://tttapa.github.io/Pages/Raspberry-Pi/C++-Development-Ubuntu>.
