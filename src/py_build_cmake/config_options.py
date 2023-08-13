@@ -104,7 +104,9 @@ class ConfigNode:
         except KeyError:
             return default
 
-    def setdefault(self, path: ConfPath, default: Any):
+    def setdefault(self, path: Union[str, ConfPath], default: Any):
+        if isinstance(path, str):
+            path = path,
         tgt = self[parent(path)]
         if tgt.sub is None:
             tgt.sub = {}

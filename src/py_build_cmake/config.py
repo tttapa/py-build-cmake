@@ -199,7 +199,6 @@ def set_up_os_specific_cross_inheritance(opts, tool_tree_cfg):
     if cross_os is not None:
         for s in ('cmake', 'sdist', 'editable'):
             inherit_from = get_tool_pbc_path() + (cross_os, s)
-            print(opts[get_cross_path() + (s, )].inherit_from, '->', inherit_from)
             opts[get_cross_path() + (s, )].inherit_from = inherit_from
 
 

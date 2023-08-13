@@ -519,14 +519,19 @@ class _BuildBackend(object):
         if cross_cfg:
             cross_compiling = True
             cross_opts = {
-                'toolchain_file': cross_cfg.get('toolchain_file'),
-                'python_prefix': cross_cfg.get('prefix'),
-                'python_library': cross_cfg.get('library'),
+                "toolchain_file": cross_cfg.get("toolchain_file"),
+                "python_prefix": cross_cfg.get("prefix"),
+                "python_library": cross_cfg.get("library"),
+                "python_include_dir": cross_cfg.get("include_dir"),
             }
         else:
             cross_compiling = False
-            cross_keys = 'toolchain_file', 'python_prefix', 'python_library'
-            cross_opts = {k: None for k in cross_keys}
+            cross_opts = {
+                "toolchain_file": None,
+                "python_prefix": None,
+                "python_library": None,
+                "python_include_dir": None,
+            }
 
         # Add some CMake configure options
         options = cmake_cfg.get('options', {})
