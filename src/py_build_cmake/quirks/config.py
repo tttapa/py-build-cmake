@@ -1,11 +1,13 @@
 import configparser
 import os
 import platform
+import re
 import sys
 import sysconfig
 import warnings
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 from ..config_options import ConfigNode, pth
+from distlib.util import get_platform as get_platform_dashes  # type: ignore
 
 
 def python_sysconfig_platform_to_cmake_platform_win(
@@ -40,6 +42,17 @@ def python_sysconfig_platform_to_cmake_processor_win(
 def platform_to_platform_tag(plat: str) -> str:
     """https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-tag"""
     return plat.replace('.', '_').replace('-', '_')
+
+
+def archflags_to_platform_tag(archflags: Tuple[str, ...]) -> Optional[str]:
+    """Convert tuple of CMAKE_OSX_ARCHITECTURES values to the corresponding
+    platform tag https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-tag"""
+    arch = {
+        ('arm64', 'x86_64'): 'universal2',
+        ('x86_64', ): 'x86_64',
+        ('arm64',): 'arm64',
+    }.get(tuple(sorted(archflags)))
+    return arch
 
 
 def get_python_lib_impl(libdir: str):
@@ -159,7 +172,67 @@ def config_quirks_win(config: ConfigNode):
             handle_dist_extra_config_win(config, dist_extra_conf)
 
 
+def cross_compile_mac(config: ConfigNode, archs):
+    """Update the configuration to include a cross-compilation configuration
+    that builds for the given architectures."""
+    warnings.warn(
+        f"ARCHFLAGS was specified. Automatically enabling cross-compilation for {', '.join(archs)} (native platform: {platform.machine()})"
+    )
+    assert not config.contains('cross')
+    cross_cfg = {
+        'os': 'mac',
+        'cmake': {
+            'options': {
+                'CMAKE_SYSTEM_NAME': 'Darwin',
+                'CMAKE_OSX_ARCHITECTURES': ';'.join(archs),
+            }
+        },
+    }
+    plat_tag = archflags_to_platform_tag(archs)
+    if plat_tag:
+        cross_arch = get_platform_dashes().split('-')
+        cross_arch[-1] = plat_tag
+        cross_cfg['arch']  = '_'.join(cross_arch)
+    config.setdefault(pth('cross'), ConfigNode.from_dict(cross_cfg))
+
+
+def config_quirks_mac(config: ConfigNode):
+    """Sets CMAKE_OSX_ARCHITECTURES if $ENV{ARCHFLAGS} is set
+    on macOS. This ensures compatibility with cibuildwheel. If the interpreter
+    architecture is not in the ARCHFLAGS, also enables cross-compilation."""
+    archflags = os.getenv("ARCHFLAGS")
+    if not archflags:
+        return
+    archs = tuple(re.findall(r"-arch +(\S+)", archflags))
+    if not archs:
+        warnings.warn(
+            "ARCHFLAGS was set, but its value was not valid, so I'm ignoring it"
+        )
+        return
+    if config.contains('cross'):
+        warnings.warn(
+            "Cross-compilation configuration was not empty, so I'm ignoring ARCHFLAGS"
+        )
+        return
+    if not config.contains('cmake'):
+        warnings.warn(
+            "CMake configuration was empty, so I'm ignoring ARCHFLAGS"
+        )
+        return
+    if platform.machine() not in archs:
+        cross_compile_mac(config, archs)
+    else:
+        warnings.warn(
+            f"ARCHFLAGS was set, adding CMAKE_OSX_ARCHITECTURES to cmake.options ({', '.join(archs)}, native platform: {platform.machine()})"
+        )
+        opts = config.setdefault(('cmake', 'options'), ConfigNode())
+        opts.setdefault('CMAKE_OSX_ARCHITECTURES', ConfigNode(';'.join(archs)))
+
+
 def config_quirks(config: ConfigNode):
-    dispatch = {"Windows": config_quirks_win}.get(platform.system())
+    dispatch = {
+        "Windows": config_quirks_win,
+        "Darwin": config_quirks_mac,
+    }.get(platform.system())
     if dispatch is not None:
         dispatch(config)
