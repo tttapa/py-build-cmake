@@ -127,12 +127,14 @@ class CMaker:
     def get_native_python_hints(self, prefix):
         """FindPython hints and artifacts for this (native) Python installation."""
         yield prefix + '_ROOT_DIR=' + self.get_native_python_prefixes()
-        return
-        # FIND_ABI and FIND_IMPLEMENTATIONS seem to confuse CMake
-        yield prefix + '_FIND_ABI=' + self.get_native_python_abi_tuple()
         impl = self.get_native_python_implementation()
         if impl:
             yield prefix + '_FIND_IMPLEMENTATIONS=' + impl
+        return
+        # FIND_ABI seems to confuse CMake
+        yield prefix + '_FIND_ABI=' + self.get_native_python_abi_tuple()
+        if impl == 'PyPy':
+            yield prefix + '_INCLUDE_DIR=' + sysconfig.get_path('platinclude')
 
     def get_cross_python_hints(self, prefix):
         """FindPython hints and artifacts to set when cross-compiling."""
