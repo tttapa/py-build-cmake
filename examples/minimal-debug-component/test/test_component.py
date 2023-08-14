@@ -1,3 +1,4 @@
+import re
 import sys
 
 def test_component():
@@ -12,5 +13,9 @@ def test_component():
         if resource.is_file()
     ]
     print(contents)
-    assert sys.platform != "linux" or '_add_module.so.debug' in contents
-    assert sys.platform != "win32" or '_add_module.pdb' in contents
+    if sys.platform == 'linux':
+        patt = re.compile(r"^_add_module(\.\S+)?\.so\.debug$")
+        assert any(map(patt.match, contents))
+    if sys.platform == "win32":
+        patt = re.compile(r"^_add_module(\.\S+)?\.pdb$")
+        assert any(map(patt.match, contents))
