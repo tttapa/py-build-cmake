@@ -67,7 +67,72 @@ Python3_LIBRARY = "/path-to-sysroot/usr/lib/aarch64-linux-gnu/libpython3.9.so"
 Python3_INCLUDE_DIR = "/path-to-sysroot/usr/include/python3.9"
 ```
 
-You can find a full example in [examples/pybind11-project/py-build-cmake.cross.example.toml](https://github.com/tttapa/py-build-cmake/blob/main/examples/pybind11-project/py-build-cmake.cross.example.toml)
+You can find a full example in [examples/pybind11-project/py-build-cmake.cross.example.toml](https://github.com/tttapa/py-build-cmake/blob/main/examples/pybind11-project/py-build-cmake.cross.example.toml).
+
+## Automatic cross-compilation
+
+In order to ensure compatibility with [`cibuildwheel`](https://github.com/pypa/cibuildwheel),
+`py-build-cmake` automatically enables cross-compilation when certain
+environment variables are set.
+
+### Windows
+
+Cross-compilation on Windows is enabled if the following conditions are satisfied:
+
+0. The configuration does not yet contain a `[tool.py-build-cmake.cross]` entry,
+1. and the `DIST_EXTRA_CONFIG` environment variable is set,
+2. and that variable points to a configuration file that specifies
+   `build_ext.plat_name`,
+3. and that value differs from the current platform.
+
+The supported values for `build_ext.plat_name` are:
+ - `win32`
+ - `win-amd64`
+ - `win-arm32`
+ - `win-arm64`
+
+As a result, `py-build-cmake` sets the `CMAKE_SYSTEM_NAME`,
+`CMAKE_SYSTEM_PROCESSOR` and `CMAKE_GENERATOR_PLATFORM` CMake options to the
+appropriate values for the given `plat_name`.  
+If `build_ext.library_dirs` is set in the configuration file as well, those
+directories are searched for the Python library, and if found, the
+CMake `{Python,Python3}_LIBRARY` hints are specified. If the Python library is
+part of a Python installation hierarchy that also contains an `include`
+directory, this is specified using the `{Python,Python3}_INCLUDE_DIR` hints.  
+Other CMake options are inherited from the `[tool.py-build-cmake.windows.cmake]`
+configuration in `pyproject.toml`.
+
+### macOS
+
+Cross-compilation on macOS is enabled if the following conditions are satisfied:
+
+0. The configuration does not yet contain a `[tool.py-build-cmake.cross]` entry,
+1. and the `ARCHFLAGS` environment variable is set,
+2. and its value contains one or more flags of the form `-arch XXX`,
+where `XXX` is either `x86_64` or `arm64`,
+3. and the current platform's architecture is not included in this list.
+
+The supported values for `ARCHFLAGS` are:
+ - `-arch x86_64` (Intel)
+ - `-arch arm64` (Apple silicon)
+ - `-arch x86_64 -arch arm64` (Universal 2 fat binaries, both Intel and Apple
+   silicon)
+
+As a result, `py-build-cmake` sets the `CMAKE_SYSTEM_NAME` and
+`CMAKE_OSX_ARCHITECTURES` CMake options to the appropriate values.  
+If the current interpreter is CPython, the `SETUPTOOLS_EXT_SUFFIX` environment
+variable is set as well.  
+Other CMake options are inherited from the `[tool.py-build-cmake.mac.cmake]`
+configuration in `pyproject.toml`.
+
+If the current platform's architecture is included in the `ARCHFLAGS`
+(violating condition 3), cross-compilation will not be enabled, but the
+`CMAKE_OSX_ARCHITECTURES` CMake option will still be set. (This is the case for
+universal wheels.)
+
+### Linux
+
+Since `cibuildwheel` does not support cross-compilation on Linux, `py-build-cmake` does not enable automatic cross-compilation for this platform. By default, `cibuildwheel` will try build your package in an emulated ARM64 container. This can be very slow, so it is recommended to use the instructions for manual cross-compilation above.
 
 ## Advanced cross-builds
 
