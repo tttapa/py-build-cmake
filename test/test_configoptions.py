@@ -5,7 +5,7 @@ from pprint import pprint
 import pytest
 import py_build_cmake.config_options as co
 from py_build_cmake.pyproject_options import get_options
-from flit_core.config import ConfigError
+from py_build_cmake.metadata import ConfigError
 
 
 def gen_test_opts():
@@ -310,7 +310,7 @@ def test_verify_override_unknown_keys():
             targetpath=co.pth('trunk/mid2'),
         ))
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unkown options in override_mid2: blahblah'
+    expected = 'Unknown options in override_mid2: blahblah'
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -342,7 +342,7 @@ def test_override_trunk_unknown_keys():
             targetpath=co.pth('trunk'),
         ))
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unkown options in override_trunk/mid1: azertyop'
+    expected = 'Unknown options in override_trunk/mid1: azertyop'
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -364,7 +364,7 @@ def test_verify_unknown_keys1():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unkown options in trunk: mid3'
+    expected = 'Unknown options in trunk: mid3'
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -386,7 +386,7 @@ def test_verify_unknown_keys2():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unkown options in trunk/mid2: foobar'
+    expected = 'Unknown options in trunk/mid2: foobar'
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)

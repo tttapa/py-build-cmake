@@ -8,8 +8,7 @@ from . import config
 from .build import _BuildBackend
 from .datastructures import BuildPaths, PackageInfo
 from .cmd_runner import CommandRunner
-
-from flit_core.config import ConfigError  # type: ignore
+from . import metadata
 
 
 class _BuildComponentBackend(object):
@@ -85,10 +84,10 @@ class _BuildComponentBackend(object):
         config_settings = config_settings or {}
         try:
             cfg = config.read_component_config(pyproject_path)
-            if cfg.dynamic_metadata:
-                raise ConfigError(
+            if cfg.standard_metadata.dynamic:
+                raise metadata.ConfigError(
                     "Dynamic metadata not supported for components.")
-        except ConfigError as e:
+        except metadata.ConfigError as e:
             e.args = ("\n"
                       "\n"
                       "\t❌ Error in user configuration:\n"
@@ -112,14 +111,9 @@ class _BuildComponentBackend(object):
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        from flit_core.common import Metadata
         cfg = _BuildComponentBackend.read_component_config(
             src_dir / 'pyproject.toml', config_settings, verbose)
-        md_dict = {'name': cfg.package_name}
-        md_dict.update(cfg.metadata)
-        metadata = Metadata(md_dict)
-        metadata.version = _BuildBackend.normalize_version(metadata.version)
-        return cfg, metadata
+        return cfg
 
     # --- Building wheels -----------------------------------------------------
 
@@ -133,7 +127,7 @@ class _BuildComponentBackend(object):
         comp_source_dir = Path().resolve()
 
         # Load metadata from the current (component) pyproject.toml file
-        comp_cfg, comp_metadata = self.read_all_metadata(
+        comp_cfg = self.read_all_metadata(
             comp_source_dir, config_settings, self.verbose)
 
         # Set up all paths
@@ -150,9 +144,9 @@ class _BuildComponentBackend(object):
                                         config_settings, self.verbose)
 
         pkg_info = PackageInfo(
-            version=comp_metadata.version,
+            version=comp_cfg.standard_metadata.version,
             package_name=comp_cfg.package_name,
-            module_name=cfg.module['name'],  # unused, CMake configuration only
+            module_name='',
         )
 
         # Create dist-info folder
@@ -163,12 +157,11 @@ class _BuildComponentBackend(object):
         # Write metadata
         metadata_path = distinfo_dir / 'METADATA'
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            comp_metadata.write_metadata_file(f)
+            f.write(str(comp_cfg.standard_metadata.as_rfc822()))
         # Write or copy license
-        _BuildBackend.write_license_files(comp_cfg.license, comp_source_dir,
-                                          distinfo_dir)
+        _BuildBackend.write_license_files(comp_cfg, distinfo_dir)
         # Write entrypoints/scripts
-        _BuildBackend.write_entrypoints(distinfo_dir, comp_cfg.entrypoints)
+        _BuildBackend.write_entrypoints(distinfo_dir, comp_cfg)
 
         # Configure, build and install the CMake project
         if cfg.cmake:

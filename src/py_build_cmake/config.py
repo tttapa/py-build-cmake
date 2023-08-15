@@ -4,11 +4,12 @@ import os
 import warnings
 from typing import Any, Dict, List, Optional, Set, cast
 from pathlib import Path
-from flit_core.config import ConfigError, read_pep621_metadata  # type: ignore
 from distlib.util import normalize_name  # type: ignore
+import pyproject_metadata  # type: ignore
 
 from .config_options import ConfigNode, OverrideConfigOption
 from .pyproject_options import get_options, get_cross_path, get_tool_pbc_path, get_component_options
+from .metadata import ConfigError
 
 try:
     import tomllib as toml_  # type: ignore
@@ -18,15 +19,11 @@ except ImportError:
 
 @dataclass
 class Config:
-    dynamic_metadata: Set[str] = field(default_factory=set)
-    entrypoints: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    referenced_files: List[str] = field(default_factory=list)
+    standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default='')
     module: Dict[str, str] = field(default_factory=dict)
     editable: Dict[str, Any] = field(default_factory=dict)
     sdist: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    license: Dict[str, str] = field(default_factory=dict)
     cmake: Optional[Dict[str, Any]] = field(default=None)
     stubgen: Optional[Dict[str, Any]] = field(default=None)
     cross: Optional[Dict[str, Any]] = field(default=None)
@@ -92,7 +89,7 @@ def read_config(pyproject_path, flag_overrides: Dict[str,
     return check_config(pyproject_path, pyproject, config_files, extra_options)
 
 
-def check_config(pyproject_path, pyproject, config_files, extra_options):
+def check_config(pyproject_path: Path, pyproject, config_files, extra_options):
     # Check the package/module name and normalize it
     f = 'name'
     if f in pyproject['project']:
@@ -102,20 +99,16 @@ def check_config(pyproject_path, pyproject, config_files, extra_options):
                 f"Name changed from {pyproject['project'][f]} to {normname}")
         pyproject['project'][f] = normname
 
-    # Parse the [project] section for metadata (using flit's parser)
-    flit_cfg = read_pep621_metadata(pyproject['project'], pyproject_path)
+    # Parse the [project] section for metadata
+    try:
+        meta = pyproject_metadata.StandardMetadata.from_pyproject(
+            pyproject, pyproject_path.parent)
+    except pyproject_metadata.ConfigurationError as e:
+        raise ConfigError(str(e))
 
-    # Create our own config data structure using flit's output
-    cfg = Config()
-    cfg.dynamic_metadata = set(flit_cfg.dynamic_metadata)
-    cfg.entrypoints = flit_cfg.entrypoints
-    cfg.metadata = flit_cfg.metadata
-    cfg.referenced_files = flit_cfg.referenced_files
-    cfg.license = pyproject['project'].setdefault('license', {})
-    cfg.package_name = normalize_name_wheel(cfg.metadata["name"])
-
-    if 'file' in cfg.license and Path(cfg.license['file']).is_absolute():
-        raise ConfigError("License path must be relative")
+    # Create our own config data structure
+    cfg = Config(meta)
+    cfg.package_name = normalize_name_wheel(meta.name)
 
     opts = get_options(pyproject_path.parent)
     for o in extra_options:
@@ -204,13 +197,9 @@ def set_up_os_specific_cross_inheritance(opts, tool_tree_cfg):
 
 @dataclass
 class ComponentConfig:
-    dynamic_metadata: Set[str] = field(default_factory=set)
-    entrypoints: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    referenced_files: List[str] = field(default_factory=list)
+    standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default='')
     component: Dict[str, Any] = field(default_factory=dict)
-    license: Dict[str, str] = field(default_factory=dict)
 
 
 def read_component_config(pyproject_path) -> ComponentConfig:
@@ -237,20 +226,16 @@ def check_component_config(pyproject_path, pyproject, config_files):
                 f"Name changed from {pyproject['project'][f]} to {normname}")
         pyproject['project'][f] = normname
 
-    # Parse the [project] section for metadata (using flit's parser)
-    flit_cfg = read_pep621_metadata(pyproject['project'], pyproject_path)
+        # Parse the [project] section for metadata
+    try:
+        meta = pyproject_metadata.StandardMetadata.from_pyproject(
+            pyproject, pyproject_path.parent)
+    except pyproject_metadata.ConfigurationError as e:
+        raise ConfigError(str(e))
 
-    # Create our own config data structure using flit's output
-    cfg = ComponentConfig()
-    cfg.dynamic_metadata = set(flit_cfg.dynamic_metadata)
-    cfg.entrypoints = flit_cfg.entrypoints
-    cfg.metadata = flit_cfg.metadata
-    cfg.referenced_files = flit_cfg.referenced_files
-    cfg.license = pyproject['project'].setdefault('license', {})
-    cfg.package_name = normalize_name_wheel(cfg.metadata["name"])
-
-    if 'file' in cfg.license and Path(cfg.license['file']).is_absolute():
-        raise ConfigError("License path must be relative")
+    # Create our own config data structure
+    cfg = ComponentConfig(meta)
+    cfg.package_name = normalize_name_wheel(meta.name)
 
     opts = get_component_options(pyproject_path.parent)
 

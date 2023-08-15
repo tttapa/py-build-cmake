@@ -1,5 +1,5 @@
 [build-system]
-requires = ["distlib", "flit_core>=3.7,<4", "tomli>=1.2.3,<3; python_version < '3.11'"]
+requires = ["distlib", "pyproject-metadata~=0.7.1", "tomli>=1.2.3,<3; python_version < '3.11'"]
 build-backend = "py_build_cmake.build"
 backend-path = ["src"]
 
@@ -19,13 +19,14 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
 ]
 dependencies = [
     "distlib~=0.3.5",
-    "flit_core>=3.7,<4",
+    "pyproject-metadata~=0.7.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
     "click~=8.1.3",
 ]

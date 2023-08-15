@@ -5,18 +5,17 @@ from pathlib import Path
 from copy import copy
 import shutil
 import textwrap
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import tempfile
 from glob import glob
 import re
 
 from . import config
+from . import metadata
 from . import cmake
 from .datastructures import BuildPaths, PackageInfo
 from .cmd_runner import CommandRunner
 
-from flit_core.common import Module as flit_Module  # type: ignore
-from flit_core.config import ConfigError  # type: ignore
 from distlib.version import NormalizedVersion  # type: ignore
 
 _CMAKE_MINIMUM_REQUIRED = NormalizedVersion('3.15')
@@ -96,27 +95,20 @@ class _BuildBackend(object):
         self.parse_config_settings(config_settings)
 
         # Load metadata
-        from flit_core.common import make_metadata
         pyproject = src_dir / 'pyproject.toml'
-        cfg = self.read_config(pyproject, config_settings, self.verbose)
-        import_name = cfg.module['name']
-        pkg = flit_Module(import_name, src_dir / cfg.module['directory'])
-        metadata = make_metadata(pkg, cfg)
-        metadata.version = self.normalize_version(metadata.version)
+        cfg, module = _BuildBackend.read_all_metadata(
+            src_dir, config_settings, self.verbose)
 
         # Export dist
-        from flit_core.sdist import SdistBuilder  # type: ignore
-        rel_pyproject = os.path.relpath(pyproject, src_dir)
-        extra_files = [str(rel_pyproject)] + cfg.referenced_files
+        from .sdist import SdistBuilder  # type: ignore
+        ref_files = metadata.referenced_files(cfg.standard_metadata)
+        extra_files = [pyproject] + ref_files
         sdist_cfg = cfg.sdist['cross' if cfg.cross else self.get_os_name()]
         sdist_builder = SdistBuilder(
-            pkg,
-            metadata=metadata,
+            module,
+            metadata=cfg.standard_metadata,
             cfgdir=src_dir,
-            reqs_by_extra=None,
-            entrypoints=cfg.entrypoints,
             extra_files=extra_files,
-            data_directory=None,
             include_patterns=sdist_cfg.get('include_patterns', []),
             exclude_patterns=sdist_cfg.get('exclude_patterns', []),
         )
@@ -157,7 +149,7 @@ class _BuildBackend(object):
                       "cross-compilation overrides:")
                 pprint(overrides)
             cfg = config.read_config(pyproject_path, overrides)
-        except ConfigError as e:
+        except metadata.ConfigError as e:
             e.args = ("\n"
                       "\n"
                       "\t❌ Error in user configuration:\n"
@@ -211,20 +203,20 @@ class _BuildBackend(object):
         )
 
         # Load metadata from the pyproject.toml file
-        cfg, pkg, metadata = _BuildBackend.read_all_metadata(
+        cfg, module = _BuildBackend.read_all_metadata(
             paths.source_dir, config_settings, self.verbose)
 
         pkg_info = PackageInfo(
-            version=metadata.version,
+            version=cfg.standard_metadata.version,
             package_name=cfg.package_name,
-            module_name=cfg.module['name'],
+            module_name=module.name,
         )
 
         # Copy the module's Python source files to the temporary folder
         if not editable:
-            self.copy_pkg_source_to(paths.staging_dir, pkg)
+            self.copy_pkg_source_to(paths.staging_dir, module)
         else:
-            paths = self.do_editable_install(cfg, paths, pkg)
+            paths = self.do_editable_install(cfg, paths, module)
 
         # Create dist-info folder
         distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
@@ -234,15 +226,15 @@ class _BuildBackend(object):
         # Write metadata
         metadata_path = distinfo_dir / 'METADATA'
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            metadata.write_metadata_file(f)
+            f.write(str(cfg.standard_metadata.as_rfc822()))
         # Write or copy license
-        self.write_license_files(cfg.license, paths.source_dir, distinfo_dir)
+        self.write_license_files(cfg, distinfo_dir)
         # Write entrypoints/scripts
-        self.write_entrypoints(distinfo_dir, cfg.entrypoints)
+        self.write_entrypoints(distinfo_dir, cfg)
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
-            self.generate_stubs(paths, pkg, cfg.stubgen)
+            self.generate_stubs(paths, module, cfg.stubgen)
 
         # Configure, build and install the CMake project
         if cfg.cmake:
@@ -253,35 +245,33 @@ class _BuildBackend(object):
         return whl_name
 
     @staticmethod
-    def read_all_metadata(src_dir, config_settings, verbose):
-        from flit_core.common import make_metadata, ProblemInModule
+    def read_all_metadata(src_dir, config_settings, verbose) -> Tuple[config.Config, Optional[metadata.Module]]:
         cfg = _BuildBackend.read_config(src_dir / 'pyproject.toml',
                                         config_settings, verbose)
-        pkg = flit_Module(cfg.module['name'], src_dir / cfg.module['directory'])
+        module = metadata.find_module(cfg.module, src_dir)
+        modfile = module.full_file if module is not None else None
         try:
-            metadata = make_metadata(pkg, cfg)
+            metadata.update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:
             if hasattr(e, "msg"):
                 e.msg = (
                     "\n"
                     "\n"
-                    f"\t❌ Error importing {pkg.name} for reading metadata:\n"
+                    f"\t❌ Error importing {modfile} for reading metadata:\n"
                     "\n"
                     f"\t\t{e.msg}\n"
                     "\n")
             raise
-        except ProblemInModule as e:
+        except metadata.ProblemInModule as e:
             e.args = ("\n"
                       "\n"
-                      f"\t❌ Error reading metadata from {pkg.name}:"
+                      f"\t❌ Error reading metadata from {modfile}:"
                       "\n"
                       "\n"
                       f"\t\t{e}\n"
                       "\n", )
             raise
-        metadata.version = _BuildBackend.normalize_version(metadata.version)
-        metadata.name = cfg.package_name
-        return cfg, pkg, metadata
+        return cfg, module
 
     @staticmethod
     def create_wheel(paths, cfg, package_info):
@@ -363,56 +353,65 @@ class _BuildBackend(object):
 
     @staticmethod
     def copy_pkg_source_to(staging_dir: Path,
-                           pkg: flit_Module,
+                           module: metadata.Module,
                            symlink: bool = False):
         """Copy the files of a Python package to the build directory."""
-        for mod_file in pkg.iter_files():
-            rel_path = os.path.relpath(mod_file, pkg.path.parent)
+        for src in module.iter_files_abs():
+            rel_path = src.relative_to(module.prefix)
             dst = staging_dir / rel_path
             os.makedirs(dst.parent, exist_ok=True)
             if symlink:
-                dst.symlink_to(mod_file, target_is_directory=False)
+                dst.symlink_to(src, target_is_directory=False)
             else:
-                shutil.copy2(mod_file, dst, follow_symlinks=False)
+                shutil.copy2(src, dst, follow_symlinks=False)
 
     @staticmethod
-    def write_license_files(license, srcdir: Path, distinfo_dir: Path):
+    def write_license_files(cfg: config.Config, distinfo_dir: Path):
         """Write the LICENSE file from pyproject.toml to the distinfo
         directory."""
-        if 'text' in license:
+        license = cfg.standard_metadata.license
+        if not license:
+            return
+        if license.file:
+            shutil.copy2(license.file, distinfo_dir)
+        else:
             with (distinfo_dir / 'LICENSE').open('w', encoding='utf-8') as f:
-                f.write(license['text'])
-        elif 'file' in license:
-            assert not Path(license['file']).is_absolute()
-            shutil.copy2(srcdir / license['file'], distinfo_dir)
+                f.write(license.text)
 
     @staticmethod
-    def write_entrypoints(distinfo: Path, entrypoints: Dict[str, Dict[str,
-                                                                      str]]):
-        from flit_core.common import write_entry_points
+    def write_entrypoints(distinfo: Path, cfg: config.Config):
+        entrypoints = copy(cfg.standard_metadata.entrypoints)
+        if cfg.standard_metadata.scripts:
+            entrypoints["console_scripts"] = cfg.standard_metadata.scripts
+        if cfg.standard_metadata.gui_scripts:
+            entrypoints["gui_scripts"] = cfg.standard_metadata.gui_scripts
         with (distinfo / 'entry_points.txt').open('w', encoding='utf-8') as f:
-            write_entry_points(entrypoints, f)
+            metadata.write_entry_points(entrypoints, f)
 
     # --- Editable installs ---------------------------------------------------
 
-    def do_editable_install(self, cfg, paths: BuildPaths, pkg: flit_Module):
+    def do_editable_install(self, cfg, paths: BuildPaths, module: metadata.Module):
         edit_cfg = cfg.editable['cross' if cfg.cross else self.get_os_name()]
         mode = edit_cfg["mode"]
         if mode == "wrapper":
-            self.write_editable_wrapper(paths.staging_dir, pkg)
+            self.write_editable_wrapper(paths.staging_dir, module)
         elif mode == "hook":
-            self.write_editable_hook(paths.staging_dir, pkg),
+            self.write_editable_hook(paths.staging_dir, module),
         elif mode == "symlink":
-            paths = self.write_editable_links(paths, pkg)
+            paths = self.write_editable_links(paths, module)
         else:
             assert False, "Invalid editable mode"
         return paths
 
-    def write_editable_wrapper(self, staging_dir: Path, pkg: flit_Module):
+    def write_editable_wrapper(self, staging_dir: Path, module: metadata.Module):
         """Write a fake __init__.py file that points to the development 
         folder."""
-        tmp_pkg: Path = staging_dir / pkg.name
-        pkgpath = Path(pkg.path)
+        if not module.is_package:
+            raise metadata.ConfigError("Editable wrapper mode is not supported "
+                                       "for stand-alone Python modules.")
+        name = module.name
+        tmp_pkg: Path = staging_dir / name
+        pkgpath: Path = module.full_path
         initpath = pkgpath / '__init__.py'
         os.makedirs(tmp_pkg, exist_ok=True)
         special_dunders = [
@@ -424,7 +423,7 @@ class _BuildBackend(object):
             __spec__.submodule_search_locations.insert(0, {str(pkgpath)!a})
             # Now manually import the development __init__.py
             from importlib import util as _util
-            _spec = _util.spec_from_file_location("{pkg.name}",
+            _spec = _util.spec_from_file_location("{name}",
                                                   {str(initpath)!a})
             _mod = _util.module_from_spec(_spec)
             _spec.loader.exec_module(_mod)
@@ -439,15 +438,16 @@ class _BuildBackend(object):
                                              encoding='utf-8')
         # Add the py.typed file if it exists, so mypy picks up the stubs for
         # the C++ extensions
-        py_typed: Path = pkg.path / 'py.typed'
+        py_typed: Path = module.full_path / 'py.typed'
         if py_typed.exists():
             shutil.copy2(py_typed, tmp_pkg)
         # Write a path file so IDEs find the correct files as well
-        (staging_dir / f'{pkg.name}.pth').write_text(str(pkg.path.parent))
+        (staging_dir / f'{name}.pth').write_text(str(module.full_path.parent))
 
-    def write_editable_hook(self, staging_dir: Path, pkg: flit_Module):
+    def write_editable_hook(self, staging_dir: Path, module: metadata.Module):
         # Write a hook that finds the installed compiled extension modules
-        pkg_hook: Path = staging_dir / (pkg.name + '_editable_hook')
+        name = module.name
+        pkg_hook: Path = staging_dir / (name + '_editable_hook')
         os.makedirs(pkg_hook, exist_ok=True)
         content = f"""\
             import sys, inspect, os
@@ -469,25 +469,25 @@ class _BuildBackend(object):
                 installed_path = os.path.join(source_dir, '..', name)
                 sys.meta_path.insert(0, EditablePathFinder(name, installed_path))
 
-            install('{pkg.name}')
+            install('{name}')
             """
         (pkg_hook / '__init__.py').write_text(textwrap.dedent(content),
                                               encoding='utf-8')
         # Write a path file to find the development files
         content = f"""\
-            {str(pkg.path.parent)}
-            import {pkg.name}_editable_hook"""
-        (staging_dir / f'{pkg.name}.pth').write_text(textwrap.dedent(content))
+            {str(module.full_path.parent)}
+            import {name}_editable_hook"""
+        (staging_dir / f'{name}.pth').write_text(textwrap.dedent(content))
 
-    def write_editable_links(self, paths: BuildPaths, pkg: flit_Module):
+    def write_editable_links(self, paths: BuildPaths, module: metadata.Module):
         paths = copy(paths)
         cache_dir = paths.source_dir / '.py-build-cmake_cache'
         cache_dir.mkdir(exist_ok=True)
         paths.staging_dir = cache_dir / 'editable'
         shutil.rmtree(paths.staging_dir, ignore_errors=True)
         paths.staging_dir.mkdir()
-        self.copy_pkg_source_to(paths.staging_dir, pkg, symlink=True)
-        pth_file = paths.pkg_staging_dir / f'{pkg.name}.pth'
+        self.copy_pkg_source_to(paths.staging_dir, module, symlink=True)
+        pth_file = paths.pkg_staging_dir / f'{module.name}.pth'
         pth_file.parent.mkdir(exist_ok=True)
         pth_file.write_text(str(paths.staging_dir))
         return paths
@@ -585,13 +585,14 @@ class _BuildBackend(object):
 
     # --- Generate stubs ------------------------------------------------------
 
-    def generate_stubs(self, paths: BuildPaths, pkg, cfg: Dict[str, Any]):
+    def generate_stubs(self, paths: BuildPaths, module: metadata.Module, cfg: Dict[str, Any]):
         """Generate stubs (.pyi) using mypy stubgen."""
         args = ['stubgen'] + cfg.get('args', [])
-        cfg.setdefault('packages', [pkg.name] if pkg.is_package else [])
+        is_package = module.is_package
+        cfg.setdefault('packages', [module.name] if is_package else [])
         for p in cfg['packages']:
             args += ['-p', p]
-        cfg.setdefault('modules', [pkg.name] if not pkg.is_package else [])
+        cfg.setdefault('modules', [module.name] if not is_package else [])
         for m in cfg['modules']:
             args += ['-m', m]
         args += cfg.get('files', [])
@@ -601,7 +602,7 @@ class _BuildBackend(object):
         env = os.environ.copy()
         env.setdefault('MYPY_CACHE_DIR', str(paths.temp_dir))
         # Call mypy stubgen in a subprocess
-        self.runner.run(args, cwd=pkg.path.parent, check=True, env=env)
+        self.runner.run(args, cwd=module.full_path.parent, check=True, env=env)
 
     # --- Misc helper functions -----------------------------------------------
 

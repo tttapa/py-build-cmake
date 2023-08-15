@@ -13,7 +13,7 @@ import os.path as osp
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
-from flit_core.config import ConfigError  # type: ignore
+from .metadata import ConfigError
 
 ConfPath = Tuple[str, ...]
 ConfValue = Optional[Union[bool, int, str, List[str], Dict[str, Any]]]
@@ -417,7 +417,7 @@ class ConfigOption:
         if not self.allow_unknown_keys:
             unknwn = set(selfcfg.sub or ()) - set(self.sub or ())
             if unknwn:
-                raise ConfigError(f'Unkown options in {pth2str(cfgpath)}: ' +
+                raise ConfigError(f'Unknown options in {pth2str(cfgpath)}: ' +
                                   ', '.join(unknwn))
         # Recursively verify the sub-options
         if selfcfg.sub:
