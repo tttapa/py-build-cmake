@@ -192,7 +192,7 @@ def cross_compile_mac(config: ConfigNode, archs):
     if plat_tag:
         cross_arch = get_platform_dashes().split('-')
         cross_arch[-1] = plat_tag
-        cross_cfg['arch']  = '_'.join(cross_arch)
+        cross_cfg['arch'] = platform_to_platform_tag('_'.join(cross_arch))
     if sys.implementation.name == 'cpython':
         version = ''.join(map(str, sys.version_info[:2]))
         abi = sys.abiflags
