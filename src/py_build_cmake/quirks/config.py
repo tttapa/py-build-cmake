@@ -5,7 +5,7 @@ import re
 import sys
 import sysconfig
 import warnings
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List, Tuple, Dict, Any
 from ..config_options import ConfigNode, pth
 from distlib.util import get_platform as get_platform_dashes  # type: ignore
 
@@ -179,7 +179,7 @@ def cross_compile_mac(config: ConfigNode, archs):
         f"ARCHFLAGS was specified. Automatically enabling cross-compilation for {', '.join(archs)} (native platform: {platform.machine()})"
     )
     assert not config.contains('cross')
-    cross_cfg = {
+    cross_cfg: Dict[str, Any] = {
         'os': 'mac',
         'cmake': {
             'options': {
@@ -193,6 +193,11 @@ def cross_compile_mac(config: ConfigNode, archs):
         cross_arch = get_platform_dashes().split('-')
         cross_arch[-1] = plat_tag
         cross_cfg['arch']  = '_'.join(cross_arch)
+    if sys.implementation.name == 'cpython':
+        version = ''.join(map(str, sys.version_info[:2]))
+        abi = sys.abiflags
+        env = cross_cfg['cmake']['env'] = {}
+        env['SETUPTOOLS_EXT_SUFFIX'] = f'.cpython-{version}{abi}-darwin.so'
     config.setdefault(pth('cross'), ConfigNode.from_dict(cross_cfg))
 
 
