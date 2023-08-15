@@ -1,5 +1,5 @@
 py*-venv
-.venv
+.venv*
 build
 .build
 .*cache
