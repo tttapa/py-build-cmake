@@ -44,7 +44,7 @@ from pathlib import Path
 from posixpath import join as pjoin
 import tarfile
 
-from .metadata import Module
+from ..common import Module
 from pyproject_metadata import StandardMetadata
 
 
@@ -264,5 +264,5 @@ class SdistBuilder:
             tf.close()
             gz.close()
 
-        log.info("Built sdist: %s", target)
+        log.debug("Built sdist: %s", target)
         return target

@@ -3,9 +3,9 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
-import py_build_cmake.config_options as co
-from py_build_cmake.pyproject_options import get_options
-from py_build_cmake.metadata import ConfigError
+import py_build_cmake.config.config_options as co
+from py_build_cmake.config.pyproject_options import get_options
+from py_build_cmake.common import ConfigError
 
 
 def gen_test_opts():
@@ -720,7 +720,7 @@ def test_real_config_inherit_cross_cmake():
                             "foo": "bar"
                         },
                         "pure_python": False,
-                        "python_extension_abi": "auto",
+                        "python_abi": "auto",
                         "abi3_minimum_cpython_version": 32,
                     },
                     "cross": {
@@ -764,7 +764,7 @@ def test_real_config_inherit_cross_cmake():
                                 "crosscompiling": "true",
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         },
                     },
@@ -798,7 +798,7 @@ def test_real_config_inherit_cross_cmake():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         },
                     },
@@ -832,7 +832,7 @@ def test_real_config_inherit_cross_cmake():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         }
                     },
@@ -866,7 +866,7 @@ def test_real_config_inherit_cross_cmake():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         }
                     }
@@ -958,7 +958,7 @@ def test_real_config_no_cross():
                             "foo": "bar"
                         },
                         "pure_python": False,
-                        "python_extension_abi": "auto",
+                        "python_abi": "auto",
                         "abi3_minimum_cpython_version": 32,
                     },
                     "linux": {
@@ -991,7 +991,7 @@ def test_real_config_no_cross():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         },
                     },
@@ -1025,7 +1025,7 @@ def test_real_config_no_cross():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         }
                     },
@@ -1059,7 +1059,7 @@ def test_real_config_no_cross():
                                 "foo": "bar"
                             },
                             "pure_python": False,
-                            "python_extension_abi": "auto",
+                            "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
                         }
                     }

@@ -49,7 +49,7 @@ build_tool_args = []
 install_args = ["--verbose"]
 install_components = ["python_modules"]
 env = {}
-python_extension_abi = 'abi3'
+python_abi = 'abi3'
 abi3_minimum_cpython_version = 312
 
 [tool.py-build-cmake.linux.cmake] # Linux-specific options

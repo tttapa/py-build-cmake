@@ -208,7 +208,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          "to be set to `py3-none-any`.",
                          "pure_python = true",
                          default=DefaultValueValue(False)),
-        EnumConfigOption("python_extension_abi",
+        EnumConfigOption("python_abi",
                          "Override the default ABI tag for the Wheel package.\n"
                          "For packages with a Python extension module that "
                          "make use of the full Python C API, this option "
@@ -225,15 +225,14 @@ def get_options(project_path: Path, *, test: bool = False):
                          "For details about platform compatibility tags, see "
                          "the PyPA specification: https://packaging.python.org/"
                          "en/latest/specifications/platform-compatibility-tags",
-                         "python_extension_abi = 'none'",
+                         "python_abi = 'none'",
                          default=DefaultValueValue("auto"),
                          options=["auto", "none", "abi3"]),
         IntConfigOption("abi3_minimum_cpython_version",
-                        "If `python_extension_abi` is set to `abi3`, only use "
-                        "the stable CPython API for CPython version that are "
-                        "newer than `abi3_minimum_version`. Useful for "
-                        "nanobind, which supports the stable ABI for CPython "
-                        "12 and later.\n"
+                        "If `python_abi` is set to `abi3`, only use the stable "
+                        "CPython API for CPython version that are newer than "
+                        "`abi3_minimum_version`. Useful for nanobind, which "
+                        "supports the stable ABI for CPython 12 and later.\n"
                         "The Python version is encoded as a single integer, "
                         "consisting of the major and minor version numbers, "
                         "without a dot.",
@@ -371,18 +370,6 @@ def get_options(project_path: Path, *, test: bool = False):
                          must_exist=not test,
                          allow_abs=True,
                          is_folder=False),
-        DirPatternsConfigOption('copy_from_native_build',
-                                "If set, this will cause a native version of "
-                                "the CMake project to be built and installed "
-                                "in a temporary directory first, and the "
-                                "files in this list will be copied to the "
-                                "final cross-compiled package. This is useful "
-                                "if you need binary utilities that run on the "
-                                "build system while cross-compiling, or for "
-                                "things like stubs for extension modules that "
-                                "cannot be generated while cross-compiling.\n"
-                                "May include the '*' wildcard "
-                                "(but not '**' for recursive patterns)."),
         ConfigOption("editable",
                      f"Override editable options when cross-compiling.",
                      inherit_from=editable_pth,

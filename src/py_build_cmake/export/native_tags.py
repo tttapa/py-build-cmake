@@ -5,11 +5,12 @@ for the generated wheels. Therefore the only option here is to write our own
 (kind of hacky) functions based on packaging.tags.
 """
 
-from typing import Dict
+from typing import Dict, List
 import sys
 import sysconfig
 from importlib.machinery import EXTENSION_SUFFIXES
 from distlib.util import get_platform as get_platform_dashes  # type: ignore
+from ..common.util import platform_to_platform_tag
 
 _INTERPRETER_SHORT_NAMES: Dict[str, str] = {
     "python": "py",
@@ -20,12 +21,8 @@ _INTERPRETER_SHORT_NAMES: Dict[str, str] = {
 }
 
 
-def _normalize_string(s: str) -> str:
-    return s.replace(".", "_").replace("-", "_")
-
-
 def get_platform_tag() -> str:
-    return _normalize_string(get_platform_dashes())
+    return platform_to_platform_tag(get_platform_dashes())
 
 
 def get_interpreter_name() -> str:
@@ -70,14 +67,30 @@ def get_generic_interpreter() -> str:
 
 def get_generic_abi() -> str:
     abi = sysconfig.get_config_var("SOABI") or "none"
-    return _normalize_string(abi)
+    return platform_to_platform_tag(abi)
 
 
 def get_python_tag() -> str:
-    if get_interpreter_name() == "cp": return get_cpython_interpreter()
-    else: return get_generic_interpreter()
+    if get_interpreter_name() == "cp":
+        return get_cpython_interpreter()
+    else:
+        return get_generic_interpreter()
 
 
 def get_abi_tag() -> str:
-    if get_interpreter_name() == "cp": return get_cpython_abi()
-    else: return get_generic_abi()
+    if get_interpreter_name() == "cp":
+        return get_cpython_abi()
+    else:
+        return get_generic_abi()
+
+
+WheelTags = Dict[str, List[str]]
+
+
+def get_native_tags() -> WheelTags:
+    """Get the PEP 425 tags for the current platform."""
+    return {
+        "pyver": [get_python_tag()],
+        "abi": [get_abi_tag()],
+        "arch": [get_platform_tag()],
+    }

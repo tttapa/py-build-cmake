@@ -38,30 +38,18 @@ import logging
 import sys
 import distlib.version
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional
 
-log = logging.getLogger(__name__)
+from ..common import (
+    ProblemInModule,
+    Module,
+    ConfigError,
+    NoDocstringError,
+    NoVersionError,
+    InvalidVersion,
+)
 
-
-class ConfigError(ValueError):
-    """Problem processing the pyproject.toml config"""
-
-
-class ProblemInModule(ValueError):
-    """Problem processing the project's modules"""
-
-
-class NoDocstringError(ProblemInModule):
-    """The module does not contain a docstring that can be used as package
-    description."""
-
-
-class NoVersionError(ProblemInModule):
-    """The module does not contain a __version__."""
-
-
-class InvalidVersion(ProblemInModule):
-    """The __version__ is invalid."""
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -88,15 +76,14 @@ def get_docstring_and_version_via_ast(mod_filename: Path):
     for child in node.body:
         # Only use the version from the given module if it's a simple
         # string assignment to __version__
-        is_version_str = (
+        if (
             isinstance(child, ast.Assign)
             and any(
                 isinstance(target, ast.Name) and target.id == "__version__"
                 for target in child.targets
             )
             and isinstance(child.value, ast.Str)
-        )
-        if is_version_str:
+        ):
             version = child.value.s
             break
     else:
@@ -119,11 +106,15 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     global _import_i
     _import_i += 1
 
-    log.debug("Loading module %s", mod_filename)
+    logger.debug("Loading module %s", mod_filename)
     from importlib.util import spec_from_file_location, module_from_spec
 
     mod_name = "py_build_cmake.dummy.import%d" % _import_i
     spec = spec_from_file_location(mod_name, mod_filename)
+    if spec is None:
+        raise ProblemInModule(f"Unable to import '{mod_filename}' (missing spec)")
+    if spec.loader is None:
+        raise ProblemInModule(f"Unable to import '{mod_filename}' (missing loader)")
     with _module_load_ctx():
         m = module_from_spec(spec)
         # Add the module to sys.modules to allow relative imports to work.
@@ -150,7 +141,7 @@ def get_info_from_module(mod_filename: Path, for_fields=("version", "description
     want_summary = "description" in for_fields
     want_version = "version" in for_fields
 
-    log.debug("Loading module %s", mod_filename)
+    logger.debug("Loading module %s", mod_filename)
 
     # Attempt to extract our docstring & version by parsing our target's
     # AST, falling back to an import if that fails. This allows us to
@@ -204,26 +195,10 @@ def check_version(version, filename):
     return version
 
 
-def write_entry_points(entrypoints: Dict[str, Dict[str, str]], fp):
-    """Write entry_points.txt from a two-level dict
-
-    Sorts on keys to ensure results are reproducible.
-    """
-    for group_name in sorted(entrypoints):
-        fp.write("[{}]\n".format(group_name))
-        group = entrypoints[group_name]
-        for name in sorted(group):
-            val = group[name]
-            fp.write("{}={}\n".format(name, val))
-        fp.write("\n")
-
-
 # Own code
 # --------------------------------------------------------------------------- #
 
 from pyproject_metadata import StandardMetadata
-from dataclasses import dataclass
-import os
 
 
 def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Optional[Path]):
@@ -238,50 +213,6 @@ def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Optional[P
         metadata.version = res["version"]
     if "summary" in res:
         metadata.description = res["summary"]
-
-
-@dataclass
-class Module:
-    """
-    TODO: distinction between paths relative to prefix and relative to base.
-    """
-
-    name: str
-    full_path: Path
-    base_path: Path
-    is_package: bool
-
-    @property
-    def prefix(self):
-        return self.full_path.parent
-
-    @property
-    def full_file(self):
-        if self.is_package:
-            return self.full_path / "__init__.py"
-        else:
-            return self.full_path
-
-    def iter_files_abs(self):
-        """Iterate over the files contained in this module.
-
-        Yields absolute paths.
-        Excludes any __pycache__ and *.pyc files.
-        """
-
-        def _include(p: Path):
-            return not p.name == "__pycache__" and not p.name.endswith(".pyc")
-
-        if self.is_package:
-            # Ensure we sort all files and directories so the order is stable
-            for dirpath, dirs, files in os.walk(str(self.full_path)):
-                for file in sorted(files):
-                    filepath = Path(dirpath) / file
-                    if _include(filepath):
-                        yield filepath
-                dirs[:] = [d for d in sorted(dirs) if _include(Path(d))]
-        else:
-            yield self.full_file
 
 
 def find_module(module_metadata: dict, src_dir: Path) -> Optional[Module]:
@@ -316,14 +247,6 @@ def find_module(module_metadata: dict, src_dir: Path) -> Optional[Module]:
     return Module(
         name=name,
         full_path=found[0][0],
-        base_path=base_dir,
+        base_path=src_dir,
         is_package=found[0][1] == dir,
     )
-
-def referenced_files(metadata: StandardMetadata) -> List[Path]:
-    res = []
-    if metadata.readme is not None and metadata.readme.file is not None:
-        res += [metadata.readme.file]
-    if metadata.license is not None and metadata.license.file is not None:
-        res += [metadata.license.file]
-    return res
