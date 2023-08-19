@@ -1,0 +1,7 @@
+minimal_program-{version}.data/scripts/minimal_program
+minimal_program-{version}.dist-info/LICENSE
+minimal_program-{version}.dist-info/METADATA
+minimal_program-{version}.dist-info/RECORD
+minimal_program-{version}.dist-info/WHEEL
+minimal_program-{version}.dist-info/entry_points.txt
+minimal_program_module/__init__.py

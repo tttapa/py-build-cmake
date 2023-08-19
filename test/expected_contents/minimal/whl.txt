@@ -1,0 +1,12 @@
+minimal-{version}.dist-info/LICENSE
+minimal-{version}.dist-info/METADATA
+minimal-{version}.dist-info/RECORD
+minimal-{version}.dist-info/WHEEL
+minimal-{version}.dist-info/entry_points.txt
+minimal/__init__.py
+minimal/__init__.pyi
+minimal/_add_module{ext_suffix}
+minimal/_add_module.pyi
+minimal/add_module.py
+minimal/add_module.pyi
+minimal/py.typed

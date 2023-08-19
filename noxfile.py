@@ -1,51 +1,101 @@
 import shutil
 import nox
 import os
+import re
 import sys
+import sysconfig
+from tarfile import open as open_tar
+from zipfile import ZipFile
+from pathlib import Path
+from difflib import unified_diff
+from glob import glob
+from distlib.util import get_platform
+
+version = "0.2.0a5.dev0"
+project_dir = Path(__name__).resolve().parent
+print(project_dir)
+
+examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
+
+
+def check_pkg_contents(
+    session: nox.Session, name: str, ext_suffix: str, with_sdist=True
+):
+    d = project_dir / "test" / "expected_contents" / name
+    normname = re.sub(r"[-_.]+", "_", name).lower()
+    plat = get_platform().replace(".", "_").replace("-", "_")
+    dbg_suffix = ext_suffix
+    dbg_suffix = re.sub(".pyd$", ".pdb", dbg_suffix)
+    dbg_suffix = re.sub(".so$", ".so.debug", dbg_suffix)
+    subs = dict(version=version, ext_suffix=ext_suffix, dbg_suffix=dbg_suffix)
+    # Compare sdist contents
+    sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
+    if with_sdist:
+        sdist_expect = (d / "sdist.txt").read_text().format(**subs).split("\n")
+        sdist_actual = sorted(open_tar(sdist).getnames())
+        if sdist_expect != sdist_actual:
+            diff = "\n".join(unified_diff(sdist_expect, sdist_actual))
+            session.error("sdist contents mismatch:\n" + diff)
+    # Find Wheel
+    whl_pattern = f"dist-nox/{normname}-{version}-*{plat}*.whl"
+    whls = glob(whl_pattern)
+    if len(whls) != 1:
+        session.error(f"Unexpected number of Wheels {whls} ({whl_pattern})")
+    whl = whls[0]
+    # Compare Wheel contents
+    whl_expect = (d / "whl.txt").read_text().format(**subs).split("\n")
+    whl_actual = sorted(ZipFile(whl).namelist())
+    if whl_expect != whl_actual:
+        diff = "\n".join(unified_diff(whl_expect, whl_actual))
+        session.error("Wheel contents mismatch:\n" + diff)
+
+
+def test_example_project(session: nox.Session, name: str, ext_suffix: str):
+    with session.chdir("examples/" + name):
+        shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
+        shutil.rmtree("dist-nox", ignore_errors=True)
+        session.run("python", "-m", "build", ".", "-o", "dist-nox")
+        check_pkg_contents(session, name, ext_suffix)
+        session.install(".")
+        session.run("pytest")
+
 
 @nox.session
 def example_projects(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
-    dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-    session.install("py-build-cmake==0.2.0a5.dev0")
-    with session.chdir("examples/minimal"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        session.run("python", "-m", "build", ".")
-        session.install(".")
-        session.run("pytest")
-    with session.chdir("examples/pybind11-project"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        session.run("python", "-m", "build", ".")
-        session.install(".")
-        session.run("pytest")
-    if sys.version_info >= (3, 8):
-        with session.chdir("examples/nanobind-project"):
-            shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-            session.run("python", "-m", "build", ".")
-            session.install(".")
-            session.run("pytest")
-    with session.chdir("examples/minimal-program"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
-        session.run("python", "-m", "build", ".")
-        session.install(".")
-        session.run("pytest")
+    session.install(f"py-build-cmake=={version}")
+    for name in examples:
+        ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
+        if name == "nanobind-project":
+            if sys.version_info < (3, 8):
+                continue
+            elif sys.version_info >= (3, 12):
+                ext_suffix = ".abi3." + ext_suffix.rsplit(".", 1)[-1]
+        test_example_project(session, name, ext_suffix)
 
 
 @nox.session
 def component(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
-    dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-    session.install("py-build-cmake==0.2.0a5.dev0")
+    session.install(f"py-build-cmake=={version}")
     with session.chdir("examples/minimal-debug-component"):
-        shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+        shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
+        shutil.rmtree("dist-nox", ignore_errors=True)
+        session.run("python", "-m", "build", "-w", ".", "-o", "dist-nox")
+        session.run("python", "-m", "build", "-w", "./debug", "-o", "dist-nox")
+        ext_suffix: str = sysconfig.get_config_var("EXT_SUFFIX")
+        check_pkg_contents(session, "minimal-comp", ext_suffix, False)
+        check_pkg_contents(session, "minimal-comp-debug", ext_suffix, False)
         session.install(".")
         session.install("./debug")
         session.run("pytest")
@@ -55,9 +105,9 @@ def test_editable(session: nox.Session, mode: str):
     tmpdir = os.path.realpath(session.create_tmp())
     try:
         with session.chdir("examples/pybind11-project"):
-            shutil.rmtree('.py-build-cmake_cache', ignore_errors=True)
+            shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
             with open(os.path.join(tmpdir, f"{mode}.toml"), "w") as f:
-                f.write(f"[editable]\nmode = \"{mode}\"")
+                f.write(f'[editable]\nmode = "{mode}"')
             session.install("-e", ".", "--config-settings=--local=" + f.name)
             session.run("pytest")
     finally:
@@ -67,23 +117,23 @@ def test_editable(session: nox.Session, mode: str):
 @nox.session
 def editable(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
-    dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-    session.install("py-build-cmake==0.2.0a5.dev0")
-    for mode in ("wrapper", "hook", "symlink"):
+    session.install(f"py-build-cmake=={version}")
+    for mode in "wrapper", "hook", "symlink":
         test_editable(session, mode)
 
 
 @nox.session
 def tests(session: nox.Session):
     session.install("-U", "pip", "pytest")
-    dist_dir = os.getenv('PY_BUILD_CMAKE_WHEEL_DIR')
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir:
         session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
-        session.install("py-build-cmake==0.2.0a5.dev0")
+        session.install(f"py-build-cmake=={version}")
     else:
         session.install(".")
-    session.run('pytest')
+    session.run("pytest")

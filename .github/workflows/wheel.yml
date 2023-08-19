@@ -57,7 +57,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox
+        python -m pip install -U pip nox distlib
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -113,7 +113,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox
+        python -m pip install -U pip nox distlib
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -166,7 +166,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox
+        python -m pip install -U pip nox distlib
         python -m nox
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
