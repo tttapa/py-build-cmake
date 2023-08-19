@@ -16,12 +16,8 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         }
         # Read configuration and package metadata
         cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
+        pkg_info = backend.get_pkg_info(cfg, module)
         cmake_cfg = backend.get_cmake_config(cfg)
-        pkg_info = PackageInfo(
-            version=cfg.standard_metadata.version,
-            package_name=cfg.package_name,
-            module_name=module.name,
-        )
 
         # Set up all paths
         build_cfg_name = backend.get_build_config_name(cfg.cross)

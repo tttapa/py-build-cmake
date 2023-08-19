@@ -98,7 +98,7 @@ class CMaker:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
         return [
             "PY_BUILD_CMAKE_PACKAGE_VERSION:STRING=" + self.package_info.version,
-            "PY_BUILD_CMAKE_PACKAGE_NAME:STRING=" + self.package_info.package_name,
+            "PY_BUILD_CMAKE_PACKAGE_NAME:STRING=" + self.package_info.norm_name,
             "PY_BUILD_CMAKE_MODULE_NAME:STRING=" + self.package_info.module_name,
         ]
 

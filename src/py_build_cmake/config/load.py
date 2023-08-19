@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, cast
 from pathlib import Path
 from pprint import pprint
 import logging
@@ -14,8 +14,7 @@ from .pyproject_options import (
     get_tool_pbc_path,
     get_component_options,
 )
-from ..common import ConfigError, Module, Config
-from ..common.util import normalize_name_wheel
+from ..common import ConfigError, Config
 from .quirks import config_quirks
 
 import pyproject_metadata
@@ -138,7 +137,7 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
     if f in pyproject["project"]:
         normname = normalize_name(pyproject["project"][f])
         if pyproject["project"][f] != normname:
-            warnings.warn(f"Name changed from {pyproject['project'][f]} to {normname}")
+            logger.info(f"Name normalized from {pyproject['project'][f]} to {normname}")
         pyproject["project"][f] = normname
 
     # Parse the [project] section for metadata
@@ -150,7 +149,7 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
 
     # Create our own config data structure
     cfg = Config(meta)
-    cfg.package_name = normalize_name_wheel(meta.name)
+    cfg.package_name = meta.name
 
     # Additional options from command-line overrides
     opts = get_options(pyproject_path.parent)
@@ -176,9 +175,7 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
     s = "module"
     if s in tool_cfg:
         # Normalize the import and wheel name of the package
-        normname = normalize_name_wheel(tool_cfg[s]["name"])
-        if tool_cfg[s]["name"] != normname:
-            logger.info(f"Name changed from {tool_cfg[s]['name']} to {normname}")
+        normname = tool_cfg[s]["name"].replace("-", "_")
         tool_cfg[s]["name"] = normname
         cfg.module = tool_cfg[s]
     else:
@@ -297,9 +294,8 @@ def read_full_component_config_checked(
     return cfg
 
 
-def read_component_config(pyproject_path) -> ComponentConfig:
+def read_component_config(pyproject_path: Path) -> ComponentConfig:
     # Load the pyproject.toml file
-    pyproject_path = Path(pyproject_path)
     pyproject = toml_.loads(pyproject_path.read_text("utf-8"))
     if "project" not in pyproject:
         raise ConfigError("Missing [project] table")
@@ -311,13 +307,13 @@ def read_component_config(pyproject_path) -> ComponentConfig:
     return process_component_config(pyproject_path, pyproject, config_files)
 
 
-def process_component_config(pyproject_path, pyproject, config_files):
+def process_component_config(pyproject_path: Path, pyproject, config_files):
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:
         normname = normalize_name(pyproject["project"][f])
         if pyproject["project"][f] != normname:
-            logger.info(f"Name changed from {pyproject['project'][f]} to {normname}")
+            logger.info(f"Name normalized from {pyproject['project'][f]} to {normname}")
         pyproject["project"][f] = normname
 
         # Parse the [project] section for metadata
@@ -330,7 +326,7 @@ def process_component_config(pyproject_path, pyproject, config_files):
 
     # Create our own config data structure
     cfg = ComponentConfig(meta)
-    cfg.package_name = normalize_name_wheel(meta.name)
+    cfg.package_name = meta.name
 
     opts = get_component_options(pyproject_path.parent)
 
@@ -357,4 +353,3 @@ def print_component_config_verbose(cfg: ComponentConfig):
     print("component:")
     pprint(cfg.component)
     print("================================\n")
-

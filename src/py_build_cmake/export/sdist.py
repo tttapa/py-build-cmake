@@ -44,8 +44,10 @@ from pathlib import Path
 from posixpath import join as pjoin
 import tarfile
 
-from ..common import Module
+from ..common import Module, PackageInfo
 from pyproject_metadata import StandardMetadata
+
+logger = logging.getLogger(__name__)
 
 
 def walk_data_dir(data_directory):
@@ -77,9 +79,6 @@ def normalize_file_permissions(st_mode):
     if st_mode & 0o100:
         new_mode |= 0o111  # Executable: 644 -> 755
     return new_mode
-
-
-log = logging.getLogger(__name__)
 
 
 def clean_tarinfo(ti, mtime=None):
@@ -143,6 +142,7 @@ class SdistBuilder:
     def __init__(
         self,
         module: Module,
+        pkg_info: PackageInfo,
         metadata: StandardMetadata,
         cfgdir,
         extra_files,
@@ -150,6 +150,7 @@ class SdistBuilder:
         exclude_patterns=(),
     ):
         self.module = module
+        self.pkg_info = pkg_info
         self.metadata = metadata
         self.cfgdir = cfgdir
         self.extra_files = extra_files
@@ -186,7 +187,7 @@ class SdistBuilder:
 
         for f_rel in self.includes.files:
             if not self.excludes.match_file(f_rel):
-                files.add(f_rel)
+                files.add(Path(f_rel))
 
         for rel_d in self.includes.dirs:
             for dirpath, dirs, dfiles in os.walk(osp.join(cfgdir_s, rel_d)):
@@ -194,7 +195,7 @@ class SdistBuilder:
                     f_abs = osp.join(dirpath, file)
                     f_rel = osp.relpath(f_abs, cfgdir_s)
                     if not self.excludes.match_file(f_rel):
-                        files.add(f_rel)
+                        files.add(Path(f_rel))
 
                 # Filter subdirectories before os.walk scans them
                 dirs[:] = [
@@ -222,13 +223,11 @@ class SdistBuilder:
 
     @property
     def dir_name(self):
-        return "{}-{}".format(self.metadata.name, self.metadata.version)
+        return f"{self.pkg_info.norm_name}-{self.pkg_info.version}"
 
     def build(self, target_dir, gen_setup_py=True):
         os.makedirs(str(target_dir), exist_ok=True)
-        target = target_dir / "{}-{}.tar.gz".format(
-            self.metadata.name, self.metadata.version
-        )
+        target = target_dir / (self.dir_name + ".tar.gz")
         source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
         mtime = int(source_date_epoch) if source_date_epoch else None
         gz = GzipFile(str(target), mode="wb", mtime=mtime)
@@ -264,5 +263,5 @@ class SdistBuilder:
             tf.close()
             gz.close()
 
-        log.debug("Built sdist: %s", target)
+        logger.debug("Built sdist: %s", target)
         return target

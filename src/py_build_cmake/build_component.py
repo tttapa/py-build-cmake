@@ -30,12 +30,12 @@ class _BuildComponentBackend(object):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
         self.parse_config_settings(config_settings)
 
-        comp_pyproject = Path("pyproject.toml").resolve()
-        comp_cfg = self.read_component_config(
-            comp_pyproject, config_settings, self.verbose
+        comp_source_dir = Path().resolve()
+        comp_cfg = self.read_all_metadata(
+            comp_source_dir, config_settings, self.verbose
         )
         cfg = std_backend.read_config(
-            Path(comp_cfg.component["main_project"]) / "pyproject.toml",
+            Path(comp_cfg.component["main_project"]),
             config_settings,
             self.verbose,
         )
@@ -113,12 +113,8 @@ class _BuildComponentBackend(object):
         cfg, module = std_backend.read_all_metadata(
             src_dir, config_settings, self.verbose
         )
+        pkg_info = std_backend.get_pkg_info(comp_cfg, module)
         cmake_cfg = std_backend.get_cmake_config(cfg)
-        pkg_info = PackageInfo(
-            version=comp_cfg.standard_metadata.version,
-            package_name=comp_cfg.package_name,
-            module_name=module.name if module is not None else "",
-        )
 
         # Set up all paths
         paths = std_backend.get_default_paths(
@@ -126,7 +122,7 @@ class _BuildComponentBackend(object):
         )
 
         # Create dist-info folder
-        distinfo_dir = f"{pkg_info.package_name}-{pkg_info.version}.dist-info"
+        distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
         distinfo_dir = paths.pkg_staging_dir / distinfo_dir
         os.makedirs(distinfo_dir, exist_ok=True)
 

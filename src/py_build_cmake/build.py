@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 import tempfile
 import logging
 
 from .common import (
     util,
     Config,
+    ComponentConfig,
     Module,
     ProblemInModule,
     PackageInfo,
@@ -104,12 +105,14 @@ class _BuildBackend(object):
         src_dir = Path().resolve()
         pyproject = src_dir / "pyproject.toml"
         cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
+        pkg_info = self.get_pkg_info(cfg, module)
 
         # Export dist
         extra_files = [pyproject] + cfg.referenced_files
         sdist_cfg = cfg.sdist["cross" if cfg.cross else util.get_os_name()]
         sdist_builder = SdistBuilder(
             module,
+            pkg_info,
             metadata=cfg.standard_metadata,
             cfgdir=src_dir,
             extra_files=extra_files,
@@ -189,12 +192,8 @@ class _BuildBackend(object):
         # Load metadata from the pyproject.toml file
         src_dir = Path().resolve()
         cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
+        pkg_info = self.get_pkg_info(cfg, module)
         cmake_cfg = self.get_cmake_config(cfg)
-        pkg_info = PackageInfo(
-            version=cfg.standard_metadata.version,
-            package_name=cfg.package_name,
-            module_name=module.name if module is not None else "",
-        )
 
         # Set up all paths
         paths = self.get_default_paths(
@@ -208,7 +207,7 @@ class _BuildBackend(object):
             paths = export_editable.do_editable_install(cfg, paths, module)
 
         # Create dist-info folder
-        distinfo_dir = f"{pkg_info.package_name}-{pkg_info.version}.dist-info"
+        distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
         distinfo_dir = paths.pkg_staging_dir / distinfo_dir
         os.makedirs(distinfo_dir, exist_ok=True)
 
@@ -239,6 +238,14 @@ class _BuildBackend(object):
         # Create wheel
         whl_name = self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
         return whl_name
+
+    @staticmethod
+    def get_pkg_info(cfg: Union[Config, ComponentConfig], module: Module):
+        return PackageInfo(
+            version=str(cfg.standard_metadata.version),
+            package_name=cfg.package_name,
+            module_name=module.name if module is not None else "",
+        )
 
     @staticmethod
     def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg, cmake_cfg):
@@ -304,7 +311,7 @@ class _BuildBackend(object):
     ):
         """Create a wheel package from the build directory."""
         whl = Wheel()
-        whl.name = package_info.package_name
+        whl.name = package_info.norm_name
         whl.version = package_info.version
         pure = is_pure(cmake_cfg)
         libdir = "purelib" if pure else "platlib"
@@ -320,6 +327,7 @@ class _BuildBackend(object):
             tags = get_native_tags()
             tags = convert_wheel_tags(tags, cmake_cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
+        logger.debug("Built Wheel: %s", wheel_path)
         whl_name = os.path.relpath(wheel_path, paths.wheel_dir)
         return whl_name
 

@@ -113,6 +113,10 @@ class PackageInfo:
     package_name: str
     module_name: str
 
+    @property
+    def norm_name(self):
+        from .util import normalize_name_wheel
+        return normalize_name_wheel(self.package_name)
 
 @dataclass
 class BuildPaths:
