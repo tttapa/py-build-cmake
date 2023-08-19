@@ -6,7 +6,7 @@ from ..util import copy_pkg_source_to
 def write_editable_links(paths: BuildPaths, module: Module):
     paths = copy(paths)
     cache_dir = paths.build_dir
-    cache_dir.mkdir(exist_ok=True)
+    cache_dir.mkdir(exist_ok=True, parents=True)
     paths.staging_dir = cache_dir / 'editable'
     shutil.rmtree(paths.staging_dir, ignore_errors=True)
     paths.staging_dir.mkdir()
