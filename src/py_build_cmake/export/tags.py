@@ -53,4 +53,4 @@ def is_pure(cmake_cfg: Optional[dict]) -> bool:
     specific binaries."""
     if not cmake_cfg:
         return True
-    return cmake_cfg["python_abi"] == "none"
+    return cmake_cfg["pure_python"]
