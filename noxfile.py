@@ -1,15 +1,33 @@
+"""
+Tests for the py-build-cmake package.
+
+ - Build all example projects
+   - Run the package's pytest tests
+   - Check the contents of the sdist and Wheel packages produced
+ - Build the component backend example
+   - Run the package's pytest tests
+   - Check the contents of the Wheel packages produced
+ - Test all three editable modes for the pybind11-project example
+   -  Install in editable mode and run the package's pytest
+ - Run the py-build-cmake pytest tests
+"""
+
 import shutil
 import nox
 import os
 import re
 import sys
-import sysconfig
 from tarfile import open as open_tar
 from zipfile import ZipFile
 from pathlib import Path
 from difflib import unified_diff
 from glob import glob
 from distlib.util import get_platform
+
+if sys.version_info < (3, 8):
+    import distutils.sysconfig as dist_sysconfig
+else:
+    import sysconfig as dist_sysconfig
 
 version = "0.2.0a5.dev0"
 project_dir = Path(__file__).resolve().parent
@@ -73,17 +91,15 @@ def test_example_project(session: nox.Session, name: str, ext_suffix: str):
 
 def get_ext_suffix(name: str):
     impl = sys.implementation
-    ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
-    if name == "nanobind-project" or name == "pybind11-project":
-        # https://github.com/pypa/setuptools/issues/3219
-        if ext_suffix == ".pyd" and impl.name == "cpython":
-            version = "".join(map(str, sys.version_info[:2]))
-            plat = get_platform().replace(".", "_").replace("-", "_")
-            ext_suffix = f".cp{version}-{plat}" + ext_suffix
+    py_v = sys.version_info
+    ext_suffix = dist_sysconfig.get_config_var("EXT_SUFFIX")
+    assert isinstance(ext_suffix, str)
+    if name == "minimal" and ext_suffix.endswith(".pyd") and py_v < (3, 8):
+        ext_suffix = ".pyd"  # what a mess ...
     if name == "nanobind-project":
-        if sys.version_info < (3, 8):
-            ext_suffix = None
-        elif impl.name == "cpython" and sys.version_info >= (3, 12):
+        if py_v < (3, 8):
+            ext_suffix = None  # skip
+        elif impl.name == "cpython" and py_v >= (3, 12):
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix
@@ -121,7 +137,7 @@ def component(session: nox.Session):
         shutil.rmtree("dist-nox", ignore_errors=True)
         session.run("python", "-m", "build", "-w", ".", "-o", "dist-nox")
         session.run("python", "-m", "build", "-w", "./debug", "-o", "dist-nox")
-        ext_suffix: str = sysconfig.get_config_var("EXT_SUFFIX")
+        ext_suffix = get_ext_suffix("minimal")
         check_pkg_contents(session, "minimal-comp", ext_suffix, False)
         check_pkg_contents(session, "minimal-comp-debug", ext_suffix, False)
         session.install(".")
