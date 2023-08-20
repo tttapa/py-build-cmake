@@ -12,8 +12,7 @@ from glob import glob
 from distlib.util import get_platform
 
 version = "0.2.0a5.dev0"
-project_dir = Path(__name__).resolve().parent
-print(project_dir)
+project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
 
