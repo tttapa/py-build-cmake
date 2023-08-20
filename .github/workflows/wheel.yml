@@ -171,7 +171,7 @@ jobs:
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
-  release:
+  check-release:
     if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
     needs: [test, test-windows, test-macos]
     runs-on: ubuntu-latest
@@ -191,21 +191,24 @@ jobs:
       run: |
         [ "${{ github.event.release.tag_name }}" == "$(python -c 'from importlib.metadata import version as v; print(v("py_build_cmake"))')" ]
       shell: bash
-    - name: Install Twine
-      run: pip install twine
-    - name: Check Wheel metadata
-      run: python -m twine check dist/py_build_cmake-*.whl
-    - name: Upload Wheel to PyPI
-      run: python -m twine upload dist/py_build_cmake-*.whl
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PyPI }}
+
+  release:
+    needs: [check-release]
+    if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/py-build-cmake
+    permissions:
+      id-token: write  # mandatory for trusted publishing
+    steps:
     - uses: actions/download-artifact@v3
       with:
-        name: py_build_cmake-src-${{ matrix.python-version }}
+        name: py_build_cmake-whl-3.11
         path: dist
-    - name: Upload source to PyPI
-      run: python -m twine upload dist/py_build_cmake-*.tar.gz
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PyPI }}
+    - uses: actions/download-artifact@v3
+      with:
+        name: py_build_cmake-src-3.11
+        path: dist
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
