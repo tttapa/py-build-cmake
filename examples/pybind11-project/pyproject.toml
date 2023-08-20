@@ -25,6 +25,9 @@ dynamic = ["version", "description"]
 [project.scripts]
 add = "pybind11_project.add:main"
 
+[project.optional-dependencies]
+test = ["pytest>=7.2.0,<7.5"]
+
 [build-system]
 requires = ["py-build-cmake~=0.2.0a5.dev0", "pybind11", "pybind11-stubgen"]
 build-backend = "py_build_cmake.build"
@@ -73,3 +76,9 @@ args = ["-v"]
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["test"]
+
+[tool.cibuildwheel]
+build-verbosity = 1
+environment = { PY_BUILD_CMAKE_VERBOSE="1" }
+test-command = "pytest {package}/test"
+test-extras = ["test"]
