@@ -93,6 +93,8 @@ def example_projects(session: nox.Session):
 
 @nox.session
 def component(session: nox.Session):
+    if sys.platform != 'linux' and sys.platform != "win32":
+        return
     session.install("-U", "pip", "build", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
