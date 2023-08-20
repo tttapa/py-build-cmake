@@ -34,14 +34,6 @@ install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
         DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
-# Install the debug file for the Python module (Windows only)
-if (WIN32)
-    install(FILES $<TARGET_PDB_FILE:_add_module>
-            EXCLUDE_FROM_ALL
-            COMPONENT python_modules
-            DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME}
-            OPTIONAL)
-endif()
 
 # Generate stubs for the Python module
 option(WITH_PY_STUBS
