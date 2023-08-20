@@ -282,6 +282,7 @@ class _BuildBackend(object):
         try:
             update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:
+            logger.error("Error importing %s for reading metadata", str(modfile))
             if hasattr(e, "msg"):
                 e.msg = (
                     "\n"
@@ -293,6 +294,7 @@ class _BuildBackend(object):
                 )
             raise
         except ProblemInModule as e:
+            logger.error("Error reading metadata from %s", str(modfile))
             e.args = (
                 "\n"
                 "\n"

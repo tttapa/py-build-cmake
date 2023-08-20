@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 
 class GitHubActionsFormatter(logging.Formatter):
@@ -9,12 +11,18 @@ class GitHubActionsFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord):
         s = super().format(record)
+        loc = ""
+        if os.environ.get("GITHUB_REPOSITORY", "").endswith("/py-build-cmake"):
+            p = Path(record.pathname)
+            try:
+                i = len(p.parts) - p.parts[-1::-1].index("py_build_cmake") - 1
+                file = Path("src", *p.parts[i:])
+                loc = f" file={file},line={record.lineno}"
+            except ValueError:
+                pass
         prefix = {
-            logging.INFO:
-            "::notice file=%(pathname)s,line=%(lineno)d::" % record.__dict__,
-            logging.WARNING:
-            "::warning file=%(pathname)s,line=%(lineno)d::" % record.__dict__,
-            logging.ERROR:
-            "::error file=%(pathname)s,line=%(lineno)d::" % record.__dict__
+            logging.INFO: f"::notice{loc}::",
+            logging.WARNING: f"::warning{loc}::",
+            logging.ERROR: f"::error{loc}::",
         }.get(record.levelno, record.levelname + ":")
         return prefix + s

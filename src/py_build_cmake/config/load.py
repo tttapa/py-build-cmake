@@ -36,13 +36,13 @@ def read_full_config_checked(
         overrides = parse_config_settings_overrides(config_settings, verbose)
         cfg = read_config(pyproject_path, overrides)
     except ConfigError as e:
-        logger.error("Invalid user configuration", exc_info=e)
+        logger.error("Error in user configuration", exc_info=e)
         e.args = (
             "\n" "\n" "\t\u274C Error in user configuration:\n" "\n" f"\t\t{e}\n" "\n",
         )
         raise
     except Exception as e:
-        logger.error("Internal error while processing configuration", exc_info=e)
+        logger.error("Internal error while processing the configuration", exc_info=e)
         e.args = (
             "\n"
             "\n"
