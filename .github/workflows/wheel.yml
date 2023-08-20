@@ -100,12 +100,15 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        include:
+          - python-version: '3.7'
+            python-patch: '.13 - 3.7.99'
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       name: Install Python
       with: 
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ matrix.python-version }}${{ matrix.python-patch }}
         allow-prereleases: true
     - uses: actions/download-artifact@v3
       with:
