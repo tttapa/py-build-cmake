@@ -87,7 +87,9 @@ def example_projects(session: nox.Session):
             if sys.version_info < (3, 8):
                 continue
             elif impl.name == "cpython" and sys.version_info >= (3, 12):
-                ext_suffix = ".abi3." + ext_suffix.rsplit(".", 1)[-1]
+                ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
+                if sys.platform != "win32":
+                    ext_suffix = ".abi3" + ext_suffix
         test_example_project(session, name, ext_suffix)
 
 
