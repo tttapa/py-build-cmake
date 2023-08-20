@@ -71,6 +71,25 @@ def test_example_project(session: nox.Session, name: str, ext_suffix: str):
         session.run("pytest")
 
 
+def get_ext_suffix(name: str):
+    impl = sys.implementation
+    ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
+    if name == "nanobind-project" or name == "pybind11-project":
+        # https://github.com/pypa/setuptools/issues/3219
+        if ext_suffix == ".pyd" and impl.name == "cpython":
+            version = "".join(map(str, sys.version_info[:2]))
+            plat = get_platform().replace(".", "_").replace("-", "_")
+            ext_suffix = f".cp{version}-{plat}" + ext_suffix
+    if name == "nanobind-project":
+        if sys.version_info < (3, 8):
+            ext_suffix = None
+        elif impl.name == "cpython" and sys.version_info >= (3, 12):
+            ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
+            if sys.platform != "win32":
+                ext_suffix = ".abi3" + ext_suffix
+    return ext_suffix
+
+
 @nox.session
 def example_projects(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
@@ -81,16 +100,9 @@ def example_projects(session: nox.Session):
     session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
     session.install(f"py-build-cmake=={version}")
     for name in examples:
-        ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
-        impl = sys.implementation
-        if name == "nanobind-project":
-            if sys.version_info < (3, 8):
-                continue
-            elif impl.name == "cpython" and sys.version_info >= (3, 12):
-                ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
-                if sys.platform != "win32":
-                    ext_suffix = ".abi3" + ext_suffix
-        test_example_project(session, name, ext_suffix)
+        ext_suffix = get_ext_suffix(name)
+        if ext_suffix is not None:
+            test_example_project(session, name, ext_suffix)
 
 
 @nox.session
