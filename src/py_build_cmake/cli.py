@@ -89,7 +89,7 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     "tool.py-build-cmake.cross section of pyproject.toml, "
     "similar to py-build-cmake.cross.toml.",
 )
-@click.version_option(__version__, "-v", "--version")
+@click.version_option(__version__, "-v", "--version", prog_name="py-build-cmake")
 @click.pass_context
 def cli(ctx: click.Context, **kwargs):
     ctx.obj = cmake_command(**kwargs)
