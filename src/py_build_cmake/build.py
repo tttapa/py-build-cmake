@@ -5,6 +5,7 @@ import tempfile
 import logging
 
 from .common import (
+    logformat,
     util,
     Config,
     ComponentConfig,
@@ -133,7 +134,7 @@ class _BuildBackend(object):
                 k: v for k, v in config_settings.items() if k in verbose_keys
             }
             if verbose_opts:
-                last_val = next(reversed(verbose_opts.values()))
+                last_val = next(reversed(list(verbose_opts.values())))
                 return truthy(last_val)
         env_verbose = os.environ.get("PY_BUILD_CMAKE_VERBOSE")
         if env_verbose is not None:
@@ -152,7 +153,7 @@ class _BuildBackend(object):
             log_keys = {"loglevel", "--loglevel"}
             log_opts = {k: v for k, v in config_settings.items() if k in log_keys}
             if log_opts:
-                last_val = next(reversed(log_opts.values()))
+                last_val = next(reversed(list(log_opts.values())))
                 return parse_log_level(last_val)
         env_log = os.environ.get("PY_BUILD_CMAKE_LOGLEVEL")
         if env_log is not None:
@@ -162,7 +163,13 @@ class _BuildBackend(object):
     def parse_config_settings(self, config_settings: Optional[Dict]):
         try:
             level = self.get_log_level(config_settings)
-            logging.basicConfig(level=level)
+            if "GITHUB_ACTIONS" in os.environ:
+                formatter = logformat.GitHubActionsFormatter()
+                handler = logging.StreamHandler()
+                handler.setFormatter(formatter)
+                logging.basicConfig(level=level, handlers=[handler])
+            else:
+                logging.basicConfig(level=level)
         except ValueError as e:
             logger.error("Invalid log level specified", exc_info=e)
         self.runner.verbose = self.is_verbose_enabled(config_settings)
