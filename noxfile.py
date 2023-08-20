@@ -82,17 +82,18 @@ def example_projects(session: nox.Session):
     session.install(f"py-build-cmake=={version}")
     for name in examples:
         ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
+        impl = sys.implementation
         if name == "nanobind-project":
             if sys.version_info < (3, 8):
                 continue
-            elif sys.version_info >= (3, 12):
+            elif impl.name == "cpython" and sys.version_info >= (3, 12):
                 ext_suffix = ".abi3." + ext_suffix.rsplit(".", 1)[-1]
         test_example_project(session, name, ext_suffix)
 
 
 @nox.session
 def component(session: nox.Session):
-    if sys.platform != 'linux' and sys.platform != "win32":
+    if sys.platform != "linux" and sys.platform != "win32":
         return
     session.install("-U", "pip", "build", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
