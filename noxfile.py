@@ -18,16 +18,28 @@ print(project_dir)
 examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
 
 
+def get_contents_subs(ext_suffix: str):
+    if ext_suffix.endswith(".pyd"):
+        dbg_suffix = ".pdb"
+        exe_suffix = ".exe"
+    else:
+        dbg_suffix = ext_suffix + ".debug"
+        exe_suffix = ""
+    return dict(
+        version=version,
+        ext_suffix=ext_suffix,
+        dbg_suffix=dbg_suffix,
+        exe_suffix=exe_suffix,
+    )
+
+
 def check_pkg_contents(
     session: nox.Session, name: str, ext_suffix: str, with_sdist=True
 ):
     d = project_dir / "test" / "expected_contents" / name
     normname = re.sub(r"[-_.]+", "_", name).lower()
     plat = get_platform().replace(".", "_").replace("-", "_")
-    dbg_suffix = ext_suffix
-    dbg_suffix = re.sub(".pyd$", ".pdb", dbg_suffix)
-    dbg_suffix = re.sub(".so$", ".so.debug", dbg_suffix)
-    subs = dict(version=version, ext_suffix=ext_suffix, dbg_suffix=dbg_suffix)
+    subs = get_contents_subs(ext_suffix)
     # Compare sdist contents
     sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
     if with_sdist:
