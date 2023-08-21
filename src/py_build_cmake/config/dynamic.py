@@ -213,6 +213,7 @@ def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Optional[P
         metadata.version = res["version"]
     if "summary" in res:
         metadata.description = res["summary"]
+    metadata.dynamic = []
 
 
 def find_module(module_metadata: dict, src_dir: Path) -> Optional[Module]:
