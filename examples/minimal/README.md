@@ -143,7 +143,7 @@ readme = "README.md"
 requires-python = ">=3.7"
 license = { "file" = "LICENSE" }
 authors = [{ "name" = "Pieter P", "email" = "pieter.p.dev@outlook.com" }]
-keywords = ["addition", "subtraction", "pybind11"]
+keywords = ["example", "addition", "subtraction"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
@@ -236,7 +236,6 @@ for information about the optional options in this section.
 
 ```toml
 [tool.pytest.ini_options]
-minversion = "6.0"
 testpaths = ["test"]
 ```
 You can also add configuration options for other Python tools, for example, for

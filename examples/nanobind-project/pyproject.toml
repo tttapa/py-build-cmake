@@ -74,5 +74,4 @@ CMAKE_RELWITHDEBINFO_POSTFIX = "_d"
 args = ["-v"]
 
 [tool.pytest.ini_options]
-minversion = "6.0"
 testpaths = ["test"]

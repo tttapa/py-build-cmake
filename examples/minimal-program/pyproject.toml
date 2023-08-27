@@ -44,5 +44,4 @@ find_python3 = false
 python_abi = "none"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
 testpaths = ["test"]
