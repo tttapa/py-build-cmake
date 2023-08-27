@@ -22,6 +22,7 @@ from pathlib import Path
 from tarfile import open as open_tar
 from zipfile import ZipFile
 
+import jinja2
 import nox
 from distlib.util import get_platform
 
@@ -48,6 +49,11 @@ def get_contents_subs(ext_suffix: str):
         "ext_suffix": ext_suffix,
         "dbg_suffix": dbg_suffix,
         "exe_suffix": exe_suffix,
+        "sys": {
+            "version_info": sys.version_info,
+            "implementation": sys.implementation,
+            "platform": sys.platform,
+        },
     }
 
 
@@ -55,13 +61,16 @@ def check_pkg_contents(
     session: nox.Session, name: str, ext_suffix: str, with_sdist=True
 ):
     d = project_dir / "tests" / "expected_contents" / name
+    template_env = jinja2.Environment(loader=jinja2.FileSystemLoader(d))
     normname = re.sub(r"[-_.]+", "_", name).lower()
     plat = get_platform().replace(".", "_").replace("-", "_")
     subs = get_contents_subs(ext_suffix)
     # Compare sdist contents
     sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
     if with_sdist:
-        sdist_expect = (d / "sdist.txt").read_text().format(**subs).split("\n")
+        sdist_template = template_env.get_template("sdist.txt")
+        sdist_expect = sdist_template.render(**subs).split("\n")
+        sdist_expect = sorted(filter(bool, sdist_expect))
         sdist_actual = sorted(open_tar(sdist).getnames())
         if sdist_expect != sdist_actual:
             diff = "\n".join(unified_diff(sdist_expect, sdist_actual))
@@ -73,7 +82,9 @@ def check_pkg_contents(
         session.error(f"Unexpected number of Wheels {whls} ({whl_pattern})")
     whl = whls[0]
     # Compare Wheel contents
-    whl_expect = (d / "whl.txt").read_text().format(**subs).split("\n")
+    whl_template = template_env.get_template("whl.txt")
+    whl_expect = whl_template.render(**subs).split("\n")
+    whl_expect = sorted(filter(bool, whl_expect))
     whl_actual = sorted(ZipFile(whl).namelist())
     if whl_expect != whl_actual:
         diff = "\n".join(unified_diff(whl_expect, whl_actual))
@@ -124,8 +135,6 @@ def example_projects(session: nox.Session):
 
 @nox.session
 def component(session: nox.Session):
-    if sys.platform not in ("linux", "win32"):
-        return
     session.install("-U", "pip", "build", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:

@@ -44,6 +44,9 @@ Tracker = "https://github.com/tttapa/py-build-cmake/issues"
 [project.scripts]
 py-build-cmake = "py_build_cmake.cli:cli"
 
+[project.optional-dependencies]
+test = ["nox>=2023.4.22,<2024","jinja2~=3.1.2"]
+
 [tool.py-build-cmake.module]
 name = "py_build_cmake"
 
