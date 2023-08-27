@@ -13,8 +13,9 @@ from pybind11_project._add_module import __version__ as cpp_version
 def test_version():
     assert py_version == py_cpp_version
     assert py_version == cpp_version
-    try: # No importlib in Python 3.7 and below
+    try:  # No importlib in Python 3.7 and below
         from importlib.metadata import version
-        assert py_version == version('pybind11_project')
+
+        assert py_version == version("pybind11_project")
     except ImportError:
         pass

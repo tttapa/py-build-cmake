@@ -31,13 +31,13 @@ def test_iter():
     opts = gen_test_opts()
     result = [p for p in opts.iter_opt_paths()]
     expected = [
-        ('trunk', ),
-        ('trunk', 'mid1'),
-        ('trunk', 'mid1', 'leaf11'),
-        ('trunk', 'mid1', 'leaf12'),
-        ('trunk', 'mid2'),
-        ('trunk', 'mid2', 'leaf21'),
-        ('trunk', 'mid2', 'leaf22'),
+        ("trunk",),
+        ("trunk", "mid1"),
+        ("trunk", "mid1", "leaf11"),
+        ("trunk", "mid1", "leaf12"),
+        ("trunk", "mid2"),
+        ("trunk", "mid2", "leaf21"),
+        ("trunk", "mid2", "leaf22"),
     ]
     print(result)
     assert result == expected
@@ -47,10 +47,10 @@ def test_iter_leaf():
     opts = gen_test_opts()
     result = [p for p in opts.iter_leaf_opt_paths()]
     expected = [
-        ('trunk', 'mid1', 'leaf11'),
-        ('trunk', 'mid1', 'leaf12'),
-        ('trunk', 'mid2', 'leaf21'),
-        ('trunk', 'mid2', 'leaf22'),
+        ("trunk", "mid1", "leaf11"),
+        ("trunk", "mid1", "leaf12"),
+        ("trunk", "mid2", "leaf21"),
+        ("trunk", "mid2", "leaf22"),
     ]
     print(result)
     assert result == expected
@@ -58,16 +58,16 @@ def test_iter_leaf():
 
 def test_update_defaults():
     opts = gen_test_opts()
-    trunk = opts[co.pth('trunk')]
+    trunk = opts[co.pth("trunk")]
     assert trunk.name == "trunk"
-    mid1 = opts[co.pth('trunk/mid1')]
+    mid1 = opts[co.pth("trunk/mid1")]
     assert mid1.name == "mid1"
-    leaf12 = opts[co.pth('trunk/mid1/leaf12')]
+    leaf12 = opts[co.pth("trunk/mid1/leaf12")]
     assert leaf12.name == "leaf12"
 
     cfg = co.ConfigNode.from_dict({})
     trunk.default = co.DefaultValueValue({})
-    res = trunk.update_default(opts, cfg, co.pth('trunk'))
+    res = trunk.update_default(opts, cfg, co.pth("trunk"))
     assert res is not None and res.value == {}
     assert cfg.to_dict() == {"trunk": {}}
     opts.update_default_all(cfg)
@@ -75,7 +75,7 @@ def test_update_defaults():
 
     cfg = co.ConfigNode.from_dict({})
     leaf12.default = co.DefaultValueValue("d12")
-    res = leaf12.update_default(opts, cfg, co.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
     assert res is not None and res.value == "d12"
     assert cfg.to_dict() == {}
     opts.update_default_all(cfg)
@@ -83,7 +83,7 @@ def test_update_defaults():
 
     cfg = co.ConfigNode.from_dict({})
     mid1.default = co.DefaultValueValue({})
-    res = leaf12.update_default(opts, cfg, co.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
     assert res is not None and res.value == "d12"
     assert cfg.to_dict() == {}
     opts.update_default_all(cfg)
@@ -94,7 +94,7 @@ def test_update_defaults():
     print(cfg.value)
     print(cfg.sub)
     trunk.default = co.NoDefaultValue()
-    res = leaf12.update_default(opts, cfg, co.pth('trunk/mid1/leaf12'))
+    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
     assert res is not None and res.value == "d12"
     assert cfg.to_dict() == {}
     print(cfg)
@@ -119,12 +119,13 @@ def test_override0():
         },
         # No override
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_mid2',
-            '',
-            targetpath=co.pth('trunk/mid2'),
-        ))
+            "override_mid2",
+            "",
+            targetpath=co.pth("trunk/mid2"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
     opts.verify_all(cfg)
     opts.override_all(cfg)
@@ -155,16 +156,15 @@ def test_override1():
                 "leaf22": "22",
             },
         },
-        "override_mid2": {
-            "leaf21": "23"
-        }
+        "override_mid2": {"leaf21": "23"},
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_mid2',
-            '',
-            targetpath=co.pth('trunk/mid2'),
-        ))
+            "override_mid2",
+            "",
+            targetpath=co.pth("trunk/mid2"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
     opts.verify_all(cfg)
     opts.override_all(cfg)
@@ -179,9 +179,7 @@ def test_override1():
                 "leaf22": "22",
             },
         },
-        "override_mid2": {
-            "leaf21": "23"
-        }
+        "override_mid2": {"leaf21": "23"},
     }
 
 
@@ -203,12 +201,13 @@ def test_override2():
             "leaf22": "32",
         },
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_mid2',
-            '',
-            targetpath=co.pth('trunk/mid2'),
-        ))
+            "override_mid2",
+            "",
+            targetpath=co.pth("trunk/mid2"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
     opts.verify_all(cfg)
     opts.override_all(cfg)
@@ -253,12 +252,13 @@ def test_override_trunk():
             },
         },
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_trunk',
-            '',
-            targetpath=co.pth('trunk'),
-        ))
+            "override_trunk",
+            "",
+            targetpath=co.pth("trunk"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
     opts.verify_all(cfg)
     opts.override_all(cfg)
@@ -303,14 +303,15 @@ def test_verify_override_unknown_keys():
             "leaf22": "32",
         },
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_mid2',
-            '',
-            targetpath=co.pth('trunk/mid2'),
-        ))
+            "override_mid2",
+            "",
+            targetpath=co.pth("trunk/mid2"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unknown options in override_mid2: blahblah'
+    expected = "Unknown options in override_mid2: blahblah"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -335,14 +336,15 @@ def test_override_trunk_unknown_keys():
             },
         },
     }
-    opts[co.pth('')].insert(
+    opts[co.pth("")].insert(
         co.OverrideConfigOption(
-            'override_trunk',
-            '',
-            targetpath=co.pth('trunk'),
-        ))
+            "override_trunk",
+            "",
+            targetpath=co.pth("trunk"),
+        )
+    )
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unknown options in override_trunk/mid1: azertyop'
+    expected = "Unknown options in override_trunk/mid1: azertyop"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -364,7 +366,7 @@ def test_verify_unknown_keys1():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unknown options in trunk: mid3'
+    expected = "Unknown options in trunk: mid3"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -386,7 +388,7 @@ def test_verify_unknown_keys2():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = 'Unknown options in trunk/mid2: foobar'
+    expected = "Unknown options in trunk/mid2: foobar"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -407,8 +409,7 @@ def test_verify_wrong_type_str():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = "Type of trunk/mid2/leaf22 should be <class 'str'>, " \
-               "not <class 'int'>"
+    expected = "Type of trunk/mid2/leaf22 should be <class 'str'>, " "not <class 'int'>"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -423,15 +424,14 @@ def test_verify_wrong_type_str_dict():
                 "leaf12": "12",
             },
             "mid2": {
-                "leaf21": {
-                    "21": 1234
-                },
+                "leaf21": {"21": 1234},
             },
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = "Type of trunk/mid2/leaf21 should be <class 'str'>, " \
-               "not <class 'dict'>"
+    expected = (
+        "Type of trunk/mid2/leaf21 should be <class 'str'>, " "not <class 'dict'>"
+    )
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -452,11 +452,12 @@ def test_inherit():
             "mid3": {},
         },
     }
-    mid3 = opts[co.pth('trunk')].insert(
-        co.ConfigOption('mid3', inherit_from=co.pth('trunk/mid2')))
+    mid3 = opts[co.pth("trunk")].insert(
+        co.ConfigOption("mid3", inherit_from=co.pth("trunk/mid2"))
+    )
 
     cfg = co.ConfigNode.from_dict(d)
-    mid3.inherit(opts, cfg, co.pth('trunk/mid3'))
+    mid3.inherit(opts, cfg, co.pth("trunk/mid3"))
     assert cfg.to_dict() == {
         "trunk": {
             "mid1": {
@@ -475,8 +476,8 @@ def test_inherit():
     }
 
     cfg = co.ConfigNode.from_dict(d)
-    cfg.setdefault(co.pth('trunk/mid3/leaf22'), co.ConfigNode(value="32"))
-    mid3.inherit(opts, cfg, co.pth('trunk/mid3'))
+    cfg.setdefault(co.pth("trunk/mid3/leaf22"), co.ConfigNode(value="32"))
+    mid3.inherit(opts, cfg, co.pth("trunk/mid3"))
     assert cfg.to_dict() == {
         "trunk": {
             "mid1": {
@@ -511,35 +512,33 @@ def test_config_node():
     nodes = co.ConfigNode.from_dict(d)
     for pth, val in nodes.iter_dfs():
         print(pth, val.value)
-    assert nodes[co.pth('')] is nodes
-    assert nodes[co.pth('')].value is None
-    assert nodes[co.pth('trunk')].value is None
-    assert nodes[co.pth('trunk/mid1')].value is None
-    assert nodes[co.pth('trunk/mid2')].value is None
-    assert nodes[co.pth('trunk/mid1/leaf11')].value == "11"
-    assert nodes[co.pth('trunk/mid1/leaf12')].value == "12"
-    assert nodes[co.pth('trunk/mid2/leaf21')].value == "21"
-    assert nodes[co.pth('trunk/mid2/leaf22')].value == "22"
+    assert nodes[co.pth("")] is nodes
+    assert nodes[co.pth("")].value is None
+    assert nodes[co.pth("trunk")].value is None
+    assert nodes[co.pth("trunk/mid1")].value is None
+    assert nodes[co.pth("trunk/mid2")].value is None
+    assert nodes[co.pth("trunk/mid1/leaf11")].value == "11"
+    assert nodes[co.pth("trunk/mid1/leaf12")].value == "12"
+    assert nodes[co.pth("trunk/mid2/leaf21")].value == "21"
+    assert nodes[co.pth("trunk/mid2/leaf22")].value == "22"
 
     d2 = nodes.to_dict()
     assert d2 == d
 
 
 def test_joinpth():
-    assert co.joinpth(co.pth('a/b/c'), co.pth('d/e')) == co.pth('a/b/c/d/e')
-    assert co.joinpth(co.pth('a/b/c'), co.pth('^/e')) == co.pth('a/b/e')
-    assert co.joinpth(co.pth('a/b/c'), co.pth('^/^/e')) == co.pth('a/e')
-    assert co.joinpth(co.pth('a/b/c'), co.pth('^/^/^/e')) == co.pth('e')
-    assert co.joinpth(co.pth('a/b/c'), co.pth('^/^/^/^/e')) == co.pth('^/e')
+    assert co.joinpth(co.pth("a/b/c"), co.pth("d/e")) == co.pth("a/b/c/d/e")
+    assert co.joinpth(co.pth("a/b/c"), co.pth("^/e")) == co.pth("a/b/e")
+    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/e")) == co.pth("a/e")
+    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/^/e")) == co.pth("e")
+    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/^/^/e")) == co.pth("^/e")
 
 
 def test_real_config_inherit_cross_cmake():
-    opts = get_options(Path('/project'), test=True)
+    opts = get_options(Path("/project"), test=True)
     d = {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -547,9 +546,7 @@ def test_real_config_inherit_cross_cmake():
                         "build_type": "Release",
                         "generator": "Ninja",
                         "source_path": "src",
-                        "env": {
-                            "foo": "bar"
-                        },
+                        "env": {"foo": "bar"},
                         "args": ["arg1", "arg2"],
                         "find_python": False,
                         "find_python3": True,
@@ -563,9 +560,7 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "generator": "Unix Makefiles",
                             "build_type": "RelWithDebInfo",
-                            "env": {
-                                "crosscompiling": "true"
-                            },
+                            "env": {"crosscompiling": "true"},
                             "args": ["arg3", "arg4"],
                         },
                     },
@@ -578,9 +573,9 @@ def test_real_config_inherit_cross_cmake():
                         "cmake": {
                             "install_components": ["win_install"],
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
     }
     cfg = co.ConfigNode.from_dict(d)
@@ -590,9 +585,7 @@ def test_real_config_inherit_cross_cmake():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -601,23 +594,18 @@ def test_real_config_inherit_cross_cmake():
                         "generator": "Ninja",
                         "source_path": os.path.normpath("/project/src"),
                         "args": ["arg1", "arg2"],
-                        "env": {
-                            "foo": "bar"
-                        },
+                        "env": {"foo": "bar"},
                         "find_python": False,
                         "find_python3": True,
                     },
                     "cross": {
-                        "implementation":
-                        "cp",
-                        "version":
-                        "310",
-                        "abi":
-                        "cp310",
-                        "arch":
-                        "linux_aarch64",
-                        "toolchain_file":
-                        os.path.normpath("/project/aarch64-linux-gnu.cmake"),
+                        "implementation": "cp",
+                        "version": "310",
+                        "abi": "cp310",
+                        "arch": "linux_aarch64",
+                        "toolchain_file": os.path.normpath(
+                            "/project/aarch64-linux-gnu.cmake"
+                        ),
                         "cmake": {
                             "build_type": "RelWithDebInfo",
                             "generator": "Unix Makefiles",
@@ -637,9 +625,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "install_components": ["linux_install"],
                             "find_python": False,
                             "find_python3": True,
@@ -651,9 +637,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "install_components": ["win_install"],
                             "find_python": False,
                             "find_python3": True,
@@ -665,15 +649,13 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "find_python": False,
                             "find_python3": True,
                         }
                     },
-                }
-            }
+                },
+            },
         }
     }
 
@@ -681,9 +663,7 @@ def test_real_config_inherit_cross_cmake():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -699,15 +679,13 @@ def test_real_config_inherit_cross_cmake():
                         "exclude": [],
                     },
                     "cmake": {
-                        "build_type":
-                        "Release",
+                        "build_type": "Release",
                         "config": ["Release"],
-                        "generator":
-                        "Ninja",
-                        "source_path":
-                        os.path.normpath("/project/src"),
-                        "build_path":
-                        os.path.normpath("/project/.py-build-cmake_cache"),
+                        "generator": "Ninja",
+                        "source_path": os.path.normpath("/project/src"),
+                        "build_path": os.path.normpath(
+                            "/project/.py-build-cmake_cache"
+                        ),
                         "options": {},
                         "args": ["arg1", "arg2"],
                         "find_python": False,
@@ -716,24 +694,19 @@ def test_real_config_inherit_cross_cmake():
                         "build_tool_args": [],
                         "install_args": [],
                         "install_components": [""],
-                        "env": {
-                            "foo": "bar"
-                        },
+                        "env": {"foo": "bar"},
                         "pure_python": False,
                         "python_abi": "auto",
                         "abi3_minimum_cpython_version": 32,
                     },
                     "cross": {
-                        "implementation":
-                        "cp",
-                        "version":
-                        "310",
-                        "abi":
-                        "cp310",
-                        "arch":
-                        "linux_aarch64",
-                        "toolchain_file":
-                        os.path.normpath("/project/aarch64-linux-gnu.cmake"),
+                        "implementation": "cp",
+                        "version": "310",
+                        "abi": "cp310",
+                        "arch": "linux_aarch64",
+                        "toolchain_file": os.path.normpath(
+                            "/project/aarch64-linux-gnu.cmake"
+                        ),
                         "editable": {
                             "mode": "wrapper",
                         },
@@ -742,15 +715,13 @@ def test_real_config_inherit_cross_cmake():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "RelWithDebInfo",
+                            "build_type": "RelWithDebInfo",
                             "config": ["RelWithDebInfo"],
-                            "generator":
-                            "Unix Makefiles",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Unix Makefiles",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2", "arg3", "arg4"],
                             "find_python": False,
@@ -777,15 +748,13 @@ def test_real_config_inherit_cross_cmake():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -794,9 +763,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": ["linux_install"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
@@ -811,15 +778,13 @@ def test_real_config_inherit_cross_cmake():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -828,13 +793,11 @@ def test_real_config_inherit_cross_cmake():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": ["win_install"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
-                        }
+                        },
                     },
                     "mac": {
                         "editable": {
@@ -845,15 +808,13 @@ def test_real_config_inherit_cross_cmake():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -862,27 +823,23 @@ def test_real_config_inherit_cross_cmake():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": [""],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         }
     }
 
 
 def test_real_config_no_cross():
-    opts = get_options(Path('/project'), test=True)
+    opts = get_options(Path("/project"), test=True)
     d = {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -890,9 +847,7 @@ def test_real_config_no_cross():
                         "build_type": "Release",
                         "generator": "Ninja",
                         "source_path": "src",
-                        "env": {
-                            "foo": "bar"
-                        },
+                        "env": {"foo": "bar"},
                         "args": ["arg1", "arg2"],
                         "find_python": False,
                         "find_python3": True,
@@ -906,9 +861,9 @@ def test_real_config_no_cross():
                         "cmake": {
                             "install_components": ["win_install"],
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
     }
     cfg = co.ConfigNode.from_dict(d)
@@ -919,9 +874,7 @@ def test_real_config_no_cross():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -937,15 +890,13 @@ def test_real_config_no_cross():
                         "exclude": [],
                     },
                     "cmake": {
-                        "build_type":
-                        "Release",
+                        "build_type": "Release",
                         "config": ["Release"],
-                        "generator":
-                        "Ninja",
-                        "source_path":
-                        os.path.normpath("/project/src"),
-                        "build_path":
-                        os.path.normpath("/project/.py-build-cmake_cache"),
+                        "generator": "Ninja",
+                        "source_path": os.path.normpath("/project/src"),
+                        "build_path": os.path.normpath(
+                            "/project/.py-build-cmake_cache"
+                        ),
                         "options": {},
                         "args": ["arg1", "arg2"],
                         "find_python": False,
@@ -954,9 +905,7 @@ def test_real_config_no_cross():
                         "build_tool_args": [],
                         "install_args": [],
                         "install_components": [""],
-                        "env": {
-                            "foo": "bar"
-                        },
+                        "env": {"foo": "bar"},
                         "pure_python": False,
                         "python_abi": "auto",
                         "abi3_minimum_cpython_version": 32,
@@ -970,15 +919,13 @@ def test_real_config_no_cross():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -987,9 +934,7 @@ def test_real_config_no_cross():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": ["linux_install"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
@@ -1004,15 +949,13 @@ def test_real_config_no_cross():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -1021,13 +964,11 @@ def test_real_config_no_cross():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": ["win_install"],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
-                        }
+                        },
                     },
                     "mac": {
                         "editable": {
@@ -1038,15 +979,13 @@ def test_real_config_no_cross():
                             "exclude": [],
                         },
                         "cmake": {
-                            "build_type":
-                            "Release",
+                            "build_type": "Release",
                             "config": ["Release"],
-                            "generator":
-                            "Ninja",
-                            "source_path":
-                            os.path.normpath("/project/src"),
-                            "build_path":
-                            os.path.normpath("/project/.py-build-cmake_cache"),
+                            "generator": "Ninja",
+                            "source_path": os.path.normpath("/project/src"),
+                            "build_path": os.path.normpath(
+                                "/project/.py-build-cmake_cache"
+                            ),
                             "options": {},
                             "args": ["arg1", "arg2"],
                             "find_python": False,
@@ -1055,31 +994,24 @@ def test_real_config_no_cross():
                             "build_tool_args": [],
                             "install_args": [],
                             "install_components": [""],
-                            "env": {
-                                "foo": "bar"
-                            },
+                            "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
                             "abi3_minimum_cpython_version": 32,
-                        }
-                    }
-                }
-            }
+                        },
+                    },
+                },
+            },
         }
     }
 
 
 def test_real_config_no_cmake():
-    opts = get_options(Path('/project'), test=True)
+    opts = get_options(Path("/project"), test=True)
     d = {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {}
-            }
+            "project": {"name": "foobar"},
+            "tool": {"some-other-tool": {}, "py-build-cmake": {}},
         }
     }
     cfg = co.ConfigNode.from_dict(d)
@@ -1090,9 +1022,7 @@ def test_real_config_no_cmake():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -1134,29 +1064,20 @@ def test_real_config_no_cmake():
                             "exclude": [],
                         },
                     },
-                }
-            }
+                },
+            },
         }
     }
 
 
 def test_real_config_local_override():
-    opts = get_options(Path('/project'), test=True)
+    opts = get_options(Path("/project"), test=True)
     d = {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {}
-            }
+            "project": {"name": "foobar"},
+            "tool": {"some-other-tool": {}, "py-build-cmake": {}},
         },
-        "py-build-cmake.local.toml": {
-            "sdist": {
-                "include": ["somefile*"]
-            }
-        }
+        "py-build-cmake.local.toml": {"sdist": {"include": ["somefile*"]}},
     }
     cfg = co.ConfigNode.from_dict(d)
     opts.verify_all(cfg)
@@ -1167,9 +1088,7 @@ def test_real_config_local_override():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -1211,42 +1130,34 @@ def test_real_config_local_override():
                             "exclude": [],
                         },
                     },
-                }
-            }
+                },
+            },
         },
-        "py-build-cmake.local.toml": {
-            "sdist": {
-                "include": ["somefile*"]
-            }
-        }
+        "py-build-cmake.local.toml": {"sdist": {"include": ["somefile*"]}},
     }
 
 
 def test_real_config_local_override_windows():
-    opts = get_options(Path('/project'), test=True)
+    opts = get_options(Path("/project"), test=True)
     d = {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
                     # "editable":{},
                     # "sdist":{},
-                }
-            }
+                },
+            },
         },
         "py-build-cmake.local.toml": {
             "windows": {
                 "editable": {
                     "mode": "hook",
                 },
-                "sdist": {
-                    "include": ["somefile*"]
-                },
+                "sdist": {"include": ["somefile*"]},
             }
-        }
+        },
     }
     cfg = co.ConfigNode.from_dict(d)
     print("\ninitial")
@@ -1265,9 +1176,7 @@ def test_real_config_local_override_windows():
     pprint(cfg.to_dict())
     assert cfg.to_dict() == {
         "pyproject.toml": {
-            "project": {
-                "name": "foobar"
-            },
+            "project": {"name": "foobar"},
             "tool": {
                 "some-other-tool": {},
                 "py-build-cmake": {
@@ -1309,21 +1218,19 @@ def test_real_config_local_override_windows():
                             "exclude": [],
                         },
                     },
-                }
-            }
+                },
+            },
         },
         "py-build-cmake.local.toml": {
             "windows": {
                 "editable": {
                     "mode": "hook",
                 },
-                "sdist": {
-                    "include": ["somefile*"]
-                }
+                "sdist": {"include": ["somefile*"]},
             }
-        }
+        },
     }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_real_config_inherit_cross_cmake()

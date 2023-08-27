@@ -14,4 +14,4 @@ from nanobind_project._add_module import __version__ as cpp_version
 def test_version():
     assert py_version == py_cpp_version
     assert py_version == cpp_version
-    assert py_version == version('nanobind_project')
+    assert py_version == version("nanobind_project")
