@@ -11,17 +11,19 @@ Tests for the py-build-cmake package.
    -  Install in editable mode and run the package's pytest
  - Run the py-build-cmake pytest tests
 """
+from __future__ import annotations
 
-import shutil
-import nox
 import os
 import re
+import shutil
 import sys
-from tarfile import open as open_tar
-from zipfile import ZipFile
-from pathlib import Path
 from difflib import unified_diff
 from glob import glob
+from pathlib import Path
+from tarfile import open as open_tar
+from zipfile import ZipFile
+
+import nox
 from distlib.util import get_platform
 
 if sys.version_info < (3, 8):
@@ -42,12 +44,12 @@ def get_contents_subs(ext_suffix: str):
     else:
         dbg_suffix = ext_suffix + ".debug"
         exe_suffix = ""
-    return dict(
-        version=version,
-        ext_suffix=ext_suffix,
-        dbg_suffix=dbg_suffix,
-        exe_suffix=exe_suffix,
-    )
+    return {
+        "version": version,
+        "ext_suffix": ext_suffix,
+        "dbg_suffix": dbg_suffix,
+        "exe_suffix": exe_suffix,
+    }
 
 
 def check_pkg_contents(

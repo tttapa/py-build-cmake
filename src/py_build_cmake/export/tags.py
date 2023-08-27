@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 import re
 from copy import copy
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .native_tags import WheelTags, get_native_tags
 
 
-def get_cross_tags(crosscfg: Dict[str, Any]) -> WheelTags:
+def get_cross_tags(crosscfg: dict[str, Any]) -> WheelTags:
     """Get the PEP 425 tags to use when cross-compiling."""
     tags = get_native_tags()
     if "implementation" in crosscfg and "version" in crosscfg:
@@ -17,7 +19,7 @@ def get_cross_tags(crosscfg: Dict[str, Any]) -> WheelTags:
     return tags
 
 
-def convert_abi_tag(abi_tag: str, cmake_cfg: Optional[dict]) -> str:
+def convert_abi_tag(abi_tag: str, cmake_cfg: dict | None) -> str:
     """Set the ABI tag to 'none' or 'abi3', depending on the config options
     specified by the user."""
     if not cmake_cfg:
@@ -33,12 +35,11 @@ def convert_abi_tag(abi_tag: str, cmake_cfg: Optional[dict]) -> str:
             return "abi3"
         return abi_tag
     else:
-        assert False, "Unsupported python_abi"
+        msg = "Unsupported python_abi"
+        raise AssertionError(msg)
 
 
-def convert_wheel_tags(
-    tags: Dict[str, List[str]], cmake_cfg: Optional[dict]
-) -> WheelTags:
+def convert_wheel_tags(tags: dict[str, list[str]], cmake_cfg: dict | None) -> WheelTags:
     """Apply convert_abi_tag to each of the abi tags."""
     tags = copy(tags)
     cvt_abi = lambda tag: convert_abi_tag(tag, cmake_cfg)
@@ -48,7 +49,7 @@ def convert_wheel_tags(
     return tags
 
 
-def is_pure(cmake_cfg: Optional[dict]) -> bool:
+def is_pure(cmake_cfg: dict | None) -> bool:
     """Check if the package is a pure-Python package without platform-
     specific binaries."""
     if not cmake_cfg:

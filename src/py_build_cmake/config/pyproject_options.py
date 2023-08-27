@@ -1,4 +1,26 @@
-from .config_options import *
+from __future__ import annotations
+
+from pathlib import Path
+
+from .config_options import (
+    BoolConfigOption,
+    ConfigOption,
+    DefaultValueValue,
+    DictOfStrConfigOption,
+    DirPatternsConfigOption,
+    EnumConfigOption,
+    ListOfStrConfigOption,
+    NoDefaultValue,
+    OverrideConfigOption,
+    PathConfigOption,
+    RefDefaultValue,
+    RelativeToCurrentConfig,
+    RelativeToProject,
+    RequiredValue,
+    StrConfigOption,
+    UncheckedConfigOption,
+    pth,
+)
 
 
 def get_tool_pbc_path():
@@ -367,7 +389,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          allow_abs=True,
                          is_folder=False),
         ConfigOption("editable",
-                     f"Override editable options when cross-compiling.",
+                     "Override editable options when cross-compiling.",
                      inherit_from=editable_pth,
                      create_if_inheritance_target_exists=True),
         ConfigOption("sdist",

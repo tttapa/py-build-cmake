@@ -1,4 +1,5 @@
-import os
+from __future__ import annotations
+
 import textwrap
 from pathlib import Path
 
@@ -9,7 +10,7 @@ def write_editable_hook(staging_dir: Path, module: Module):
     """Write a hook that finds the installed compiled extension modules."""
     name = module.name
     pkg_hook = staging_dir / (name + "_editable_hook")
-    os.makedirs(pkg_hook, exist_ok=True)
+    pkg_hook.mkdir(parents=True, exist_ok=True)
     content = f"""\
         import sys, inspect, os
         from importlib.machinery import PathFinder
@@ -35,6 +36,6 @@ def write_editable_hook(staging_dir: Path, module: Module):
     (pkg_hook / "__init__.py").write_text(textwrap.dedent(content), encoding="utf-8")
     # Write a path file to find the development files
     content = f"""\
-        {str(module.full_path.parent)}
+        {module.full_path.parent!s}
         import {name}_editable_hook"""
     (staging_dir / f"{name}.pth").write_text(textwrap.dedent(content))

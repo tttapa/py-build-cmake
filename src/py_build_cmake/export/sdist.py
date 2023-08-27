@@ -31,6 +31,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+from __future__ import annotations
 
 import io
 import logging
@@ -163,7 +164,7 @@ class SdistBuilder:
         res = defaultdict(list)
         for groupname, group in self.entrypoints.items():
             for name, ep in sorted(group.items()):
-                res[groupname].append("{} = {}".format(name, ep))
+                res[groupname].append(f"{name} = {ep}")
 
         return dict(res)
 
@@ -210,17 +211,13 @@ class SdistBuilder:
         crucial_files = set(self.crucial_files())
         missing_crucial = crucial_files - files
         if missing_crucial:
-            raise Exception(
-                "Crucial files were excluded from the sdist: {}".format(
-                    ", ".join(map(str, missing_crucial))
-                )
-            )
+            msg = f"Crucial files were excluded from the sdist: {', '.join(map(str, missing_crucial))}"
+            raise Exception(msg)
 
         return sorted(files)
 
     def add_setup_py(self, files_to_add, target_tarfile):
         """No-op here; overridden in flit to generate setup.py"""
-        pass
 
     @property
     def dir_name(self):

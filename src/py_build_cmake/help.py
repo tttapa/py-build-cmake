@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import html
 import itertools
 import re
@@ -77,8 +79,7 @@ def _md_escape(descr: str):
         return html.unescape(m0.replace("\\_", "_").replace("\\*", "*"))
 
     descr = re.sub(r"`.*`", unescape, descr)
-    descr = descr.replace("\n", "<br/>")
-    return descr
+    return descr.replace("\n", "<br/>")
 
 
 def recursive_help_print(opt: ConfigOption, level=0):

@@ -2,6 +2,7 @@
 Classes to define hierarchical configuration options which support inheriting
 from other options, default values, overriding options, etc.
 """
+from __future__ import annotations
 
 import os
 import os.path as osp
@@ -43,7 +44,8 @@ def hasparent(path: ConfPath) -> bool:
 
 def parent(path: ConfPath) -> ConfPath:
     if not hasparent(path):
-        raise RuntimeError(f"Path {pth2str(path)} does not have a parent")
+        msg = f"Path {pth2str(path)} does not have a parent"
+        raise RuntimeError(msg)
     return path[:-1]
 
 
@@ -53,10 +55,10 @@ def basename(path: ConfPath) -> str:
 
 class ConfigNode:
     def __init__(
-        self, value: ConfValue = None, sub: Optional[Dict[str, "ConfigNode"]] = None
+        self, value: ConfValue = None, sub: dict[str, ConfigNode] | None = None
     ) -> None:
         self.value: ConfValue = value
-        self.sub: Optional[Dict[str, "ConfigNode"]] = sub
+        self.sub: dict[str, ConfigNode] | None = sub
         self.inherited = False
 
     @classmethod
@@ -79,8 +81,7 @@ class ConfigNode:
         yield path, self
         if self.sub is not None:
             for name, sub in self.sub.items():
-                for y in sub.iter_dfs(path + (name,)):
-                    yield y
+                yield from sub.iter_dfs((*path, name))
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -103,7 +104,7 @@ class ConfigNode:
         except KeyError:
             return default
 
-    def setdefault(self, path: Union[str, ConfPath], default: Any):
+    def setdefault(self, path: str | ConfPath, default: Any):
         if isinstance(path, str):
             path = (path,)
         tgt = self[parent(path)]
@@ -111,7 +112,7 @@ class ConfigNode:
             tgt.sub = {}
         return tgt.sub.setdefault(basename(path), default)
 
-    def contains(self, path: Union[str, ConfPath]):
+    def contains(self, path: str | ConfPath):
         try:
             self[path]
             return True
@@ -128,12 +129,12 @@ class DefaultValue(ABC):
     @abstractmethod
     def get_default(
         self,
-        rootopts: "ConfigOption",
-        opt: "ConfigOption",
+        rootopts: ConfigOption,
+        opt: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> Optional[DefaultValueWrapper]:
+    ) -> DefaultValueWrapper | None:
         ...
 
     @abstractmethod
@@ -147,12 +148,12 @@ class DefaultValueValue(DefaultValue):
 
     def get_default(
         self,
-        rootopts: "ConfigOption",
-        opt: "ConfigOption",
+        rootopts: ConfigOption,
+        opt: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> Optional[DefaultValueWrapper]:
+    ) -> DefaultValueWrapper | None:
         return DefaultValueWrapper(self.value)
 
     def get_name(self):
@@ -167,12 +168,12 @@ class NoDefaultValue(DefaultValue):
 
     def get_default(
         self,
-        rootopts: "ConfigOption",
-        opt: "ConfigOption",
+        rootopts: ConfigOption,
+        opt: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> Optional[DefaultValueWrapper]:
+    ) -> DefaultValueWrapper | None:
         return None
 
     def get_name(self):
@@ -186,13 +187,14 @@ class MissingDefaultError(ConfigError):
 class RequiredValue(DefaultValue):
     def get_default(
         self,
-        rootopts: "ConfigOption",
-        opt: "ConfigOption",
+        rootopts: ConfigOption,
+        opt: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> Optional[DefaultValueWrapper]:
-        raise MissingDefaultError(f"{pth2str(cfgpath)} requires a value")
+    ) -> DefaultValueWrapper | None:
+        msg = f"{pth2str(cfgpath)} requires a value"
+        raise MissingDefaultError(msg)
 
     def get_name(self):
         return "required"
@@ -206,22 +208,20 @@ class RefDefaultValue(DefaultValue):
 
     def get_default(
         self,
-        rootopts: "ConfigOption",
-        opt: "ConfigOption",
+        rootopts: ConfigOption,
+        opt: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> Optional[DefaultValueWrapper]:
+    ) -> DefaultValueWrapper | None:
         abscfgpath = absoptpath = self.path
         if self.relative:
-            absoptpath = joinpth(optpath, ("^",) + absoptpath)
-            abscfgpath = joinpth(cfgpath, ("^",) + abscfgpath)
+            absoptpath = joinpth(optpath, ("^", *absoptpath))
+            abscfgpath = joinpth(cfgpath, ("^", *abscfgpath))
         opt = rootopts.get(absoptpath)
         if opt is None:
-            raise ValueError(
-                "DefaultValue: reference to nonexisting option "
-                f"{pth2str(absoptpath)}"
-            )
+            msg = f"DefaultValue: reference to nonexisting option {pth2str(absoptpath)}"
+            raise ValueError(msg)
         return opt.update_default(rootopts, cfg, abscfgpath, absoptpath)
 
     def get_name(self) -> str:
@@ -240,26 +240,26 @@ class ConfigOption:
         description: str = "",
         example: str = "",
         default: DefaultValue = NoDefaultValue(),
-        inherit_from: Optional[ConfPath] = None,
+        inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
     ) -> None:
         self.name = name
         self.description = description
         self.example = example
-        self.sub: Dict[str, "ConfigOption"] = {}
+        self.sub: dict[str, ConfigOption] = {}
         self.default: DefaultValue = default
-        self.inherit_from: Optional[ConfPath] = inherit_from
+        self.inherit_from: ConfPath | None = inherit_from
         self.create_if_inheritance_target_exists = create_if_inheritance_target_exists
 
     def get_typename(self, md: bool = False):
         return None
 
-    def insert(self, opt: "ConfigOption"):
+    def insert(self, opt: ConfigOption):
         assert opt.name not in self.sub
         self.sub[opt.name] = opt
         return self.sub[opt.name]
 
-    def insert_multiple(self, opts: Iterable["ConfigOption"]):
+    def insert_multiple(self, opts: Iterable[ConfigOption]):
         for opt in opts:
             self.insert(opt)
 
@@ -268,7 +268,7 @@ class ConfigOption:
         for name, subopt in self.sub.items():
             yield (name,)
             for p in subopt.iter_opt_paths():
-                yield (name,) + p
+                yield (name, *p)
 
     def iter_leaf_opt_paths(self) -> Iterator[ConfPath]:
         """DFS of the option tree."""
@@ -277,15 +277,14 @@ class ConfigOption:
         else:
             for name, subopt in self.sub.items():
                 for p in subopt.iter_leaf_opt_paths():
-                    yield (name,) + p
+                    yield (name, *p)
 
     def iter_dfs(self, path: ConfPath = ()):
         yield path, self
         for name, sub in self.sub.items():
-            for y in sub.iter_dfs(path + (name,)):
-                yield y
+            yield from sub.iter_dfs((*path, name))
 
-    def __getitem__(self, key) -> "ConfigOption":
+    def __getitem__(self, key) -> ConfigOption:
         if isinstance(key, str):
             return self.sub[key]
         elif isinstance(key, tuple):
@@ -315,7 +314,7 @@ class ConfigOption:
         except KeyError:
             return False
 
-    def inherit(self, rootopts: "ConfigOption", cfg: ConfigNode, selfpth: ConfPath):
+    def inherit(self, rootopts: ConfigOption, cfg: ConfigNode, selfpth: ConfPath):
         superpth = self.inherit_from
         if superpth is not None:
             # If the super option is not set, there's nothing to inherit
@@ -338,7 +337,8 @@ class ConfigOption:
             # Find the option we inherit from and make sure it exists
             superopt = rootopts.get(superpth)
             if superopt is None:
-                raise ValueError(f"{pth2str(superpth)} is not a valid option")
+                msg = f"{pth2str(superpth)} is not a valid option"
+                raise ValueError(msg)
 
             # If our super option inherits from other options, carry out that
             # inheritance first
@@ -361,11 +361,11 @@ class ConfigOption:
             selfcfg.inherited = True
         if self.sub:
             for name, sub in self.sub.items():
-                sub.inherit(rootopts, cfg, selfpth + (name,))
+                sub.inherit(rootopts, cfg, (*selfpth, name))
 
     @staticmethod
     def create_parent_config_for_inheritance(
-        rootopts: "ConfigOption", cfg: ConfigNode, selfpth: ConfPath
+        rootopts: ConfigOption, cfg: ConfigNode, selfpth: ConfPath
     ):
         """
         Loop over all parent options of selfpth in rootopts and default-
@@ -377,7 +377,7 @@ class ConfigOption:
         selfcfg = None
         p: ConfPath = ()
         opt = rootopts
-        create_paths: List[ConfPath] = []
+        create_paths: list[ConfPath] = []
         for s in selfpth:
             p += (s,)
             opt = opt[s]
@@ -392,7 +392,7 @@ class ConfigOption:
 
     def explicit_override(
         self,
-        rootopts: "ConfigOption",
+        rootopts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -411,7 +411,7 @@ class ConfigOption:
             )
         # If no sub-options are set in the config, there is nothing to override
         if not overridecfg.sub:
-            return
+            return None
         # Actually override all sub-options
         for name, subopt in self.sub.items():
             assert isinstance(selfcfg, ConfigNode)
@@ -421,20 +421,21 @@ class ConfigOption:
                 continue
             # Add the overrider's option to our own config
             subselfcfg = selfcfg.setdefault((name,), ConfigNode())
-            subpath = selfpth + (name,)
-            suboverridepath = overridepath + (name,)
+            subpath = (*selfpth, name)
+            suboverridepath = (*overridepath, name)
             suboverridecfg = overridecfg.sub[name]
             # Override our subconfig by the overrider's subconfig
             subopt.explicit_override(
                 rootopts, subselfcfg, subpath, suboverridecfg, suboverridepath
             )
+        return None
 
-    def override(self, rootopts: "ConfigOption", cfg: ConfigNode, selfpath: ConfPath):
+    def override(self, rootopts: ConfigOption, cfg: ConfigNode, selfpath: ConfPath):
         """Override other options with this option if appropriate. This is a
         no-op in most cases and only does something in OverrideConfigOption."""
         assert cfg.contains(selfpath)
 
-    def verify_impl(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify_impl(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         assert cfg.contains(cfgpath)
         selfcfg = cfg[cfgpath]
         # Check if there are any unknown options in the config
@@ -446,11 +447,11 @@ class ConfigOption:
                 )
         # Recursively verify the sub-options
         if selfcfg.sub:
-            for name, sub in selfcfg.sub.items():
+            for name, _sub in selfcfg.sub.items():
                 if name in self.sub:
-                    self.sub[name].verify(rootopts, cfg, cfgpath + (name,))
+                    self.sub[name].verify(rootopts, cfg, (*cfgpath, name))
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if self.inherit_from is None:
             return self.verify_impl(rootopts, cfg, cfgpath)
         else:
@@ -471,12 +472,12 @@ class ConfigOption:
 
     def update_default(
         self,
-        rootopts: "ConfigOption",
+        rootopts: ConfigOption,
         cfg: ConfigNode,
         cfgpath: ConfPath,
-        selfpath: Optional[ConfPath] = None,
+        selfpath: ConfPath | None = None,
         max_depth: int = 5,
-    ) -> Optional[DefaultValueWrapper]:
+    ) -> DefaultValueWrapper | None:
         if selfpath is None:
             selfpath = cfgpath
 
@@ -503,11 +504,8 @@ class ConfigOption:
         if self.inherit_from is not None:
             targetopt = rootopts.get(self.inherit_from)
             if targetopt is None:
-                raise ValueError(
-                    f"Inheritance {pth2str(selfpath)} targets "
-                    f"nonexisting option "
-                    f"{pth2str(self.inherit_from)}"
-                )
+                msg = f"Inheritance {pth2str(selfpath)} targets nonexisting option {pth2str(self.inherit_from)}"
+                raise ValueError(msg)
             for p, opt in targetopt.iter_dfs():
                 inherits = opt.inherit_from is None
                 max_depth_left = max_depth if inherits else max_depth - 1
@@ -538,7 +536,7 @@ class StrConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -549,16 +547,13 @@ class StrConfigOption(ConfigOption):
         assert not overridecfg.sub
         selfcfg.value = deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].sub:
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{str}, not {dict}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {str}, not {dict}"
+            raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, str):
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be "
-                f"{str}, not {type(cfg[cfgpath].value)}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {str}, not {type(cfg[cfgpath].value)}"
+            raise ConfigError(msg)
 
 
 class IntConfigOption(ConfigOption):
@@ -567,7 +562,7 @@ class IntConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -578,16 +573,13 @@ class IntConfigOption(ConfigOption):
         assert not overridecfg.sub
         selfcfg.value = deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].sub:
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{int}, not {dict}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {int}, not {dict}"
+            raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, int):
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be "
-                f"{int}, not {type(cfg[cfgpath].value)}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {int}, not {type(cfg[cfgpath].value)}"
+            raise ConfigError(msg)
 
 
 class EnumConfigOption(ConfigOption):
@@ -597,10 +589,12 @@ class EnumConfigOption(ConfigOption):
         description: str = "",
         example: str = "",
         default: DefaultValue = NoDefaultValue(),
-        inherit_from: Optional[ConfPath] = None,
+        inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
-        options: List[str] = [],
+        options: list[str] | None = None,
     ) -> None:
+        if options is None:
+            options = []
         super().__init__(
             name,
             description,
@@ -619,7 +613,7 @@ class EnumConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -630,16 +624,13 @@ class EnumConfigOption(ConfigOption):
         assert not overridecfg.sub
         selfcfg.value = deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].sub:
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{str}, not {dict}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {str}, not {dict}"
+            raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, str):
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be "
-                f"{str}, not {type(cfg[cfgpath].value)}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {str}, not {type(cfg[cfgpath].value)}"
+            raise ConfigError(msg)
         if cfg[cfgpath].value not in self.options:
             raise ConfigError(
                 f"Value of {pth2str(cfgpath)} should be "
@@ -653,7 +644,7 @@ class BoolConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -664,16 +655,13 @@ class BoolConfigOption(ConfigOption):
         assert not overridecfg.sub
         selfcfg.value = deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].sub:
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{bool}, not {dict}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {bool}, not {dict}"
+            raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, bool):
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be "
-                f"{bool}, not {type(cfg[cfgpath].value)}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {bool}, not {type(cfg[cfgpath].value)}"
+            raise ConfigError(msg)
 
 
 @dataclass
@@ -696,11 +684,13 @@ class PathConfigOption(StrConfigOption):
         example: str = "",
         default: DefaultValue = NoDefaultValue(),
         must_exist: bool = True,
-        expected_contents: List[str] = [],
-        base_path: Optional[Union[RelativeToProject, RelativeToCurrentConfig]] = None,
+        expected_contents: list[str] | None = None,
+        base_path: RelativeToProject | RelativeToCurrentConfig | None = None,
         allow_abs: bool = False,
         is_folder: bool = True,
     ):
+        if expected_contents is None:
+            expected_contents = []
         super().__init__(name, description, example, default)
         self.must_exist = must_exist or bool(expected_contents)
         self.expected_contents = expected_contents
@@ -720,9 +710,8 @@ class PathConfigOption(StrConfigOption):
         if osp.isabs(path):
             # Absolute path
             if not self.allow_abs:
-                raise ConfigError(
-                    f'{pth2str(cfgpath)}: "{str(path)}" ' f"must be a relative path"
-                )
+                msg = f'{pth2str(cfgpath)}: "{path!s}" must be a relative path'
+                raise ConfigError(msg)
         else:
             # Relative path
             if isinstance(self.base_path, RelativeToCurrentConfig):
@@ -734,19 +723,17 @@ class PathConfigOption(StrConfigOption):
             elif isinstance(self.base_path, RelativeToProject):
                 path = osp.join(self.base_path.project_path, path)
             else:
-                assert False, "Invalid relative path type"
+                raise AssertionError("Invalid relative path type")
         assert osp.isabs(path), "Failed to make path absolute"
         # Does the path exist?
         if self.must_exist:
             if not osp.exists(path):
-                raise ConfigError(
-                    f'{pth2str(cfgpath)}: "{str(path)}" ' f"does not exist"
-                )
+                msg = f'{pth2str(cfgpath)}: "{path!s}" does not exist'
+                raise ConfigError(msg)
             if self.is_folder != osp.isdir(path):
                 type_ = "directory" if self.is_folder else "file"
-                raise ConfigError(
-                    f'{pth2str(cfgpath)}: "{str(path)}" ' f"should be a {type_}"
-                )
+                msg = f'{pth2str(cfgpath)}: "{path!s}" should be a {type_}'
+                raise ConfigError(msg)
             # Are any of the required contents missing?
             missing = [
                 sub
@@ -755,14 +742,11 @@ class PathConfigOption(StrConfigOption):
             ]
             if missing:
                 missingstr = '", "'.join(missing)
-                raise ConfigError(
-                    f'{pth2str(cfgpath)}: "{str(path)}" '
-                    f"does not contain the following "
-                    f'required files or folders: "{missingstr}"'
-                )
+                msg = f'{pth2str(cfgpath)}: "{path!s}" does not contain the following required files or folders: "{missingstr}"'
+                raise ConfigError(msg)
         cfg[cfgpath].value = osp.normpath(path)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         super().verify(rootopts, cfg, cfgpath)
         self.check_path(cfg, cfgpath)
 
@@ -774,7 +758,7 @@ class ListOfStrConfigOption(ConfigOption):
         description: str = "",
         example: str = "",
         default: DefaultValue = NoDefaultValue(),
-        inherit_from: Optional[ConfPath] = None,
+        inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         convert_str_to_singleton=False,
     ) -> None:
@@ -793,7 +777,7 @@ class ListOfStrConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -809,23 +793,19 @@ class ListOfStrConfigOption(ConfigOption):
             assert isinstance(overridecfg.value, list)
             selfcfg.value += deepcopy(overridecfg.value)
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].sub:
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{list}, not {dict}"
-            )
+            msg = f"Type of {pth2str(cfgpath)} should be {list}, not {dict}"
+            raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, list):
             if self.convert_str_to_singleton and isinstance(cfg[cfgpath].value, str):
                 cfg[cfgpath].value = [cfg[cfgpath].value]
             else:
-                raise ConfigError(
-                    f"Type of {pth2str(cfgpath)} should be "
-                    f"{list}, not {type(cfg[cfgpath].value)}"
-                )
+                msg = f"Type of {pth2str(cfgpath)} should be {list}, not {type(cfg[cfgpath].value)}"
+                raise ConfigError(msg)
         elif not all(isinstance(el, str) for el in cfg[cfgpath].value):
-            raise ConfigError(
-                f"Type of elements in {pth2str(cfgpath)} should " f"be {str}"
-            )
+            msg = f"Type of elements in {pth2str(cfgpath)} should be {str}"
+            raise ConfigError(msg)
 
 
 class DirPatternsConfigOption(ListOfStrConfigOption):
@@ -835,7 +815,7 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
         description: str = "",
         example: str = "",
         default: DefaultValue = NoDefaultValue(),
-        inherit_from: Optional[ConfPath] = None,
+        inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         convert_str_to_singleton=False,
     ) -> None:
@@ -849,7 +829,7 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
             convert_str_to_singleton,
         )
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         # Based on https://github.com/pypa/flit/blob/f7496a50debdfa393e39f8e51d328deabcd7ae7e/flit_core/flit_core/config.py#L215
         super().verify(rootopts, cfg, cfgpath)
         # Windows filenames can't contain these (nor * or ?, but they are part of
@@ -858,23 +838,17 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
         pattern_list = cfg[cfgpath].value
         for i, pattern in enumerate(pattern_list):
             if bad_chars.search(pattern):
-                raise ConfigError(
-                    f"Pattern '{pattern}' in {pth2str(cfgpath)} "
-                    'contains bad characters (<>:"\\ or '
-                    "control characters)"
-                )
+                msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} contains bad characters (<>:\"\\ or control characters)"
+                raise ConfigError(msg)
             # Normalize the path
             normp = osp.normpath(pattern)
             # Make sure that the path is relative and inside of the project
             if osp.isabs(normp):
-                raise ConfigError(
-                    f"Pattern '{pattern}' in {pth2str(cfgpath)} " "should be relative"
-                )
+                msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} should be relative"
+                raise ConfigError(msg)
             if normp.startswith(".." + os.sep):
-                raise ConfigError(
-                    f"Pattern '{pattern}' in {pth2str(cfgpath)} "
-                    "cannot refer to the parent directory (..)"
-                )
+                msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} cannot refer to the parent directory (..)"
+                raise ConfigError(msg)
             pattern_list[i] = normp
 
 
@@ -884,7 +858,7 @@ class DictOfStrConfigOption(ConfigOption):
 
     def explicit_override(
         self,
-        opts: "ConfigOption",
+        opts: ConfigOption,
         selfcfg: ConfigNode,
         selfpth: ConfPath,
         overridecfg: ConfigNode,
@@ -900,28 +874,25 @@ class DictOfStrConfigOption(ConfigOption):
             assert isinstance(overridecfg.sub, dict)
             selfcfg.sub.update(deepcopy(overridecfg.sub))
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         if cfg[cfgpath].value is not None:
             if isinstance(cfg[cfgpath].value, dict):
                 newcfg = ConfigNode.from_dict(cfg[cfgpath].value)
                 cfg[cfgpath].value = newcfg.value
                 cfg[cfgpath].sub = newcfg.sub
             else:
-                raise ConfigError(
-                    f"Type of {pth2str(cfgpath)} should be "
-                    f"{dict}, not {type(cfg[cfgpath].value)}"
-                )
+                msg = f"Type of {pth2str(cfgpath)} should be {dict}, not {type(cfg[cfgpath].value)}"
+                raise ConfigError(msg)
         valdict = cfg[cfgpath].sub
         if not isinstance(valdict, dict):
-            raise ConfigError(
-                f"Type of {pth2str(cfgpath)} should be " f"{dict}, not {type(valdict)}"
-            )
-        elif not all(isinstance(el, str) for el in valdict.keys()):
-            raise ConfigError(f"Type of keys in {pth2str(cfgpath)} should " f"be {str}")
+            msg = f"Type of {pth2str(cfgpath)} should be {dict}, not {type(valdict)}"
+            raise ConfigError(msg)
+        elif not all(isinstance(el, str) for el in valdict):
+            msg = f"Type of keys in {pth2str(cfgpath)} should be {str}"
+            raise ConfigError(msg)
         elif not all(isinstance(el.value, str) for el in valdict.values()):
-            raise ConfigError(
-                f"Type of values in {pth2str(cfgpath)} should " f"be {str}"
-            )
+            msg = f"Type of values in {pth2str(cfgpath)} should be {str}"
+            raise ConfigError(msg)
 
 
 class OverrideConfigOption(ConfigOption):
@@ -935,17 +906,15 @@ class OverrideConfigOption(ConfigOption):
         super().__init__(name, description, "", default)
         self.targetpath = targetpath
 
-    def verify(self, rootopts: "ConfigOption", cfg: ConfigNode, cfgpath: ConfPath):
+    def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
         rootopts[self.targetpath].verify(rootopts, cfg, cfgpath)
 
-    def inherit(self, rootopts: "ConfigOption", cfg: ConfigNode, selfpth: ConfPath):
+    def inherit(self, rootopts: ConfigOption, cfg: ConfigNode, selfpth: ConfPath):
         pass
 
     def override(self, rootopts: ConfigOption, cfg: ConfigNode, selfpth: ConfPath):
         selfcfg = cfg.get(selfpth, None)
-        if selfcfg is None:
-            return
-        elif selfcfg.value is None and selfcfg.sub is None:
+        if selfcfg is None or (selfcfg.value is None and selfcfg.sub is None):
             return
         super().override(rootopts, cfg, selfpth)
         curropt = rootopts[self.targetpath]

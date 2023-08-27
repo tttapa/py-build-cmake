@@ -31,13 +31,13 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+from __future__ import annotations
 
 import ast
 import logging
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
 import distlib.version
 
@@ -113,9 +113,11 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     mod_name = "py_build_cmake.dummy.import%d" % _import_i
     spec = spec_from_file_location(mod_name, mod_filename)
     if spec is None:
-        raise ProblemInModule(f"Unable to import '{mod_filename}' (missing spec)")
+        msg = f"Unable to import '{mod_filename}' (missing spec)"
+        raise ProblemInModule(msg)
     if spec.loader is None:
-        raise ProblemInModule(f"Unable to import '{mod_filename}' (missing loader)")
+        msg = f"Unable to import '{mod_filename}' (missing loader)"
+        raise ProblemInModule(msg)
     with _module_load_ctx():
         m = module_from_spec(spec)
         # Add the module to sys.modules to allow relative imports to work.
@@ -156,9 +158,8 @@ def get_info_from_module(mod_filename: Path, for_fields=("version", "description
 
     if want_summary:
         if (not docstring) or not docstring.strip():
-            raise NoDocstringError(
-                "The module '{}' is missing a docstring.".format(mod_filename)
-            )
+            msg = f"The module '{mod_filename}' is missing a docstring."
+            raise NoDocstringError(msg)
         res["summary"] = docstring.lstrip().splitlines()[0]
 
     if want_version:
@@ -179,19 +180,18 @@ def check_version(version, filename):
     Returns the version in canonical PEP 440 format.
     """
     if not version:
-        raise NoVersionError(
-            f"Please define a `__version__ = \"x.y.z\"` in your module '{filename}'."
-        )
+        msg = f"Please define a `__version__ = \"x.y.z\"` in your module '{filename}'."
+        raise NoVersionError(msg)
     if not isinstance(version, str):
-        raise InvalidVersion(
-            f"__version__ must be a string, not {type(version)}, in module '{filename}'."
-        )
+        msg = f"__version__ must be a string, not {type(version)}, in module '{filename}'."
+        raise InvalidVersion(msg)
 
     try:
         norm_version = distlib.version.NormalizedVersion(version)
         version = str(norm_version)
     except distlib.version.UnsupportedVersionError as e:
-        raise InvalidVersion(f"Invalid __version__ in module '{filename}': {str(e)}")
+        msg = f"Invalid __version__ in module '{filename}': {e!s}"
+        raise InvalidVersion(msg)
 
     return version
 
@@ -202,12 +202,11 @@ def check_version(version, filename):
 from pyproject_metadata import StandardMetadata
 
 
-def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Optional[Path]):
+def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Path | None):
     if mod_filename is None:
         if metadata.dynamic:
-            raise ConfigError(
-                "If no module is specified, dynamic metadata is not allowed"
-            )
+            msg = "If no module is specified, dynamic metadata is not allowed"
+            raise ConfigError(msg)
         return
     res = get_info_from_module(mod_filename, metadata.dynamic)
     if "version" in res:
@@ -217,11 +216,12 @@ def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Optional[P
     metadata.dynamic = []
 
 
-def find_module(module_metadata: dict, src_dir: Path) -> Optional[Module]:
+def find_module(module_metadata: dict, src_dir: Path) -> Module | None:
     name = module_metadata["name"]
     base_dir = src_dir / module_metadata["directory"]
     if name is None or base_dir is None:
         return None
+
     # Look for the module
     dir = lambda p: p.is_dir()
     file = lambda p: p.is_file()
@@ -238,13 +238,11 @@ def find_module(module_metadata: dict, src_dir: Path) -> Optional[Module]:
     found = list(filter(lambda x: check(*x), options))
 
     if len(found) > 1:
-        raise ConfigError(
-            "Module is ambiguous {}: {}".format(
-                name, ", ".join(map(str, sorted(found)))
-            )
-        )
+        msg = f"Module is ambiguous {name}: {', '.join(map(repr, sorted(found)))}"
+        raise ConfigError(msg)
     elif not found:
-        raise ConfigError("No file/folder found for module {}".format(name))
+        msg = f"No file/folder found for module {name}"
+        raise ConfigError(msg)
 
     return Module(
         name=name,

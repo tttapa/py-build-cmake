@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Sequence
 
 import pyproject_metadata
 
@@ -57,7 +59,7 @@ class Module:
 
         def _include(p):
             p = Path(p)
-            return not p.name == "__pycache__" and not p.name.endswith(".pyc")
+            return p.name != "__pycache__" and not p.name.endswith(".pyc")
 
         if self.is_package:
             # Ensure we sort all files and directories so the order is stable
@@ -78,15 +80,15 @@ class Config:
 
     standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default="")
-    module: Dict[str, str] = field(default_factory=dict)
-    editable: Dict[str, Any] = field(default_factory=dict)
-    sdist: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    cmake: Optional[Dict[str, Any]] = field(default=None)
-    stubgen: Optional[Dict[str, Any]] = field(default=None)
-    cross: Optional[Dict[str, Any]] = field(default=None)
+    module: dict[str, str] = field(default_factory=dict)
+    editable: dict[str, Any] = field(default_factory=dict)
+    sdist: dict[str, dict[str, Any]] = field(default_factory=dict)
+    cmake: dict[str, Any] | None = field(default=None)
+    stubgen: dict[str, Any] | None = field(default=None)
+    cross: dict[str, Any] | None = field(default=None)
 
     @property
-    def referenced_files(self) -> List[Path]:
+    def referenced_files(self) -> list[Path]:
         metadata = self.standard_metadata
         res = []
         if metadata.readme is not None and metadata.readme.file is not None:
@@ -103,7 +105,7 @@ class ComponentConfig:
 
     standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default="")
-    component: Dict[str, Any] = field(default_factory=dict)
+    component: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -141,4 +143,4 @@ class BuildPaths:
 @dataclass
 class Command:
     args: Sequence[str]
-    kwargs: Dict[str, Any]
+    kwargs: dict[str, Any]

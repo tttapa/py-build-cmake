@@ -1,5 +1,5 @@
-from zipfile import ZipFile
 from tarfile import open as tar_open
+from zipfile import ZipFile
 
 tar_files = [
     "examples/minimal-program/dist-nox/minimal_program-0.2.0a5.tar.gz",

@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import re
 import sys
 from pprint import pprint
 from subprocess import CalledProcessError
 from subprocess import run as sp_run
-from typing import Optional
 
 from distlib.version import NormalizedVersion  # type: ignore
 
@@ -25,12 +26,13 @@ class CommandRunner:
             print(join(args[0]))
         if not self.dry:
             return sp_run(*args, **kwargs)
+        return None
 
     def check_program_version(
         self,
         program: str,
-        minimum_version: Optional[NormalizedVersion],
-        name: Optional[str],
+        minimum_version: NormalizedVersion | None,
+        name: str | None,
         check_version: bool = True,
     ):
         """Check if there's a new enough version of the given command available
@@ -44,14 +46,15 @@ class CommandRunner:
             if res is not None and check_version:
                 m = re.search(r"\d+(\.\d+){1,}", res.stdout)
                 if not m:
-                    raise RuntimeError(f"Unexpected {name} version output")
+                    msg = f"Unexpected {name} version output"
+                    raise RuntimeError(msg)
                 program_version = NormalizedVersion(m.group(0))
                 if self.verbose:
                     print("Found", name, program_version)
                 # Check if the version is new enough
-                if minimum_version is not None:
-                    if program_version < minimum_version:
-                        raise RuntimeError(f"{name} too old")
+                if minimum_version is not None and program_version < minimum_version:
+                    msg = f"{name} too old"
+                    raise RuntimeError(msg)
         except CalledProcessError as e:
             if self.verbose:
                 print(f"{type(e).__module__}.{type(e).__name__}", e, sep=": ")

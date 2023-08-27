@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 from pprint import pprint
 
-import pytest
 import py_build_cmake.config.config_options as co
-from py_build_cmake.config.pyproject_options import get_options
+import pytest
 from py_build_cmake.common import ConfigError
+from py_build_cmake.config.pyproject_options import get_options
 
 
 def gen_test_opts():
@@ -29,7 +29,7 @@ def gen_test_opts():
 
 def test_iter():
     opts = gen_test_opts()
-    result = [p for p in opts.iter_opt_paths()]
+    result = list(opts.iter_opt_paths())
     expected = [
         ("trunk",),
         ("trunk", "mid1"),
@@ -45,7 +45,7 @@ def test_iter():
 
 def test_iter_leaf():
     opts = gen_test_opts()
-    result = [p for p in opts.iter_leaf_opt_paths()]
+    result = list(opts.iter_leaf_opt_paths())
     expected = [
         ("trunk", "mid1", "leaf11"),
         ("trunk", "mid1", "leaf12"),
@@ -68,7 +68,8 @@ def test_update_defaults():
     cfg = co.ConfigNode.from_dict({})
     trunk.default = co.DefaultValueValue({})
     res = trunk.update_default(opts, cfg, co.pth("trunk"))
-    assert res is not None and res.value == {}
+    assert res is not None
+    assert res.value == {}
     assert cfg.to_dict() == {"trunk": {}}
     opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {}}
@@ -76,7 +77,8 @@ def test_update_defaults():
     cfg = co.ConfigNode.from_dict({})
     leaf12.default = co.DefaultValueValue("d12")
     res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None and res.value == "d12"
+    assert res is not None
+    assert res.value == "d12"
     assert cfg.to_dict() == {}
     opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {}}
@@ -84,7 +86,8 @@ def test_update_defaults():
     cfg = co.ConfigNode.from_dict({})
     mid1.default = co.DefaultValueValue({})
     res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None and res.value == "d12"
+    assert res is not None
+    assert res.value == "d12"
     assert cfg.to_dict() == {}
     opts.update_default_all(cfg)
     assert cfg.to_dict() == {"trunk": {"mid1": {"leaf12": "d12"}}}
@@ -95,7 +98,8 @@ def test_update_defaults():
     print(cfg.sub)
     trunk.default = co.NoDefaultValue()
     res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None and res.value == "d12"
+    assert res is not None
+    assert res.value == "d12"
     assert cfg.to_dict() == {}
     print(cfg)
     print(cfg.value)
@@ -409,7 +413,7 @@ def test_verify_wrong_type_str():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = "Type of trunk/mid2/leaf22 should be <class 'str'>, " "not <class 'int'>"
+    expected = "Type of trunk/mid2/leaf22 should be <class 'str'>, not <class 'int'>"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)
@@ -429,9 +433,7 @@ def test_verify_wrong_type_str_dict():
         },
     }
     cfg = co.ConfigNode.from_dict(d)
-    expected = (
-        "Type of trunk/mid2/leaf21 should be <class 'str'>, " "not <class 'dict'>"
-    )
+    expected = "Type of trunk/mid2/leaf21 should be <class 'str'>, not <class 'dict'>"
     with pytest.raises(ConfigError, match=expected) as e:
         opts.verify_all(cfg)
     print(e)

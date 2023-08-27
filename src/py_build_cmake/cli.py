@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import click
@@ -9,7 +11,6 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     def get_cmaker():
         from .build import _BuildBackend as backend
         from .commands.cmd_runner import CommandRunner
-        from .common import PackageInfo
 
         src_dir = Path(directory or ".").resolve()
         config_settings = {
@@ -59,7 +60,7 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     "-V",
     "--verbose",
     is_flag=True,
-    help="Print verbose information about the commands being " "executed.",
+    help="Print verbose information about the commands being executed.",
 )
 @click.option(
     "-n",
@@ -181,7 +182,7 @@ def format(md, component):
     if md:
         from .help import help_print_md as help_print
     else:
-        from .help import help_print as help_print
+        from .help import help_print
     help_pth = pth("pyproject.toml/tool/py-build-cmake")
     pr_md = print if md else lambda *args, **kwargs: None
     pr_tx = lambda *args, **kwargs: None if md else print

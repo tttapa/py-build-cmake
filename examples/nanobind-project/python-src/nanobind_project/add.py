@@ -1,5 +1,6 @@
-from .add_module import add
 import sys
+
+from .add_module import add
 
 
 def main():

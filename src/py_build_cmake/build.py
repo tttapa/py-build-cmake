@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from distlib.wheel import Wheel  # type: ignore
 
@@ -36,7 +38,7 @@ from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is
 logger = logging.getLogger(__name__)
 
 
-class _BuildBackend(object):
+class _BuildBackend:
     # --- Constructor ---------------------------------------------------------
 
     def __init__(self) -> None:
@@ -75,10 +77,9 @@ class _BuildBackend(object):
 
         # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
-            whl_name = self.build_wheel_in_dir(
+            return self.build_wheel_in_dir(
                 wheel_directory, tmp_build_dir, config_settings
             )
-        return whl_name
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
@@ -91,10 +92,9 @@ class _BuildBackend(object):
 
         # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
-            whl_name = self.build_wheel_in_dir(
+            return self.build_wheel_in_dir(
                 wheel_directory, tmp_build_dir, config_settings, editable=True
             )
-        return whl_name
 
     def build_sdist(self, sdist_directory, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
@@ -109,7 +109,7 @@ class _BuildBackend(object):
         pkg_info = self.get_pkg_info(cfg, module)
 
         # Export dist
-        extra_files = [pyproject] + cfg.referenced_files
+        extra_files = [pyproject, *cfg.referenced_files]
         sdist_cfg = cfg.sdist["cross" if cfg.cross else util.get_os_name()]
         sdist_builder = SdistBuilder(
             module,
@@ -126,7 +126,7 @@ class _BuildBackend(object):
     # --- Parsing config options and metadata ---------------------------------
 
     @staticmethod
-    def is_verbose_enabled(config_settings: Optional[dict]):
+    def is_verbose_enabled(config_settings: dict | None):
         truthy = lambda x: x.lower() in ("", "1", "true", "yes", "y")
         if config_settings is not None:
             verbose_keys = {"verbose", "--verbose", "V", "-V"}
@@ -142,7 +142,7 @@ class _BuildBackend(object):
         return False
 
     @staticmethod
-    def get_log_level(config_settings: Optional[dict]) -> int:
+    def get_log_level(config_settings: dict | None) -> int:
         def parse_log_level(loglevel: str) -> int:
             numeric_level = getattr(logging, loglevel.upper(), None)
             if isinstance(numeric_level, int):
@@ -160,7 +160,7 @@ class _BuildBackend(object):
             return parse_log_level(env_log)
         return logging.INFO
 
-    def parse_config_settings(self, config_settings: Optional[Dict]):
+    def parse_config_settings(self, config_settings: dict | None):
         try:
             level = self.get_log_level(config_settings)
             if "GITHUB_ACTIONS" in os.environ:
@@ -176,9 +176,9 @@ class _BuildBackend(object):
 
     @staticmethod
     def get_requires_build_project(
-        config_settings: Optional[dict], cfg: Config, runner: CommandRunner
+        config_settings: dict | None, cfg: Config, runner: CommandRunner
     ):
-        deps: List[str] = []
+        deps: list[str] = []
         # Check if we need CMake
         if cfg.cmake:
             check_cmake_program(cfg, deps, runner)
@@ -243,11 +243,10 @@ class _BuildBackend(object):
             cmaker.install()
 
         # Create wheel
-        whl_name = self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
-        return whl_name
+        return self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
 
     @staticmethod
-    def get_pkg_info(cfg: Union[Config, ComponentConfig], module: Module):
+    def get_pkg_info(cfg: Config | ComponentConfig, module: Module):
         return PackageInfo(
             version=str(cfg.standard_metadata.version),
             package_name=cfg.package_name,
@@ -261,7 +260,7 @@ class _BuildBackend(object):
             build_dir = Path(cmake_cfg["build_path"]) / build_cfg_name
         else:
             build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
-        paths = BuildPaths(
+        return BuildPaths(
             source_dir=src_dir,
             build_dir=build_dir,
             wheel_dir=Path(wheel_dir),
@@ -270,12 +269,10 @@ class _BuildBackend(object):
             pkg_staging_dir=Path(tmp_build_dir) / "staging",
         )
 
-        return paths
-
     @staticmethod
     def read_all_metadata(
         src_dir, config_settings, verbose
-    ) -> Tuple[Config, Optional[Module]]:
+    ) -> tuple[Config, Module | None]:
         cfg = _BuildBackend.read_config(src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
         modfile = module.full_file if module is not None else None
@@ -337,8 +334,7 @@ class _BuildBackend(object):
             tags = convert_wheel_tags(tags, cmake_cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         logger.debug("Built Wheel: %s", wheel_path)
-        whl_name = os.path.relpath(wheel_path, paths.wheel_dir)
-        return whl_name
+        return os.path.relpath(wheel_path, paths.wheel_dir)
 
     @staticmethod
     def get_cmake_config(cfg: Config):
@@ -355,9 +351,9 @@ class _BuildBackend(object):
     def get_cmaker(
         source_dir: Path,
         build_dir: Path,
-        install_dir: Optional[Path],
+        install_dir: Path | None,
         cmake_cfg: dict,
-        cross_cfg: Optional[dict],
+        cross_cfg: dict | None,
         package_info: PackageInfo,
         **kwargs,
     ):
@@ -425,9 +421,9 @@ class _BuildBackend(object):
 
     # --- Generate stubs ------------------------------------------------------
 
-    def generate_stubs(self, paths: BuildPaths, module: Module, cfg: Dict[str, Any]):
+    def generate_stubs(self, paths: BuildPaths, module: Module, cfg: dict[str, Any]):
         """Generate stubs (.pyi) using mypy stubgen."""
-        args = ["stubgen"] + cfg.get("args", [])
+        args = ["stubgen", *cfg.get("args", [])]
         is_package = module.is_package
         cfg.setdefault("packages", [module.name] if is_package else [])
         for p in cfg["packages"]:
@@ -451,11 +447,8 @@ class _BuildBackend(object):
         """Get a string representing the Python version, ABI and architecture,
         used to name the build folder so builds for different versions don't
         interfere."""
-        if cross_cfg:
-            tags = get_cross_tags(cross_cfg)
-        else:
-            tags = get_native_tags()
-        return "-".join(map(lambda x: x[0], tags.values()))
+        tags = get_cross_tags(cross_cfg) if cross_cfg else get_native_tags()
+        return "-".join(x[0] for x in tags.values())
 
 
 _BACKEND = _BuildBackend()

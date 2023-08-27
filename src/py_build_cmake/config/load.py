@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+import contextlib
 import logging
 import os
-import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import pyproject_metadata
 from distlib.util import normalize_name  # type: ignore
@@ -29,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_full_config_checked(
-    pyproject_path: Path, config_settings: Optional[Dict], verbose: bool
+    pyproject_path: Path, config_settings: dict | None, verbose: bool
 ) -> Config:
     config_settings = config_settings or {}
     try:
@@ -37,9 +39,7 @@ def read_full_config_checked(
         cfg = read_config(pyproject_path, overrides)
     except ConfigError as e:
         logger.error("Error in user configuration", exc_info=e)
-        e.args = (
-            "\n" "\n" "\t\u274C Error in user configuration:\n" "\n" f"\t\t{e}\n" "\n",
-        )
+        e.args = ("\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n",)
         raise
     except Exception as e:
         logger.error("Internal error while processing the configuration", exc_info=e)
@@ -58,7 +58,7 @@ def read_full_config_checked(
     return cfg
 
 
-def parse_config_settings_overrides(config_settings: Dict, verbose: bool):
+def parse_config_settings_overrides(config_settings: dict, verbose: bool):
     if verbose:
         print("Configuration settings:")
         pprint(config_settings)
@@ -71,13 +71,14 @@ def parse_config_settings_overrides(config_settings: Dict, verbose: bool):
     return overrides
 
 
-def read_config(pyproject_path, flag_overrides: Dict[str, List[str]]) -> Config:
+def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
     pyproject_folder = pyproject_path.parent
     pyproject = toml_.loads(pyproject_path.read_text("utf-8"))
     if "project" not in pyproject:
-        raise ConfigError("Missing [project] table")
+        msg = "Missing [project] table"
+        raise ConfigError(msg)
 
     # Load local override
     localconfig_fname = "py-build-cmake.local.toml"
@@ -103,7 +104,7 @@ def read_config(pyproject_path, flag_overrides: Dict[str, List[str]]) -> Config:
         crossconfig_fname: crossconfig,
     }
     # Additional options for config_options
-    extra_options: List[OverrideConfigOption] = []
+    extra_options: list[OverrideConfigOption] = []
 
     def try_load_local(path: Path):
         if not path.exists():
@@ -179,7 +180,8 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
         tool_cfg[s]["name"] = normname
         cfg.module = tool_cfg[s]
     else:
-        assert False, "Missing [tools.py-build-cmake.module] section"
+        msg = "Missing [tools.py-build-cmake.module] section"
+        raise AssertionError(msg)
 
     # Store the editable configuration
     cfg.editable = {
@@ -225,14 +227,13 @@ def set_up_os_specific_cross_inheritance(opts, tool_tree_cfg):
     """Update the cross-compilation configuration to inherit from the
     corresponding OS configuration."""
     cross_os = None
-    try:
+    with contextlib.suppress(KeyError):
         cross_os = tool_tree_cfg[("cross", "os")].value
-    except KeyError:
-        pass
+
     if cross_os is not None:
         for s in ("cmake", "sdist", "editable"):
-            inherit_from = get_tool_pbc_path() + (cross_os, s)
-            opts[get_cross_path() + (s,)].inherit_from = inherit_from
+            inherit_from = (*get_tool_pbc_path(), cross_os, s)
+            opts[(*get_cross_path(), s)].inherit_from = inherit_from
 
 
 def print_config_verbose(cfg: Config):
@@ -260,22 +261,21 @@ def print_config_verbose(cfg: Config):
 class ComponentConfig:
     standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default="")
-    component: Dict[str, Any] = field(default_factory=dict)
+    component: dict[str, Any] = field(default_factory=dict)
 
 
 def read_full_component_config_checked(
-    pyproject_path: Path, config_settings: Optional[Dict], verbose: bool
+    pyproject_path: Path, config_settings: dict | None, verbose: bool
 ) -> ComponentConfig:
     config_settings = config_settings or {}
     try:
         cfg = read_component_config(pyproject_path)
         if cfg.standard_metadata.dynamic:
-            raise ConfigError("Dynamic metadata not supported for components.")
+            msg = "Dynamic metadata not supported for components."
+            raise ConfigError(msg)
     except ConfigError as e:
         logger.error("Invalid user configuration", exc_info=e)
-        e.args = (
-            "\n" "\n" "\t\u274C Error in user configuration:\n" "\n" f"\t\t{e}\n" "\n",
-        )
+        e.args = ("\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n",)
         raise
     except Exception as e:
         logger.error("Internal error while processing configuration", exc_info=e)
@@ -298,7 +298,8 @@ def read_component_config(pyproject_path: Path) -> ComponentConfig:
     # Load the pyproject.toml file
     pyproject = toml_.loads(pyproject_path.read_text("utf-8"))
     if "project" not in pyproject:
-        raise ConfigError("Missing [project] table")
+        msg = "Missing [project] table"
+        raise ConfigError(msg)
 
     # File names mapping to the actual dict with the config
     config_files = {

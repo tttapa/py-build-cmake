@@ -1,5 +1,5 @@
-from minimal.add_module import add
 import pytest
+from minimal.add_module import add
 
 
 def test_add_positive():

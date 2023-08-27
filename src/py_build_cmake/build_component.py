@@ -1,20 +1,20 @@
+from __future__ import annotations
+
 import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Dict, Optional
 
-from . import config
 from .build import _BuildBackend as std_backend
 from .commands.cmd_runner import CommandRunner
-from .common import BuildPaths, ComponentConfig, Config, PackageInfo
+from .common import ComponentConfig, PackageInfo
 from .config import load as config_load
 from .export import metadata as export_metadata
 
 logger = logging.getLogger(__name__)
 
 
-class _BuildComponentBackend(object):
+class _BuildComponentBackend:
     # --- Constructor ---------------------------------------------------------
 
     def __init__(self) -> None:
@@ -60,26 +60,23 @@ class _BuildComponentBackend(object):
 
         # Build wheel
         with tempfile.TemporaryDirectory() as tmp_build_dir:
-            whl_name = self.build_wheel_in_dir(
+            return self.build_wheel_in_dir(
                 wheel_directory, tmp_build_dir, config_settings
             )
-        return whl_name
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
-        raise NotImplementedError(
-            "Editable installation not supported for individual components."
-        )
+        msg = "Editable installation not supported for individual components."
+        raise NotImplementedError(msg)
 
     def build_sdist(self, sdist_directory, config_settings=None):
-        raise NotImplementedError(
-            "Source distribution not supported for individual components."
-        )
+        msg = "Source distribution not supported for individual components."
+        raise NotImplementedError(msg)
 
     # --- Parsing config options and metadata ---------------------------------
 
-    def parse_config_settings(self, config_settings: Optional[Dict]):
+    def parse_config_settings(self, config_settings: dict | None):
         try:
             level = std_backend.get_log_level(config_settings)
             logging.basicConfig(level=level)
@@ -89,10 +86,9 @@ class _BuildComponentBackend(object):
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        cfg = config_load.read_full_component_config_checked(
+        return config_load.read_full_component_config_checked(
             src_dir / "pyproject.toml", config_settings, verbose
         )
-        return cfg
 
     # --- Building wheels -----------------------------------------------------
 
@@ -148,8 +144,7 @@ class _BuildComponentBackend(object):
             cmaker.install()
 
         # Create wheel
-        whl_name = std_backend.create_wheel(paths, cfg, cmake_cfg, pkg_info)
-        return whl_name
+        return std_backend.create_wheel(paths, cfg, cmake_cfg, pkg_info)
 
     # --- CMake builds --------------------------------------------------------
 
@@ -157,9 +152,9 @@ class _BuildComponentBackend(object):
     def get_cmaker(
         source_dir: Path,
         build_dir: Path,
-        install_dir: Optional[Path],
+        install_dir: Path | None,
         cmake_cfg: dict,
-        cross_cfg: Optional[dict],
+        cross_cfg: dict | None,
         package_info: PackageInfo,
         comp_cfg: ComponentConfig,
         **kwargs,

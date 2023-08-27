@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import shutil
 import textwrap
@@ -9,9 +11,8 @@ from ...common import ConfigError, Module
 def write_editable_wrapper(staging_dir: Path, module: Module):
     """Write a fake __init__.py file that points to the development folder."""
     if not module.is_package:
-        raise ConfigError(
-            "Editable wrapper mode is not supported for stand-alone Python modules."
-        )
+        msg = "Editable wrapper mode is not supported for stand-alone Python modules."
+        raise ConfigError(msg)
     name = module.name
     tmp_pkg = staging_dir / name
     pkgpath = module.full_path

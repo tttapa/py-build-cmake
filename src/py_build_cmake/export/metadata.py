@@ -1,15 +1,16 @@
+from __future__ import annotations
+
 import logging
 import shutil
 from copy import copy
 from pathlib import Path
-from typing import Dict
 
 from ..common import Config
 
 logger = logging.getLogger(__name__)
 
 
-def _write_entry_points(entrypoints: Dict[str, Dict[str, str]], fp):
+def _write_entry_points(entrypoints: dict[str, dict[str, str]], fp):
     """Write entry_points.txt from a two-level dict
 
     Sorts on keys to ensure results are reproducible.

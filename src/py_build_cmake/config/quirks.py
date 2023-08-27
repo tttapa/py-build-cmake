@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import logging
 import os
@@ -5,7 +7,7 @@ import platform
 import re
 import sys
 import sysconfig
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from distlib.util import get_platform as get_platform_dashes  # type: ignore
 
@@ -20,7 +22,7 @@ from .config_options import ConfigNode, pth
 logger = logging.getLogger(__name__)
 
 
-def get_python_lib(library_dirs: Optional[Union[str, List[str]]]) -> Optional[str]:
+def get_python_lib(library_dirs: str | list[str] | None) -> str | None:
     """Return the path the the first python<major><minor>.lib or
     python<major>.lib file in any of the library_dirs.
     Returns None if no such file exists."""
@@ -79,7 +81,7 @@ def cross_compile_win(
 
 
 def handle_cross_win(
-    config: ConfigNode, plat_name: str, library_dirs: Optional[Union[str, List[str]]]
+    config: ConfigNode, plat_name: str, library_dirs: str | list[str] | None
 ):
     """Try to configure cross-compilation for the given Windows platform.
     library_dirs should contain the directory with the Python library."""
@@ -141,7 +143,7 @@ def cross_compile_mac(config: ConfigNode, archs):
         f"ARCHFLAGS was specified. Automatically enabling cross-compilation for {', '.join(archs)} (native platform: {platform.machine()})"
     )
     assert not config.contains("cross")
-    cross_cfg: Dict[str, Any] = {
+    cross_cfg: dict[str, Any] = {
         "os": "mac",
         "cmake": {
             "options": {

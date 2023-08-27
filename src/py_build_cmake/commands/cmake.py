@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -5,7 +7,6 @@ import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from string import Template
-from typing import Dict, List, Optional
 
 from .. import __version__
 from ..common import PackageInfo
@@ -29,33 +30,33 @@ class CMakeSettings:
 @dataclass
 class CMakeConfigureSettings:
     environment: dict
-    build_type: Optional[str]
-    options: Dict[str, str]
-    args: List[str]
-    preset: Optional[str]
-    generator: Optional[str]
+    build_type: str | None
+    options: dict[str, str]
+    args: list[str]
+    preset: str | None
+    generator: str | None
     cross_compiling: bool
-    toolchain_file: Optional[Path]
-    python_prefix: Optional[Path]
-    python_library: Optional[Path]
-    python_include_dir: Optional[Path]
+    toolchain_file: Path | None
+    python_prefix: Path | None
+    python_library: Path | None
+    python_include_dir: Path | None
 
 
 @dataclass
 class CMakeBuildSettings:
-    args: List[str]
-    tool_args: List[str]
-    presets: List[str]
-    configs: List[str]
+    args: list[str]
+    tool_args: list[str]
+    presets: list[str]
+    configs: list[str]
 
 
 @dataclass
 class CMakeInstallSettings:
-    args: List[str]
-    presets: List[str]
-    configs: List[str]
-    components: List[str]
-    prefix: Optional[Path]
+    args: list[str]
+    presets: list[str]
+    configs: list[str]
+    components: list[str]
+    prefix: Path | None
 
 
 class CMaker:
@@ -74,7 +75,7 @@ class CMaker:
         self.install_settings = install_settings
         self.package_info = package_info
         self.runner = runner
-        self.environment: Optional[dict] = None
+        self.environment: dict | None = None
 
     def run(self, *args, **kwargs):
         return self.runner.run(*args, **kwargs)
@@ -94,7 +95,7 @@ class CMaker:
     def cross_compiling(self) -> bool:
         return self.conf_settings.cross_compiling
 
-    def get_configure_options_package(self) -> List[str]:
+    def get_configure_options_package(self) -> list[str]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
         return [
             "PY_BUILD_CMAKE_PACKAGE_VERSION:STRING=" + self.package_info.version,
@@ -118,7 +119,7 @@ class CMaker:
         onoff = lambda x: "ON" if x else "OFF"
         return ";".join(map(onoff, map(abiflag, "dmu")))
 
-    def get_native_python_implementation(self) -> Optional[str]:
+    def get_native_python_implementation(self) -> str | None:
         return {
             "cpython": "CPython",
             "pypy": "PyPy",
@@ -148,7 +149,7 @@ class CMaker:
             inc = str(self.conf_settings.python_include_dir)
             yield prefix + "_INCLUDE_DIR=" + inc
 
-    def get_configure_options_python(self) -> List[str]:
+    def get_configure_options_python(self) -> list[str]:
         """Flags to help CMake find the right version of Python."""
 
         def get_opts(prefix):
@@ -169,7 +170,7 @@ class CMaker:
             opts += list(get_opts("Python3"))
         return opts
 
-    def get_configure_options_toolchain(self) -> List[str]:
+    def get_configure_options_toolchain(self) -> list[str]:
         """Sets CMAKE_TOOLCHAIN_FILE."""
         return (
             ["CMAKE_TOOLCHAIN_FILE:FILEPATH=" + str(self.conf_settings.toolchain_file)]
@@ -177,10 +178,10 @@ class CMaker:
             else []
         )
 
-    def get_configure_options_settings(self) -> List[str]:
+    def get_configure_options_settings(self) -> list[str]:
         return [k + "=" + v for k, v in self.conf_settings.options.items()]
 
-    def get_configure_options(self) -> List[str]:
+    def get_configure_options(self) -> list[str]:
         return (
             self.get_configure_options_package()
             + self.get_configure_options_python()
@@ -188,7 +189,7 @@ class CMaker:
             + self.get_configure_options_settings()
         )
 
-    def get_cmake_generator_platform(self) -> List[str]:
+    def get_cmake_generator_platform(self) -> list[str]:
         if self.cmake_settings.os == "windows" and not self.cross_compiling():
             plat = sysconfig.get_platform()
             cmake_plat = python_sysconfig_platform_to_cmake_platform_win(plat)

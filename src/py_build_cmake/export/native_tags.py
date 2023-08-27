@@ -4,6 +4,7 @@ returns all tags supported by the interpreter, not the tags that should be used
 for the generated wheels. Therefore the only option here is to write our own
 (kind of hacky) functions based on packaging.tags.
 """
+from __future__ import annotations
 
 import sys
 import sysconfig
@@ -14,7 +15,7 @@ from distlib.util import get_platform as get_platform_dashes  # type: ignore
 
 from ..common.util import platform_to_platform_tag
 
-_INTERPRETER_SHORT_NAMES: Dict[str, str] = {
+_INTERPRETER_SHORT_NAMES: dict[str, str] = {
     "python": "py",
     "cpython": "cp",
     "pypy": "pp",

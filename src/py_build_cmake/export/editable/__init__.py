@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ...common import BuildPaths, Module
 from ...common.util import get_os_name
 from .hook import write_editable_hook
@@ -15,5 +17,6 @@ def do_editable_install(cfg, paths: BuildPaths, module: Module):
     elif mode == "symlink":
         paths = write_editable_links(paths, module)
     else:
-        assert False, "Invalid editable mode"
+        msg = "Invalid editable mode"
+        raise AssertionError(msg)
     return paths
