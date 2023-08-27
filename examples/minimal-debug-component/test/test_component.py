@@ -1,19 +1,26 @@
 import re
 import sys
+import pytest
 
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="No importlib.resources support on older versions of Python",
+)
+@pytest.mark.skipif(
+    sys.platform not in ["linux", "win32"],
+    reason="No separate debug symbol files on macOS",
+)
 def test_component():
-    try:
-        # Not available in Python 3.7, 3.8
-        from importlib.resources import files
-    except ImportError:
-        return
+    from importlib.resources import files
 
     contents = [
-        resource.name for resource in files('minimal_comp').iterdir()
+        resource.name
+        for resource in files("minimal_comp").iterdir()
         if resource.is_file()
     ]
     print(contents)
-    if sys.platform == 'linux':
+    if sys.platform == "linux":
         patt = re.compile(r"^_add_module(\.\S+)?\.so\.debug$")
         assert any(map(patt.match, contents))
     if sys.platform == "win32":
