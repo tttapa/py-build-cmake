@@ -1,4 +1,4 @@
-# For more information, see 
+# For more information, see
 # https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html and
 # https://tttapa.github.io/Pages/Raspberry-Pi/C++-Development-RPiOS/index.html.
 
@@ -6,7 +6,7 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 set(CMAKE_SYSROOT /var/lib/schroot/chroots/rpi3-impish-arm64)
-SET(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT}) 
+SET(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 set(CMAKE_LIBRARY_ARCHITECTURE aarch64-linux-gnu)
 set(CMAKE_STAGING_PREFIX $ENV{HOME}/RPi-dev/staging-aarch64-rpi3)
 

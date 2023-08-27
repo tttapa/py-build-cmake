@@ -34,7 +34,7 @@ pip install py-build-cmake
 
 The documentation can be found on <https://tttapa.github.io/py-build-cmake>.
 
-The format of the configuration file is explained in 
+The format of the configuration file is explained in
 [Config.md](https://tttapa.github.io/py-build-cmake/Config.html).
 
 Alternatively, use the [command-line interface](https://tttapa.github.io/py-build-cmake/CLI.html)

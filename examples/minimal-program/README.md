@@ -1,6 +1,6 @@
 # Minimal program
 
-Minimal example using CMake and py-build-cmake to build a C++ program and 
+Minimal example using CMake and py-build-cmake to build a C++ program and
 package it as a Python package.
 
 The key takeaway of this example is the installation path of the program: it

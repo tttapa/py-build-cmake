@@ -1,6 +1,6 @@
 # Minimal debug component
 
-Largely the same as the [minimal](../minimal) example, but uses 
+Largely the same as the [minimal](../minimal) example, but uses
 py-build-cmake's `build_component` backend to package the debugging symbols
 in a separate, optional package.
 
