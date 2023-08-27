@@ -53,7 +53,7 @@ def get_contents_subs(ext_suffix: str):
 def check_pkg_contents(
     session: nox.Session, name: str, ext_suffix: str, with_sdist=True
 ):
-    d = project_dir / "test" / "expected_contents" / name
+    d = project_dir / "tests" / "expected_contents" / name
     normname = re.sub(r"[-_.]+", "_", name).lower()
     plat = get_platform().replace(".", "_").replace("-", "_")
     subs = get_contents_subs(ext_suffix)

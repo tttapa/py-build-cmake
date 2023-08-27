@@ -46,4 +46,4 @@ install_components = ["python_modules"]
 [tool.py-build-cmake.stubgen]
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["tests"]

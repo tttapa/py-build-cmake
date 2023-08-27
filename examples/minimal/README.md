@@ -47,7 +47,7 @@ minimal
    │       ├── __init__.py
    │       ├── add_module.py
    │       └── py.typed
-   ├── test
+   ├── tests
    │   └── test_add_module.py
    ├── CMakeLists.txt
    ├── LICENSE
@@ -110,7 +110,7 @@ contents.
 Tells [mypy](https://github.com/python/mypy) to provide type checking for your
 package, and to look at the stub files.
 
-`test/test_add_module.py`  
+`tests/test_add_module.py`  
 Unit tests for testing the extension module using
 [pytest](https://github.com/pytest-dev/pytest).
 
@@ -236,7 +236,7 @@ for information about the optional options in this section.
 
 ```toml
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["tests"]
 ```
 You can also add configuration options for other Python tools, for example, for
 `pytest`. See https://docs.pytest.org/en/7.4.x/reference/customize.html#pyproject-toml for

@@ -11,7 +11,7 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: end-of-file-fixer
-        exclude: '(^test/expected_contents/.*\.txt$)|(^docs/(Components|Config)\.md$)'
+        exclude: '(^tests/expected_contents/.*\.txt$)|(^docs/(Components|Config)\.md$)'
       - id: fix-byte-order-marker
       - id: mixed-line-ending
       - id: name-tests-test

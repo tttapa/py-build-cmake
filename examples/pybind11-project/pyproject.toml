@@ -78,10 +78,10 @@ CMAKE_RELWITHDEBINFO_POSTFIX = "_d"
 args = ["-v"]
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["tests"]
 
 [tool.cibuildwheel]
 build-verbosity = 1
 environment = { PY_BUILD_CMAKE_VERBOSE="1" }
-test-command = "pytest {package}/test"
+test-command = "pytest {package}/tests"
 test-extras = ["test"]
