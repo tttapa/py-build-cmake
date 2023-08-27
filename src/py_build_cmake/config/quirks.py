@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import configparser
+import contextlib
 import logging
 import os
 import platform
@@ -204,10 +205,22 @@ def config_quirks_mac(config: ConfigNode):
         opts.setdefault("CMAKE_OSX_ARCHITECTURES", ConfigNode(";".join(archs)))
 
 
+def config_quirks_pypy(config: ConfigNode):
+    if sys.version_info < (3, 8):
+        with contextlib.suppress(KeyError):
+            del config.sub["stubgen"]
+            logger.info("Mypy is not supported on PyPy <3.8, disabling stubgen")
+
+
 def config_quirks(config: ConfigNode):
     dispatch = {
         "Windows": config_quirks_win,
         "Darwin": config_quirks_mac,
     }.get(platform.system())
+    if dispatch is not None:
+        dispatch(config)
+    dispatch = {
+        "pypy": config_quirks_pypy,
+    }.get(sys.implementation.name)
     if dispatch is not None:
         dispatch(config)
