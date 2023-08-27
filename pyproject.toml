@@ -1,5 +1,9 @@
 [build-system]
-requires = ["distlib", "pyproject-metadata~=0.7.1", "tomli>=1.2.3,<3; python_version < '3.11'"]
+requires = [
+    "distlib~=0.3.5",
+    "pyproject-metadata~=0.7.1",
+    "tomli>=1.2.3,<3; python_version < '3.11'",
+]
 build-backend = "py_build_cmake.build"
 backend-path = ["src"]
 
