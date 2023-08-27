@@ -9,6 +9,7 @@ from .config_options import (
     DictOfStrConfigOption,
     DirPatternsConfigOption,
     EnumConfigOption,
+    IntConfigOption,
     ListOfStrConfigOption,
     NoDefaultValue,
     OverrideConfigOption,

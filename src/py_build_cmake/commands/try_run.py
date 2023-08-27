@@ -38,11 +38,10 @@ def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
     # Do any of the configs require Ninja as a generator?
     needs_ninja = lambda c: "ninja" in c.get("generator", "").lower()
     need_ninja = any(map(needs_ninja, cfgs))
-    if need_ninja:
+    if need_ninja and not runner.check_program_version("ninja", None, "Ninja"):
         # If so, check if a working version exists in the PATH, otherwise,
         # add it as a build requirement
-        if not runner.check_program_version("ninja", None, "Ninja"):
-            deps.append("ninja")
+        deps.append("ninja")
 
 
 def check_stubgen_program(deps: list[str], runner: CommandRunner):

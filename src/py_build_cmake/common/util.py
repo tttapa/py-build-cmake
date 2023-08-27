@@ -28,7 +28,7 @@ def get_os_name() -> OSIdentifier:
 
 def normalize_name_wheel_pep_427(name):
     """https://www.python.org/dev/peps/pep-0427/#escaping-and-unicode"""
-    return re.sub(r"[^\w\d.]+", "_", name, re.UNICODE)
+    return re.sub(r"[^\w\d.]+", "_", name, flags=re.UNICODE)
 
 
 def normalize_name_wheel(name):

@@ -248,7 +248,7 @@ class CMaker:
         if self.build_settings.args:
             cmd += self.build_settings.args
         if self.build_settings.tool_args:
-            cmd += ["--"] + self.build_settings.tool_args
+            cmd += ["--", *self.build_settings.tool_args]
         yield cmd
 
     def get_build_commands(self):

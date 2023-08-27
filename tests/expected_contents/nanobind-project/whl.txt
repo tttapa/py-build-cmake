@@ -16,5 +16,3 @@ nanobind_project/add_module.pyi
 nanobind_project/py.typed
 nanobind_project/sub_package/__init__.py
 nanobind_project/sub_package/__init__.pyi
-nanobind_project/sub_package/sub.py
-nanobind_project/sub_package/sub.pyi

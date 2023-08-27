@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import textwrap
 from pathlib import Path
@@ -17,7 +16,7 @@ def write_editable_wrapper(staging_dir: Path, module: Module):
     tmp_pkg = staging_dir / name
     pkgpath = module.full_path
     initpath = pkgpath / "__init__.py"
-    os.makedirs(tmp_pkg, exist_ok=True)
+    tmp_pkg.mkdir(parents=True, exist_ok=True)
     special_dunders = [
         "__builtins__",
         "__cached__",

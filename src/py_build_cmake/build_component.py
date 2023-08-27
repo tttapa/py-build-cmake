@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import tempfile
 from pathlib import Path
 
@@ -120,7 +119,7 @@ class _BuildComponentBackend:
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
         distinfo_dir = paths.pkg_staging_dir / distinfo_dir
-        os.makedirs(distinfo_dir, exist_ok=True)
+        distinfo_dir.mkdir(parents=True, exist_ok=True)
 
         # Write metadata, license and entry points to Wheel's distinfo
         export_metadata.write_metadata(comp_cfg, distinfo_dir)

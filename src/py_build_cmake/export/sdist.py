@@ -36,37 +36,17 @@ from __future__ import annotations
 import io
 import logging
 import os
-import os.path as osp
 import tarfile
-from collections import defaultdict
 from copy import copy
-from glob import glob
 from gzip import GzipFile
-from pathlib import Path
-from posixpath import join as pjoin
+from pathlib import Path, PurePosixPath
+from typing import Iterable
 
 from pyproject_metadata import StandardMetadata
 
 from ..common import Module, PackageInfo
 
 logger = logging.getLogger(__name__)
-
-
-def walk_data_dir(data_directory):
-    """Iterate over the files in the given data directory.
-
-    Yields paths prefixed with data_directory - caller may want to make them
-    relative to that. Excludes any __pycache__ subdirectories.
-    """
-    if data_directory is None:
-        return
-
-    for dirpath, dirs, files in os.walk(data_directory):
-        for file in sorted(files):
-            full_path = os.path.join(dirpath, file)
-            yield full_path
-
-        dirs[:] = [d for d in sorted(dirs) if d != "__pycache__"]
 
 
 def normalize_file_permissions(st_mode):
@@ -83,7 +63,7 @@ def normalize_file_permissions(st_mode):
     return new_mode
 
 
-def clean_tarinfo(ti, mtime=None):
+def clean_tarinfo(ti: tarfile.TarInfo, mtime=None) -> tarfile.TarInfo:
     """Clean metadata from a TarInfo object to make it more reproducible.
 
     - Set uid & gid to 0
@@ -105,32 +85,33 @@ def clean_tarinfo(ti, mtime=None):
 class FilePatterns:
     """Manage a set of file inclusion/exclusion patterns relative to basedir"""
 
-    def __init__(self, patterns, basedir):
+    def __init__(self, patterns: Iterable[str], basedir: Path):
         self.basedir = basedir
 
         self.dirs = set()
         self.files = set()
 
         for pattern in patterns:
-            for path in sorted(glob(osp.join(basedir, pattern), recursive=True)):
-                rel = osp.relpath(path, basedir)
-                if osp.isdir(path):
+            for path in sorted(basedir.glob(pattern)):
+                rel = path.relative_to(basedir)
+                if path.is_dir():
                     self.dirs.add(rel)
                 else:
                     self.files.add(rel)
 
-    def match_file(self, rel_path):
+    def match_file(self, rel_path: Path) -> bool:
         if rel_path in self.files:
             return True
 
-        return any(rel_path.startswith(d + os.sep) for d in self.dirs)
+        # Check if it's contained in any directory in the list
+        return any(d in rel_path.parents for d in self.dirs)
 
-    def match_dir(self, rel_path):
+    def match_dir(self, rel_path: Path) -> bool:
         if rel_path in self.dirs:
             return True
 
         # Check if it's a subdirectory of any directory in the list
-        return any(rel_path.startswith(d + os.sep) for d in self.dirs)
+        return any(d in rel_path.parents for d in self.dirs)
 
 
 class SdistBuilder:
@@ -146,27 +127,18 @@ class SdistBuilder:
         module: Module,
         pkg_info: PackageInfo,
         metadata: StandardMetadata,
-        cfgdir,
+        cfgdir: Path,
         extra_files,
-        include_patterns=(),
-        exclude_patterns=(),
+        include_patterns: Iterable[str] = (),
+        exclude_patterns: Iterable[str] = (),
     ):
         self.module = module
         self.pkg_info = pkg_info
         self.metadata = metadata
         self.cfgdir = cfgdir
         self.extra_files = extra_files
-        self.includes = FilePatterns(include_patterns, str(cfgdir))
-        self.excludes = FilePatterns(exclude_patterns, str(cfgdir))
-
-    def prep_entry_points(self):
-        # Reformat entry points from dict-of-dicts to dict-of-lists
-        res = defaultdict(list)
-        for groupname, group in self.entrypoints.items():
-            for name, ep in sorted(group.items()):
-                res[groupname].append(f"{name} = {ep}")
-
-        return dict(res)
+        self.includes = FilePatterns(include_patterns, cfgdir)
+        self.excludes = FilePatterns(exclude_patterns, cfgdir)
 
     def select_files(self):
         """Pick which files from the source tree will be included in the sdist
@@ -174,7 +146,10 @@ class SdistBuilder:
         This is overridden in flit itself to use information from a VCS to
         include tests, docs, etc. for a 'gold standard' sdist.
         """
-        make_rel = lambda p: p.relative_to(self.module.base_path)
+
+        def make_rel(p: Path) -> Path:
+            return p.relative_to(self.module.base_path)
+
         yield from map(make_rel, self.module.iter_files_abs())
         yield from map(make_rel, self.extra_files)
 
@@ -183,8 +158,7 @@ class SdistBuilder:
         yield make_rel(self.module.full_file)
         yield from map(make_rel, self.extra_files)
 
-    def apply_includes_excludes(self, files):
-        cfgdir_s = str(self.cfgdir)
+    def apply_includes_excludes(self, files: Iterable[Path]):
         files = {f for f in files if not self.excludes.match_file(f)}
 
         for f_rel in self.includes.files:
@@ -192,19 +166,20 @@ class SdistBuilder:
                 files.add(Path(f_rel))
 
         for rel_d in self.includes.dirs:
-            for dirpath, dirs, dfiles in os.walk(osp.join(cfgdir_s, rel_d)):
+            for dirpath, dirs, dfiles in os.walk(self.cfgdir / rel_d):
+                file: str
                 for file in dfiles:
-                    f_abs = osp.join(dirpath, file)
-                    f_rel = osp.relpath(f_abs, cfgdir_s)
+                    f_abs = Path(dirpath) / file
+                    f_rel = f_abs.relative_to(self.cfgdir)
                     if not self.excludes.match_file(f_rel):
-                        files.add(Path(f_rel))
+                        files.add(f_rel)
 
                 # Filter subdirectories before os.walk scans them
                 dirs[:] = [
                     d
                     for d in dirs
                     if not self.excludes.match_dir(
-                        osp.relpath(osp.join(dirpath, d), cfgdir_s)
+                        (Path(dirpath) / d).relative_to(self.cfgdir)
                     )
                 ]
 
@@ -223,8 +198,8 @@ class SdistBuilder:
     def dir_name(self):
         return f"{self.pkg_info.norm_name}-{self.pkg_info.version}"
 
-    def build(self, target_dir, gen_setup_py=True):
-        os.makedirs(str(target_dir), exist_ok=True)
+    def build(self, target_dir: Path, gen_setup_py=True):
+        target_dir.mkdir(parents=True, exist_ok=True)
         target = target_dir / (self.dir_name + ".tar.gz")
         source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
         mtime = int(source_date_epoch) if source_date_epoch else None
@@ -235,14 +210,15 @@ class SdistBuilder:
 
         try:
             files_to_add = self.apply_includes_excludes(self.select_files())
-
+            archive_dir = PurePosixPath(self.dir_name)
             for relpath in files_to_add:
-                path = str(self.cfgdir / relpath)
-                ti = tf.gettarinfo(path, arcname=pjoin(self.dir_name, relpath))
+                path = self.cfgdir / relpath
+                archive_path = archive_dir / PurePosixPath(relpath)
+                ti = tf.gettarinfo(path, arcname=str(archive_path))
                 ti = clean_tarinfo(ti, mtime)
 
                 if ti.isreg():
-                    with open(path, "rb") as f:
+                    with path.open("rb") as f:
                         tf.addfile(ti, f)
                 else:
                     tf.addfile(ti)  # Symlinks & ?
@@ -253,7 +229,7 @@ class SdistBuilder:
             stream = io.StringIO()
             stream.write(str(self.metadata.as_rfc822()))
             pkg_info = stream.getvalue().encode()
-            ti = tarfile.TarInfo(pjoin(self.dir_name, "PKG-INFO"))
+            ti = tarfile.TarInfo(str(archive_dir / "PKG-INFO"))
             ti.size = len(pkg_info)
             tf.addfile(ti, io.BytesIO(pkg_info))
 

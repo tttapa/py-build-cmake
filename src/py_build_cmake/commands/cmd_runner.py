@@ -25,7 +25,7 @@ class CommandRunner:
 
             print(join(args[0]))
         if not self.dry:
-            return sp_run(*args, **kwargs)
+            return sp_run(*args, **kwargs)  # noqa: PLW1510
         return None
 
     def check_program_version(

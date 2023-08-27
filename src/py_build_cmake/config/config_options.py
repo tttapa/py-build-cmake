@@ -4,17 +4,19 @@ from other options, default values, overriding options, etc.
 """
 from __future__ import annotations
 
+import logging
 import os
 import os.path as osp
 import re
-import warnings
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from ..common import ConfigError
+
+logger = logging.getLogger(__name__)
 
 ConfPath = Tuple[str, ...]
 ConfValue = Optional[Union[bool, int, str, List[str], Dict[str, Any]]]
@@ -239,10 +241,12 @@ class ConfigOption:
         name: str,
         description: str = "",
         example: str = "",
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
         inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
     ) -> None:
+        if default is None:
+            default = NoDefaultValue()
         self.name = name
         self.description = description
         self.example = example
@@ -510,7 +514,7 @@ class ConfigOption:
                 inherits = opt.inherit_from is None
                 max_depth_left = max_depth if inherits else max_depth - 1
                 if max_depth_left == 0:
-                    warnings.warn("Maximum inheritance reached")
+                    logger.warning("Maximum inheritance reached")
                     continue
                 optpth = joinpth(self.inherit_from, p)
                 newcfgpth = joinpth(cfgpath, p)
@@ -588,11 +592,13 @@ class EnumConfigOption(ConfigOption):
         name: str,
         description: str = "",
         example: str = "",
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
         inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         options: list[str] | None = None,
     ) -> None:
+        if default is None:
+            default = NoDefaultValue()
         if options is None:
             options = []
         super().__init__(
@@ -682,13 +688,15 @@ class PathConfigOption(StrConfigOption):
         name: str,
         description: str = "",
         example: str = "",
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
         must_exist: bool = True,
         expected_contents: list[str] | None = None,
         base_path: RelativeToProject | RelativeToCurrentConfig | None = None,
         allow_abs: bool = False,
         is_folder: bool = True,
     ):
+        if default is None:
+            default = NoDefaultValue()
         if expected_contents is None:
             expected_contents = []
         super().__init__(name, description, example, default)
@@ -698,7 +706,7 @@ class PathConfigOption(StrConfigOption):
         self.allow_abs = allow_abs
         self.is_folder = is_folder
         if self.base_path:
-            assert os.path.isabs(self.base_path.project_path)
+            assert self.base_path.project_path.is_absolute()
 
     def get_typename(self, md: bool = False):
         return "path" if self.is_folder else "filepath"
@@ -712,18 +720,18 @@ class PathConfigOption(StrConfigOption):
             if not self.allow_abs:
                 msg = f'{pth2str(cfgpath)}: "{path!s}" must be a relative path'
                 raise ConfigError(msg)
-        else:
-            # Relative path
-            if isinstance(self.base_path, RelativeToCurrentConfig):
-                # cfgpath[0] is relative for files inside of the project,
-                # otherwise it is absolute
-                path = osp.join(osp.dirname(cfgpath[0]), path)
-                if not osp.isabs(path):
-                    path = osp.join(self.base_path.project_path, path)
-            elif isinstance(self.base_path, RelativeToProject):
+        # Relative path
+        elif isinstance(self.base_path, RelativeToCurrentConfig):
+            # cfgpath[0] is relative for files inside of the project,
+            # otherwise it is absolute
+            path = osp.join(osp.dirname(cfgpath[0]), path)
+            if not osp.isabs(path):
                 path = osp.join(self.base_path.project_path, path)
-            else:
-                raise AssertionError("Invalid relative path type")
+        elif isinstance(self.base_path, RelativeToProject):
+            path = osp.join(self.base_path.project_path, path)
+        else:
+            msg = "Invalid relative path type"
+            raise AssertionError(msg)
         assert osp.isabs(path), "Failed to make path absolute"
         # Does the path exist?
         if self.must_exist:
@@ -757,7 +765,7 @@ class ListOfStrConfigOption(ConfigOption):
         name: str,
         description: str = "",
         example: str = "",
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
         inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         convert_str_to_singleton=False,
@@ -814,7 +822,7 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
         name: str,
         description: str = "",
         example: str = "",
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
         inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         convert_str_to_singleton=False,
@@ -841,15 +849,15 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
                 msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} contains bad characters (<>:\"\\ or control characters)"
                 raise ConfigError(msg)
             # Normalize the path
-            normp = osp.normpath(pattern)
+            normp = PurePath(osp.normpath(pattern))
             # Make sure that the path is relative and inside of the project
-            if osp.isabs(normp):
+            if normp.is_absolute():
                 msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} should be relative"
                 raise ConfigError(msg)
-            if normp.startswith(".." + os.sep):
+            if normp.parts[0] == "..":
                 msg = f"Pattern '{pattern}' in {pth2str(cfgpath)} cannot refer to the parent directory (..)"
                 raise ConfigError(msg)
-            pattern_list[i] = normp
+            pattern_list[i] = str(normp)
 
 
 class DictOfStrConfigOption(ConfigOption):
@@ -901,7 +909,7 @@ class OverrideConfigOption(ConfigOption):
         name: str,
         description: str,
         targetpath: ConfPath,
-        default: DefaultValue = NoDefaultValue(),
+        default: DefaultValue | None = None,
     ) -> None:
         super().__init__(name, description, "", default)
         self.targetpath = targetpath

@@ -7,6 +7,7 @@ import platform
 import re
 import sys
 import sysconfig
+from pathlib import Path
 from typing import Any
 
 from distlib.util import get_platform as get_platform_dashes  # type: ignore
@@ -22,7 +23,7 @@ from .config_options import ConfigNode, pth
 logger = logging.getLogger(__name__)
 
 
-def get_python_lib(library_dirs: str | list[str] | None) -> str | None:
+def get_python_lib(library_dirs: str | list[str] | None) -> Path | None:
     """Return the path the the first python<major><minor>.lib or
     python<major>.lib file in any of the library_dirs.
     Returns None if no such file exists."""
@@ -33,13 +34,13 @@ def get_python_lib(library_dirs: str | list[str] | None) -> str | None:
 
     def possible_locations():
         v = sys.version_info
-        py3xlib = lambda d: os.path.join(d, f"python{v.major}{v.minor}.lib")
-        py3lib = lambda d: os.path.join(d, f"python{v.major}.lib")
+        py3xlib = lambda d: Path(d) / f"python{v.major}{v.minor}.lib"
+        py3lib = lambda d: Path(d) / f"python{v.major}.lib"
         yield from map(py3xlib, library_dirs)
         yield from map(py3lib, library_dirs)
 
     try:
-        return next(filter(os.path.exists, possible_locations()))
+        return next(filter(Path.exists, possible_locations()))
     except StopIteration:
         return None
 
@@ -53,7 +54,9 @@ def cross_compile_win(
     well as the path to the Python installation's root directory, so CMake is
     able to locate Python correctly."""
     logger.info(
-        f"DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. Automatically enabling cross-compilation for {cmake_platform}"
+        "DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. "
+        "Automatically enabling cross-compilation for %s",
+        cmake_platform,
     )
     assert not config.contains("cross")
     cross_cfg = {
@@ -69,10 +72,10 @@ def cross_compile_win(
     }
     python_lib = get_python_lib(library_dirs)
     if python_lib is not None:
-        cross_cfg["library"] = python_lib
-        python_root = os.path.dirname(os.path.dirname(python_lib))
-        if os.path.exists(os.path.join(python_root, "include")):
-            cross_cfg["root"] = python_root
+        cross_cfg["library"] = str(python_lib)
+        python_root = python_lib.parent.parent
+        if (python_root / "include").exists():
+            cross_cfg["root"] = str(python_root)
     else:
         logger.warning(
             "Python library was not found in DIST_EXTRA_CONFIG.build_ext.library_dirs."
@@ -93,7 +96,8 @@ def handle_cross_win(
         cross_compile_win(config, plat_name, library_dirs, *plat_proc)
     else:
         logger.warning(
-            f"Cross-compilation setup skipped because the platform {plat_name} is unknown"
+            "Cross-compilation setup skipped because the platform %s is unknown",
+            plat_name,
         )
 
 
@@ -140,7 +144,9 @@ def cross_compile_mac(config: ConfigNode, archs):
     """Update the configuration to include a cross-compilation configuration
     that builds for the given architectures."""
     logger.info(
-        f"ARCHFLAGS was specified. Automatically enabling cross-compilation for {', '.join(archs)} (native platform: {platform.machine()})"
+        "ARCHFLAGS was specified. Automatically enabling cross-compilation for %s (native platform: %s)",
+        ", ".join(archs),
+        platform.machine(),
     )
     assert not config.contains("cross")
     cross_cfg: dict[str, Any] = {
@@ -190,7 +196,9 @@ def config_quirks_mac(config: ConfigNode):
         cross_compile_mac(config, archs)
     else:
         logger.info(
-            f"ARCHFLAGS was set, adding CMAKE_OSX_ARCHITECTURES to cmake.options ({', '.join(archs)}, native platform: {platform.machine()})"
+            "ARCHFLAGS was set, adding CMAKE_OSX_ARCHITECTURES to cmake.options (%s, native platform: %s)",
+            ", ".join(archs),
+            platform.machine(),
         )
         opts = config.setdefault(("cmake", "options"), ConfigNode())
         opts.setdefault("CMAKE_OSX_ARCHITECTURES", ConfigNode(";".join(archs)))

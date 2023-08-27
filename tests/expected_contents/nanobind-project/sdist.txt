@@ -10,5 +10,4 @@ nanobind_project-{version}/python-src/nanobind_project/add.py
 nanobind_project-{version}/python-src/nanobind_project/add_module.py
 nanobind_project-{version}/python-src/nanobind_project/py.typed
 nanobind_project-{version}/python-src/nanobind_project/sub_package/__init__.py
-nanobind_project-{version}/python-src/nanobind_project/sub_package/sub.py
 nanobind_project-{version}/src/add_module.cpp

@@ -118,16 +118,18 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
 
     for flag, targetpath in extra_flag_paths.items():
         for path in map(Path, flag_overrides[flag]):
-            if not path.is_absolute():
-                path = (Path(os.environ.get("PWD", ".")) / path).resolve()
+            if path.is_absolute():
+                fullpath = path
+            else:
+                fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
             extra_options.append(
                 OverrideConfigOption(
-                    str(path),
+                    str(fullpath),
                     "Command line override flag",
                     targetpath=targetpath,
                 )
             )
-            config_files[str(path)] = try_load_local(path)
+            config_files[str(fullpath)] = try_load_local(fullpath)
 
     return process_config(pyproject_path, pyproject, config_files, extra_options)
 
@@ -136,9 +138,10 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:
-        normname = normalize_name(pyproject["project"][f])
-        if pyproject["project"][f] != normname:
-            logger.info(f"Name normalized from {pyproject['project'][f]} to {normname}")
+        oldname = pyproject["project"][f]
+        normname = normalize_name(oldname)
+        if oldname != normname:
+            logger.info("Name normalized from %s to %s", oldname, normname)
         pyproject["project"][f] = normname
 
     # Parse the [project] section for metadata
@@ -146,7 +149,7 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
         Metadata = pyproject_metadata.StandardMetadata
         meta = Metadata.from_pyproject(pyproject, pyproject_path.parent)
     except pyproject_metadata.ConfigurationError as e:
-        raise ConfigError(str(e))
+        raise ConfigError() from e
 
     # Create our own config data structure
     cfg = Config(meta)
@@ -312,9 +315,10 @@ def process_component_config(pyproject_path: Path, pyproject, config_files):
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:
-        normname = normalize_name(pyproject["project"][f])
-        if pyproject["project"][f] != normname:
-            logger.info(f"Name normalized from {pyproject['project'][f]} to {normname}")
+        oldname = pyproject["project"][f]
+        normname = normalize_name(oldname)
+        if oldname != normname:
+            logger.info("Name normalized from %s to %s", oldname, normname)
         pyproject["project"][f] = normname
 
         # Parse the [project] section for metadata
@@ -323,7 +327,7 @@ def process_component_config(pyproject_path: Path, pyproject, config_files):
             pyproject, pyproject_path.parent
         )
     except pyproject_metadata.ConfigurationError as e:
-        raise ConfigError(str(e))
+        raise ConfigError() from e
 
     # Create our own config data structure
     cfg = ComponentConfig(meta)

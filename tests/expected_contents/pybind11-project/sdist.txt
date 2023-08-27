@@ -10,5 +10,4 @@ pybind11_project-{version}/python-src/pybind11_project/add.py
 pybind11_project-{version}/python-src/pybind11_project/add_module.py
 pybind11_project-{version}/python-src/pybind11_project/py.typed
 pybind11_project-{version}/python-src/pybind11_project/sub_package/__init__.py
-pybind11_project-{version}/python-src/pybind11_project/sub_package/sub.py
 pybind11_project-{version}/src/add_module.cpp

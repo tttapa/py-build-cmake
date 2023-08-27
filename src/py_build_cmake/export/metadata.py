@@ -51,5 +51,5 @@ def write_license_files(cfg: Config, distinfo_dir: Path):
 
 def write_metadata(cfg: Config, distinfo_dir: Path):
     metadata_path = distinfo_dir / "METADATA"
-    with open(metadata_path, "w", encoding="utf-8") as f:
+    with metadata_path.open("w", encoding="utf-8") as f:
         f.write(str(cfg.standard_metadata.as_rfc822()))

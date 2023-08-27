@@ -16,5 +16,3 @@ pybind11_project/add_module.pyi
 pybind11_project/py.typed
 pybind11_project/sub_package/__init__.py
 pybind11_project/sub_package/__init__.pyi
-pybind11_project/sub_package/sub.py
-pybind11_project/sub_package/sub.pyi

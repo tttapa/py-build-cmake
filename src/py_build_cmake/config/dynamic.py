@@ -104,7 +104,7 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     extracted by importing the module and pulling __doc__ & __version__
     from it.
     """
-    global _import_i
+    global _import_i  # noqa: PLW0603
     _import_i += 1
 
     logger.debug("Loading module %s", mod_filename)
@@ -190,8 +190,8 @@ def check_version(version, filename):
         norm_version = distlib.version.NormalizedVersion(version)
         version = str(norm_version)
     except distlib.version.UnsupportedVersionError as e:
-        msg = f"Invalid __version__ in module '{filename}': {e!s}"
-        raise InvalidVersion(msg)
+        msg = f"Invalid __version__ in module '{filename}'"
+        raise InvalidVersion(msg) from e
 
     return version
 
@@ -199,7 +199,7 @@ def check_version(version, filename):
 # Own code
 # --------------------------------------------------------------------------- #
 
-from pyproject_metadata import StandardMetadata
+from pyproject_metadata import StandardMetadata  # noqa: E402
 
 
 def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Path | None):

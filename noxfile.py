@@ -18,7 +18,6 @@ import re
 import shutil
 import sys
 from difflib import unified_diff
-from glob import glob
 from pathlib import Path
 from tarfile import open as open_tar
 from zipfile import ZipFile
@@ -69,7 +68,7 @@ def check_pkg_contents(
             session.error("sdist contents mismatch:\n" + diff)
     # Find Wheel
     whl_pattern = f"dist-nox/{normname}-{version}-*{plat}*.whl"
-    whls = glob(whl_pattern)
+    whls = list(Path().glob(whl_pattern))
     if len(whls) != 1:
         session.error(f"Unexpected number of Wheels {whls} ({whl_pattern})")
     whl = whls[0]
@@ -115,7 +114,7 @@ def example_projects(session: nox.Session):
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
-    session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
     for name in examples:
         ext_suffix = get_ext_suffix(name)
@@ -125,14 +124,14 @@ def example_projects(session: nox.Session):
 
 @nox.session
 def component(session: nox.Session):
-    if sys.platform != "linux" and sys.platform != "win32":
+    if sys.platform not in ("linux", "win32"):
         return
     session.install("-U", "pip", "build", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
-    session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
     with session.chdir("examples/minimal-debug-component"):
         shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
@@ -148,11 +147,11 @@ def component(session: nox.Session):
 
 
 def test_editable(session: nox.Session, mode: str):
-    tmpdir = os.path.realpath(session.create_tmp())
+    tmpdir = Path(session.create_tmp()).resolve()
     try:
         with session.chdir("examples/pybind11-project"):
             shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
-            with open(os.path.join(tmpdir, f"{mode}.toml"), "w") as f:
+            with (tmpdir / f"{mode}.toml").open("w") as f:
                 f.write(f'[editable]\nmode = "{mode}"')
             session.install("-e", ".", "--config-settings=--local=" + f.name)
             session.run("pytest")
@@ -167,7 +166,7 @@ def editable(session: nox.Session):
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
-    session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
     for mode in "wrapper", "hook", "symlink":
         test_editable(session, mode)
@@ -178,7 +177,7 @@ def tests(session: nox.Session):
     session.install("-U", "pip", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir:
-        session.env["PIP_FIND_LINKS"] = os.path.abspath(dist_dir)
+        session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
         session.install(f"py-build-cmake=={version}")
     else:
         session.install(".")
