@@ -18,7 +18,7 @@ declarative configuration files like `setup.cfg` and `pyproject.toml` instead.
 From the [Setuptools quickstart guide](https://setuptools.pypa.io/en/latest/userguide/quickstart.html):
 
 > The landscape of Python packaging is shifting and `Setuptools` has evolved to
-> only provide backend support, no longer being the de-facto packaging tool in 
+> only provide backend support, no longer being the de-facto packaging tool in
 > the market. Every python package must provide a `pyproject.toml` and specify
 > the backend (build system) it wants to use. The distribution can then be
 > generated with whatever tool that provides a `build sdist`-like functionality.
@@ -42,10 +42,10 @@ For more information about `setup.py` and Python packaging in general, see:
 ## The build fails. How can I find out what's going on?
 
 You can enable py-build-cmake's verbose mode to make it print information about
-the configuration, the exact subprocesses it invokes, the configure and build 
+the configuration, the exact subprocesses it invokes, the configure and build
 environments, and so on.
 
-When using a tool like PyPA `build`, you can use the `-C` flag to pass the 
+When using a tool like PyPA `build`, you can use the `-C` flag to pass the
 `verbose` option:
 ```sh
 python -m build . -C verbose

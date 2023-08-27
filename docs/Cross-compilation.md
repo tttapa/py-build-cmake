@@ -2,12 +2,12 @@
 
 # Cross-compilation
 
-Cross-compiling Python extension modules is supported out of the box through 
+Cross-compiling Python extension modules is supported out of the box through
 [CMake toolchain files](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html).
 
 ## Terminology
 
-- Build system: the system used for building, on which py-build-cmake is 
+- Build system: the system used for building, on which py-build-cmake is
   invoked.
 - Host system: the system that the compiled binaries and Python modules will be
   used on.
@@ -15,15 +15,15 @@ Cross-compiling Python extension modules is supported out of the box through
 - Native build: building on _build_ system, for the _build_ system (this is the
   usual scenario).
 
-In cross-compilation, the build and host systems are often different systems 
+In cross-compilation, the build and host systems are often different systems
 with different architectures.
 
 ## Simple example
 
-If your CMake project supports cross-compilation, cross-compiling a Python 
+If your CMake project supports cross-compilation, cross-compiling a Python
 package can be achieved by simply adding a `py-build-cmake.cross.toml` file
-to the same directory as `pyproject.toml`. This file should contain the 
-necessary information about the host system, such as the Python version, 
+to the same directory as `pyproject.toml`. This file should contain the
+necessary information about the host system, such as the Python version,
 implementation and ABI, the host operating system and architecture, and the
 relative path of the CMake toolchain file to use.
 
@@ -39,12 +39,12 @@ This will generate a package for CPython 3.9 on Linux for 64-bit ARM, using the
 compilers defined by the toolchain file `aarch64-linux-gnu.cmake` (which you
 should provide as well).
 
-The format for the values in this file is the same as the format used for the 
+The format for the values in this file is the same as the format used for the
 tags in wheel filenames, for example `package-1.2.3-cp39-cp39-linux_aarch64.whl`.
 For details about platform compatibility tags, see the PyPA specification:
 https://packaging.python.org/en/latest/specifications/platform-compatibility-tags.
 
-For more information about cross-compilation, ready-to-use toolchains, and 
+For more information about cross-compilation, ready-to-use toolchains, and
 example toolchain files, see <https://tttapa.github.io/Pages/Raspberry-Pi/C++-Development-Ubuntu>.
 
 ### Caveats
