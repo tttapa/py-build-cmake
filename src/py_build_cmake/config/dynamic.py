@@ -33,20 +33,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import ast
-from contextlib import contextmanager
 import logging
 import sys
-import distlib.version
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
+import distlib.version
+
 from ..common import (
-    ProblemInModule,
-    Module,
     ConfigError,
+    InvalidVersion,
+    Module,
     NoDocstringError,
     NoVersionError,
-    InvalidVersion,
+    ProblemInModule,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     _import_i += 1
 
     logger.debug("Loading module %s", mod_filename)
-    from importlib.util import spec_from_file_location, module_from_spec
+    from importlib.util import module_from_spec, spec_from_file_location
 
     mod_name = "py_build_cmake.dummy.import%d" % _import_i
     spec = spec_from_file_location(mod_name, mod_filename)

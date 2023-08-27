@@ -1,24 +1,24 @@
-from dataclasses import dataclass, field
+import logging
 import os
 import warnings
-from typing import Any, Dict, List, Optional, cast
+from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-import logging
-
-from .. import __version__
-from .config_options import ConfigNode, OverrideConfigOption
-from .pyproject_options import (
-    get_options,
-    get_cross_path,
-    get_tool_pbc_path,
-    get_component_options,
-)
-from ..common import ConfigError, Config
-from .quirks import config_quirks
+from typing import Any, Dict, List, Optional, cast
 
 import pyproject_metadata
 from distlib.util import normalize_name  # type: ignore
+
+from .. import __version__
+from ..common import Config, ConfigError
+from .config_options import ConfigNode, OverrideConfigOption
+from .pyproject_options import (
+    get_component_options,
+    get_cross_path,
+    get_options,
+    get_tool_pbc_path,
+)
+from .quirks import config_quirks
 
 try:
     import tomllib as toml_  # type: ignore

@@ -1,8 +1,8 @@
 import html
 import itertools
+import re
 import shutil
 import textwrap
-import re
 
 from .config.config_options import (
     ConfigOption,

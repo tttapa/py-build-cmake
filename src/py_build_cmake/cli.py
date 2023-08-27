@@ -1,13 +1,15 @@
-from . import __version__
 from pathlib import Path
+
 import click
+
+from . import __version__
 
 
 def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     def get_cmaker():
         from .build import _BuildBackend as backend
-        from .common import PackageInfo
         from .commands.cmd_runner import CommandRunner
+        from .common import PackageInfo
 
         src_dir = Path(directory or ".").resolve()
         config_settings = {
@@ -173,8 +175,8 @@ def config():
     "--component", is_flag=True, help="Documentation for the build_component backend."
 )
 def format(md, component):
-    from .config.pyproject_options import get_options, get_component_options
     from .config.config_options import pth
+    from .config.pyproject_options import get_component_options, get_options
 
     if md:
         from .help import help_print_md as help_print

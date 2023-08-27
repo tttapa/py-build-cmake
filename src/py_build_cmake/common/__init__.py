@@ -1,9 +1,10 @@
-from dataclasses import dataclass, field
-import os
 import logging
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
+
 import pyproject_metadata
-from typing import Dict, Any, Optional, Sequence, List
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +117,9 @@ class PackageInfo:
     @property
     def norm_name(self):
         from .util import normalize_name_wheel
+
         return normalize_name_wheel(self.package_name)
+
 
 @dataclass
 class BuildPaths:

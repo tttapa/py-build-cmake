@@ -1,8 +1,9 @@
-from ...common import Module, ConfigError
-from pathlib import Path
 import os
-import textwrap
 import shutil
+import textwrap
+from pathlib import Path
+
+from ...common import ConfigError, Module
 
 
 def write_editable_wrapper(staging_dir: Path, module: Module):

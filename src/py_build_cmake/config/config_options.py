@@ -3,13 +3,13 @@ Classes to define hierarchical configuration options which support inheriting
 from other options, default values, overriding options, etc.
 """
 
+import os
+import os.path as osp
+import re
+import warnings
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-import os
-import warnings
-import re
-import os.path as osp
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 

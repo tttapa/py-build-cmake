@@ -1,8 +1,8 @@
-from typing import Dict, Any, Optional, List
 import re
 from copy import copy
+from typing import Any, Dict, List, Optional
 
-from .native_tags import get_native_tags, WheelTags
+from .native_tags import WheelTags, get_native_tags
 
 
 def get_cross_tags(crosscfg: Dict[str, Any]) -> WheelTags:

@@ -1,16 +1,16 @@
-from pathlib import Path
-from dataclasses import dataclass
+import logging
 import os
-from string import Template
 import sys
 import sysconfig
+from dataclasses import dataclass
+from pathlib import Path
+from string import Template
 from typing import Dict, List, Optional
-import logging
 
+from .. import __version__
 from ..common import PackageInfo
 from ..common.util import python_sysconfig_platform_to_cmake_platform_win
 from .cmd_runner import CommandRunner
-from .. import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -196,8 +196,7 @@ class CMaker:
                 return ["-A", cmake_plat]
             else:
                 logger.warning(
-                    "Unknown platform, CMake generator platform "
-                    "option (-A) will not be set"
+                    "Unknown platform, CMake generator platform option (-A) will not be set"
                 )
         return []
 

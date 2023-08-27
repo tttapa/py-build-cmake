@@ -1,7 +1,8 @@
-from ..common import Module
-from pathlib import Path
 import os
 import shutil
+from pathlib import Path
+
+from ..common import Module
 
 
 def copy_pkg_source_to(staging_dir: Path, module: Module, symlink: bool = False):

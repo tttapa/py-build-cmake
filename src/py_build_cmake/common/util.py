@@ -1,6 +1,6 @@
-import re
-from typing import Optional, Sequence, cast, Any
 import platform
+import re
+from typing import Any, Optional, Sequence, cast
 
 OSIdentifier: Any
 try:

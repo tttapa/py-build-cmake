@@ -1,7 +1,9 @@
-from ...common import Module
-from pathlib import Path
 import os
 import textwrap
+from pathlib import Path
+
+from ...common import Module
+
 
 def write_editable_hook(staging_dir: Path, module: Module):
     """Write a hook that finds the installed compiled extension modules."""

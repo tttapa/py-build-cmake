@@ -1,19 +1,21 @@
 import configparser
+import logging
 import os
 import platform
 import re
 import sys
 import sysconfig
-import logging
-from typing import Optional, Union, List, Dict, Any
-from .config_options import ConfigNode, pth
+from typing import Any, Dict, List, Optional, Union
+
 from distlib.util import get_platform as get_platform_dashes  # type: ignore
+
 from ..common.util import (
+    archflags_to_platform_tag,
+    platform_to_platform_tag,
     python_sysconfig_platform_to_cmake_platform_win,
     python_sysconfig_platform_to_cmake_processor_win,
-    platform_to_platform_tag,
-    archflags_to_platform_tag,
 )
+from .config_options import ConfigNode, pth
 
 logger = logging.getLogger(__name__)
 

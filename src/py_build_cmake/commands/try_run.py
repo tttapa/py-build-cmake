@@ -1,11 +1,10 @@
 from typing import List
 
+from distlib.version import NormalizedVersion
 
 from ..common import Config
-from .cmd_runner import CommandRunner
-from distlib.version import NormalizedVersion
 from ..common.util import get_os_name
-
+from .cmd_runner import CommandRunner
 
 _CMAKE_MINIMUM_REQUIRED = NormalizedVersion("3.15")
 

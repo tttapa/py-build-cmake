@@ -1,8 +1,8 @@
 import logging
+import shutil
+from copy import copy
 from pathlib import Path
 from typing import Dict
-from copy import copy
-import shutil
 
 from ..common import Config
 

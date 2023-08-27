@@ -1,5 +1,5 @@
 {
-    "python.formatting.provider": "yapf",
+    "python.formatting.provider": "black",
     "python.linting.mypyEnabled": true,
     "cmake.configureEnvironment": {
         "VIRTUAL_ENV": "${workspaceFolder}/.venv"
