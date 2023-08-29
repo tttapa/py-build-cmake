@@ -9,7 +9,7 @@ from pprint import pprint
 from typing import Any, cast
 
 import pyproject_metadata
-from distlib.util import normalize_name  # type: ignore
+from distlib.util import normalize_name  # type: ignore[import]
 
 from .. import __version__
 from ..common import Config, ConfigError
@@ -23,9 +23,9 @@ from .pyproject_options import (
 from .quirks import config_quirks
 
 try:
-    import tomllib as toml_  # type: ignore
+    import tomllib as toml_  # type: ignore[import,unused-ignore]
 except ImportError:
-    import tomli as toml_  # type: ignore
+    import tomli as toml_  # type: ignore[import,no-redef,unused-ignore]
 
 logger = logging.getLogger(__name__)
 

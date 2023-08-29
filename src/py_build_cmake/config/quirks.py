@@ -11,7 +11,7 @@ import sysconfig
 from pathlib import Path
 from typing import Any
 
-from distlib.util import get_platform as get_platform_dashes  # type: ignore
+from distlib.util import get_platform as get_platform_dashes  # type: ignore[import]
 
 from ..common.util import (
     archflags_to_platform_tag,
@@ -206,6 +206,7 @@ def config_quirks_mac(config: ConfigNode):
 
 
 def config_quirks_pypy(config: ConfigNode):
+    assert config.sub is not None
     if sys.version_info < (3, 8):
         with contextlib.suppress(KeyError):
             del config.sub["stubgen"]

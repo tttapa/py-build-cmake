@@ -39,7 +39,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 
-import distlib.version
+import distlib.version  # type: ignore[import]
 
 from ..common import (
     ConfigError,
@@ -74,6 +74,7 @@ def get_docstring_and_version_via_ast(mod_filename: Path):
     # read as bytes to enable custom encodings
     with mod_filename.open("rb") as f:
         node = ast.parse(f.read())
+    version = None
     for child in node.body:
         # Only use the version from the given module if it's a simple
         # string assignment to __version__
@@ -87,8 +88,6 @@ def get_docstring_and_version_via_ast(mod_filename: Path):
         ):
             version = child.value.s
             break
-    else:
-        version = None
     return ast.get_docstring(node), version
 
 

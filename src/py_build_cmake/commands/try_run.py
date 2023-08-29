@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from distlib.version import NormalizedVersion
+from distlib.version import NormalizedVersion  # type: ignore[import]
 
 from ..common import Config
 from ..common.util import get_os_name

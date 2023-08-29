@@ -6,11 +6,11 @@ from pprint import pprint
 from subprocess import CalledProcessError
 from subprocess import run as sp_run
 
-from distlib.version import NormalizedVersion  # type: ignore
+from distlib.version import NormalizedVersion  # type: ignore[import]
 
 
 class CommandRunner:
-    def __init__(self, verbose=False, dry=False):
+    def __init__(self, verbose: bool = False, dry: bool = False):
         self.verbose = verbose
         self.dry = dry
 

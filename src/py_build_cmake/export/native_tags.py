@@ -11,7 +11,7 @@ import sysconfig
 from importlib.machinery import EXTENSION_SUFFIXES
 from typing import Dict, List
 
-from distlib.util import get_platform as get_platform_dashes  # type: ignore
+from distlib.util import get_platform as get_platform_dashes  # type: ignore[import]
 
 from ..common.util import platform_to_platform_tag
 

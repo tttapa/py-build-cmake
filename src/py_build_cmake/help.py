@@ -114,7 +114,7 @@ def recursive_help_print(opt: ConfigOption, level=0):
             if v.example:
                 _print_wrapped("For example: " + v.example, indent + "  ")
             default = v.default.get_name()
-            if default is not None and not is_required:
+            if not is_required:
                 print(textwrap.indent("Default: " + default, indent + "  "))
 
 

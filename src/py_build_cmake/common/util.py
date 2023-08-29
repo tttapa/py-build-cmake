@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import platform
 import re
-from typing import Any, Sequence, cast
+import sys
+from typing import Sequence, cast
 
-OSIdentifier: Any
-try:
+if sys.version_info < (3, 8):
+    OSIdentifier = str
+else:
     from typing import Literal
 
     OSIdentifier = Literal["linux", "windows", "mac"]
-except ImportError:
-    OSIdentifier = str
 
 
 def get_os_name() -> OSIdentifier:
@@ -26,12 +26,12 @@ def get_os_name() -> OSIdentifier:
     return cast(OSIdentifier, osname)
 
 
-def normalize_name_wheel_pep_427(name):
+def normalize_name_wheel_pep_427(name: str) -> str:
     """https://www.python.org/dev/peps/pep-0427/#escaping-and-unicode"""
     return re.sub(r"[^\w\d.]+", "_", name, flags=re.UNICODE)
 
 
-def normalize_name_wheel(name):
+def normalize_name_wheel(name: str) -> str:
     """https://packaging.python.org/en/latest/specifications/binary-distribution-format/#escaping-and-unicode"""
     return re.sub(r"[-_.]+", "_", name).lower()
 

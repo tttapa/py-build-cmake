@@ -158,14 +158,14 @@ class DefaultValueValue(DefaultValue):
     ) -> DefaultValueWrapper | None:
         return DefaultValueWrapper(self.value)
 
-    def get_name(self):
+    def get_name(self) -> str:
         if isinstance(self.value, bool):
             return str(self.value).lower()
         return repr(self.value)
 
 
 class NoDefaultValue(DefaultValue):
-    def __init__(self, name="none"):
+    def __init__(self, name: str = "none"):
         self.name = name
 
     def get_default(
@@ -178,7 +178,7 @@ class NoDefaultValue(DefaultValue):
     ) -> DefaultValueWrapper | None:
         return None
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
 
@@ -198,7 +198,7 @@ class RequiredValue(DefaultValue):
         msg = f"{pth2str(cfgpath)} requires a value"
         raise MissingDefaultError(msg)
 
-    def get_name(self):
+    def get_name(self) -> str:
         return "required"
 
 
@@ -220,11 +220,11 @@ class RefDefaultValue(DefaultValue):
         if self.relative:
             absoptpath = joinpth(optpath, ("^", *absoptpath))
             abscfgpath = joinpth(cfgpath, ("^", *abscfgpath))
-        opt = rootopts.get(absoptpath)
-        if opt is None:
+        ref_opt = rootopts.get(absoptpath)
+        if ref_opt is None:
             msg = f"DefaultValue: reference to nonexisting option {pth2str(absoptpath)}"
             raise ValueError(msg)
-        return opt.update_default(rootopts, cfg, abscfgpath, absoptpath)
+        return ref_opt.update_default(rootopts, cfg, abscfgpath, absoptpath)
 
     def get_name(self) -> str:
         r = pth2str(self.path).replace("^", "..")
@@ -307,8 +307,6 @@ class ConfigOption:
 
     def setdefault(self, path: ConfPath, default: Any):
         tgt = self[parent(path)]
-        if tgt.sub is None:
-            tgt.sub = {}
         return tgt.sub.setdefault(basename(path), default)
 
     def contains(self, path: ConfPath):

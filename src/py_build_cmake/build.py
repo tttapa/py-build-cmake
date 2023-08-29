@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from distlib.wheel import Wheel  # type: ignore
+from distlib.wheel import Wheel  # type: ignore[import]
 
 from .commands.cmake import (
     CMakeBuildSettings,
@@ -246,7 +246,7 @@ class _BuildBackend:
         return self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
 
     @staticmethod
-    def get_pkg_info(cfg: Config | ComponentConfig, module: Module):
+    def get_pkg_info(cfg: Config | ComponentConfig, module: Module | None):
         return PackageInfo(
             version=str(cfg.standard_metadata.version),
             package_name=cfg.package_name,
