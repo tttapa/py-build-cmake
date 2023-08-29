@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from pathlib import PurePosixPath
 from pprint import pprint
 
 import py_build_cmake.config.config_options as co
@@ -537,7 +537,7 @@ def test_joinpth():
 
 
 def test_real_config_inherit_cross_cmake():
-    opts = get_options(Path("/project"), test=True)
+    opts = get_options(PurePosixPath("/project"), test=True)
     d = {
         "pyproject.toml": {
             "project": {"name": "foobar"},
@@ -838,7 +838,7 @@ def test_real_config_inherit_cross_cmake():
 
 
 def test_real_config_no_cross():
-    opts = get_options(Path("/project"), test=True)
+    opts = get_options(PurePosixPath("/project"), test=True)
     d = {
         "pyproject.toml": {
             "project": {"name": "foobar"},
@@ -1009,7 +1009,7 @@ def test_real_config_no_cross():
 
 
 def test_real_config_no_cmake():
-    opts = get_options(Path("/project"), test=True)
+    opts = get_options(PurePosixPath("/project"), test=True)
     d = {
         "pyproject.toml": {
             "project": {"name": "foobar"},
@@ -1073,7 +1073,7 @@ def test_real_config_no_cmake():
 
 
 def test_real_config_local_override():
-    opts = get_options(Path("/project"), test=True)
+    opts = get_options(PurePosixPath("/project"), test=True)
     d = {
         "pyproject.toml": {
             "project": {"name": "foobar"},
@@ -1140,7 +1140,7 @@ def test_real_config_local_override():
 
 
 def test_real_config_local_override_windows():
-    opts = get_options(Path("/project"), test=True)
+    opts = get_options(PurePosixPath("/project"), test=True)
     d = {
         "pyproject.toml": {
             "project": {"name": "foobar"},
