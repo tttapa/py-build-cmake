@@ -71,11 +71,25 @@ def parse_config_settings_overrides(config_settings: dict, verbose: bool):
     return overrides
 
 
+def try_load_toml(path: Path):
+    try:
+        return toml_.loads(path.read_text("utf-8"))
+    except FileNotFoundError as e:
+        msg = f"Config file {str(path.absolute())!r} not found"
+        raise ConfigError(msg) from e
+    except OSError as e:
+        msg = f"Config file {str(path.absolute())!r} could not be loaded"
+        raise ConfigError(msg) from e
+    except toml_.TOMLDecodeError as e:
+        msg = f"Config file {str(path.absolute())!r} is invalid"
+        raise ConfigError(msg) from e
+
+
 def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
     pyproject_folder = pyproject_path.parent
-    pyproject = toml_.loads(pyproject_path.read_text("utf-8"))
+    pyproject = try_load_toml(pyproject_path)
     if "project" not in pyproject:
         msg = "Missing [project] table"
         raise ConfigError(msg)
@@ -85,7 +99,7 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
     localconfig_path = pyproject_folder / localconfig_fname
     localconfig = None
     if localconfig_path.exists():
-        localconfig = toml_.loads(localconfig_path.read_text("utf-8"))
+        localconfig = try_load_toml(localconfig_path)
         # treat empty local override as no local override
         localconfig = localconfig or None
 
@@ -94,7 +108,7 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
     crossconfig_path = pyproject_folder / crossconfig_fname
     crossconfig = None
     if crossconfig_path.exists():
-        crossconfig = toml_.loads(crossconfig_path.read_text("utf-8"))
+        crossconfig = try_load_toml(crossconfig_path)
         crossconfig = crossconfig or None
 
     # File names mapping to the actual dict with the config
@@ -105,11 +119,6 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
     }
     # Additional options for config_options
     extra_options: list[OverrideConfigOption] = []
-
-    def try_load_local(path: Path):
-        if not path.exists():
-            raise FileNotFoundError(path.absolute())
-        return toml_.loads(path.read_text("utf-8"))
 
     extra_flag_paths = {
         "--local": get_tool_pbc_path(),
@@ -129,7 +138,7 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
                     targetpath=targetpath,
                 )
             )
-            config_files[str(fullpath)] = try_load_local(fullpath)
+            config_files[str(fullpath)] = try_load_toml(fullpath)
 
     return process_config(pyproject_path, pyproject, config_files, extra_options)
 
@@ -299,7 +308,7 @@ def read_full_component_config_checked(
 
 def read_component_config(pyproject_path: Path) -> ComponentConfig:
     # Load the pyproject.toml file
-    pyproject = toml_.loads(pyproject_path.read_text("utf-8"))
+    pyproject = try_load_toml(pyproject_path)
     if "project" not in pyproject:
         msg = "Missing [project] table"
         raise ConfigError(msg)
