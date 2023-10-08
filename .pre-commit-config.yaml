@@ -19,6 +19,11 @@ repos:
           - "pyproject-metadata~=0.7.1"
           - "tomli>=1.2.3,<3; python_version < '3.11'"
           - "click~=8.1.3"
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: "v16.0.6"
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v4.4.0"
     hooks:
