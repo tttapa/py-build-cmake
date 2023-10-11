@@ -22,6 +22,9 @@ name = "namespace_project" # Import name
 directory = "python-src"
 namespace = true
 
+[tool.py-build-cmake.editable]
+mode = "hook"
+
 [tool.py-build-cmake.stubgen]
 packages = ["namespace_project.sub_module"]
 

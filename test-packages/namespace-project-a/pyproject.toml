@@ -24,6 +24,9 @@ name = "namespace_project" # Import name
 directory = "python-src"
 namespace = true
 
+[tool.py-build-cmake.editable]
+mode = "hook"
+
 [tool.py-build-cmake.sdist]
 include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
 exclude = []
