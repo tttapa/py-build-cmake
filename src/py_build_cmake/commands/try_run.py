@@ -46,4 +46,5 @@ def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
 
 def check_stubgen_program(deps: list[str], runner: CommandRunner):
     if not runner.check_program_version("stubgen", None, None, False):
-        deps.append("mypy")
+        # we need https://github.com/python/mypy/pull/14722
+        deps.append("mypy>=1.4.0")
