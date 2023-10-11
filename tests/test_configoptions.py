@@ -672,6 +672,7 @@ def test_real_config_inherit_cross_cmake():
                     "module": {
                         "name": "foobar",
                         "directory": os.path.normpath("/project"),
+                        "namespace": False,
                     },
                     "editable": {
                         "mode": "wrapper",
@@ -883,6 +884,7 @@ def test_real_config_no_cross():
                     "module": {
                         "name": "foobar",
                         "directory": os.path.normpath("/project"),
+                        "namespace": False,
                     },
                     "editable": {
                         "mode": "wrapper",
@@ -1031,6 +1033,7 @@ def test_real_config_no_cmake():
                     "module": {
                         "name": "foobar",
                         "directory": os.path.normpath("/project"),
+                        "namespace": False,
                     },
                     "editable": {
                         "mode": "wrapper",
@@ -1097,6 +1100,7 @@ def test_real_config_local_override():
                     "module": {
                         "name": "foobar",
                         "directory": os.path.normpath("/project"),
+                        "namespace": False,
                     },
                     "editable": {
                         "mode": "wrapper",
@@ -1185,6 +1189,7 @@ def test_real_config_local_override_windows():
                     "module": {
                         "name": "foobar",
                         "directory": os.path.normpath("/project"),
+                        "namespace": False,
                     },
                     "editable": {
                         "mode": "wrapper",

@@ -57,6 +57,7 @@ xfail_strict = true
 filterwarnings = ["error"]
 log_cli_level = "info"
 testpaths = ["tests"]
+norecursedirs = ["tests/packages"]
 
 [tool.ruff]
 select = [
