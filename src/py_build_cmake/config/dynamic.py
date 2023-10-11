@@ -215,15 +215,14 @@ def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Path | Non
     metadata.dynamic = []
 
 
-def find_module(module_metadata: dict, src_dir: Path) -> Module | None:
-    name = module_metadata["name"]
-    base_dir = src_dir / module_metadata["directory"]
-    if name is None or base_dir is None:
-        return None
+def find_module(module_metadata: dict, src_dir: Path) -> Module:
+    name: str = module_metadata["name"]
+    base_dir: Path = src_dir / module_metadata["directory"]
+    is_namespace: bool = module_metadata["namespace"]
 
     # Look for the module
     dir = lambda p: p.is_dir()
-    file = lambda p: p.is_file()
+    file = lambda p: not is_namespace and p.is_file()
     options = [
         (base_dir / name, dir),
         (base_dir / "src" / name, dir),
@@ -243,9 +242,28 @@ def find_module(module_metadata: dict, src_dir: Path) -> Module | None:
         msg = f"No file/folder found for module {name}"
         raise ConfigError(msg)
 
+    full_path: Path = found[0][0]
+    is_package = found[0][1] == dir
+
+    if is_package:
+        init_exists = (full_path / "__init__.py").exists()
+        if is_namespace and init_exists:
+            msg = (
+                "Namespace packages should not contain __init__.py " f"(in {full_path})"
+            )
+            raise ConfigError(msg)
+        elif not is_namespace and not init_exists:
+            msg = (
+                f"Missing __init__.py in {full_path}. "
+                "Perhaps you forgot to set "
+                "tool.py-build-cmake.module.namespace=true?"
+            )
+            raise ConfigError(msg)
+
     return Module(
         name=name,
-        full_path=found[0][0],
+        full_path=full_path,
         base_path=src_dir,
-        is_package=found[0][1] == dir,
+        is_package=is_package,
+        is_namespace=is_namespace,
     )

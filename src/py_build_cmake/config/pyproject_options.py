@@ -68,6 +68,9 @@ def get_options(project_path: Path, *, test: bool = False):
                          default=DefaultValueValue("."),
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
+        BoolConfigOption("namespace",
+                         "Set to true for PEP 420 namespace packages.",
+                         default=DefaultValueValue(False)),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.editable]

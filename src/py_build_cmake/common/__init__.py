@@ -40,6 +40,7 @@ class Module:
     full_path: Path
     base_path: Path
     is_package: bool
+    is_namespace: bool
 
     @property
     def prefix(self):
@@ -47,7 +48,7 @@ class Module:
 
     @property
     def full_file(self):
-        if self.is_package:
+        if self.is_package and not self.is_namespace:
             return self.full_path / "__init__.py"
         else:
             return self.full_path
@@ -56,6 +57,7 @@ class Module:
         """Iterate over the files contained in this module.
         Yields absolute paths. Excludes any __pycache__ and *.pyc files.
         """
+        assert self.is_package or not self.is_namespace
 
         def _include(p):
             p = Path(p)

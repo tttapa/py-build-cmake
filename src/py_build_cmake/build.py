@@ -21,6 +21,7 @@ from .common import (
     BuildPaths,
     ComponentConfig,
     Config,
+    ConfigError,
     ExcFormatter,
     Module,
     PackageInfo,
@@ -261,6 +262,9 @@ class _BuildBackend:
         cfg = _BuildBackend.read_config(src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
         modfile = module.full_file
+        if module.is_namespace and cfg.standard_metadata.dynamic:
+            msg = "Dynamic metadata is not supported for namespace packages"
+            raise ConfigError(msg)
         try:
             update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:
