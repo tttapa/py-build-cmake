@@ -209,6 +209,10 @@ class _BuildBackend:
         export_metadata.write_license_files(cfg, distinfo_dir)
         export_metadata.write_entry_points(cfg, distinfo_dir)
 
+        # Generate .pyi stubs (for the Python files only)
+        if cfg.stubgen is not None and not editable:
+            self.generate_stubs(paths, module, cfg.stubgen)
+
         # Configure, build and install the CMake project
         if cmake_cfg:
             cmaker = self.get_cmaker(
@@ -223,10 +227,6 @@ class _BuildBackend:
             cmaker.configure()
             cmaker.build()
             cmaker.install()
-
-        # Generate .pyi stubs (for the Python files only)
-        if cfg.stubgen is not None and not editable:
-            self.generate_stubs(paths, module, cfg.stubgen)
 
         # Create wheel
         return self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
