@@ -11,6 +11,7 @@ Defines the import name of the module or package, and the directory where it can
 |--------|-------------|------|---------|
 | `name` | Import name in Python (can be different from the name on PyPI, which is defined in the [project] section). | string | `/pyproject.toml/project/name` |
 | `directory` | Directory containing the Python module/package.<br/>Relative to project directory. | path | `'.'` |
+| `namespace` | Set to true for PEP 420 namespace packages. | bool | `false` |
 
 ## editable
 Defines how to perform an editable install (PEP 660). See https://tttapa.github.io/py-build-cmake/Editable-install.html for more information. 
