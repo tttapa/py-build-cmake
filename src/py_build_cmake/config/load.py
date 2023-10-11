@@ -29,6 +29,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 def read_full_config(
     pyproject_path: Path, config_settings: dict | None, verbose: bool
 ) -> Config:

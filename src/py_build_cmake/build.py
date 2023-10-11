@@ -449,7 +449,7 @@ class _BuildBackend:
         if "args" not in cfg or not ({"-o", "--output"} & set(cfg["args"])):
             args += ["-o", str(paths.staging_dir)]
         # Add search path argument if not already specified in cfg['args']
-        if "args" not in cfg or not "--search-path" in cfg["args"]:
+        if "args" not in cfg or "--search-path" not in cfg["args"]:
             args += ["--search-path", str(paths.staging_dir)]
         env = os.environ.copy()
         env.setdefault("MYPY_CACHE_DIR", str(paths.temp_dir))

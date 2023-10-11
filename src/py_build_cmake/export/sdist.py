@@ -44,7 +44,7 @@ from typing import Iterable
 
 from pyproject_metadata import StandardMetadata
 
-from ..common import Module, PackageInfo, ConfigError
+from ..common import ConfigError, Module, PackageInfo
 
 logger = logging.getLogger(__name__)
 

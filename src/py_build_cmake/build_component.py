@@ -39,7 +39,9 @@ class _BuildComponentBackend:
                 config_settings,
                 self.verbose,
             )
-            return std_backend.get_requires_build_project(config_settings, cfg, self.runner)
+            return std_backend.get_requires_build_project(
+                config_settings, cfg, self.runner
+            )
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
