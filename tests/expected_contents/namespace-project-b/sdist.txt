@@ -1,0 +1,6 @@
+namespace_project_b-{{version}}/LICENSE
+namespace_project_b-{{version}}/PKG-INFO
+namespace_project_b-{{version}}/README.md
+namespace_project_b-{{version}}/pyproject.toml
+namespace_project_b-{{version}}/python-src/namespace_project/sub_module.py
+namespace_project_b-{{version}}/python-src/namespace_project/py.typed

@@ -1,0 +1,10 @@
+namespace_project_a-{{version}}/CMakeLists.txt
+namespace_project_a-{{version}}/LICENSE
+namespace_project_a-{{version}}/PKG-INFO
+namespace_project_a-{{version}}/README.md
+namespace_project_a-{{version}}/cmake/Pybind11Stubgen.cmake
+namespace_project_a-{{version}}/cmake/QueryPythonForPybind11.cmake
+namespace_project_a-{{version}}/pyproject.toml
+namespace_project_a-{{version}}/python-src/namespace_project/add_module.py
+namespace_project_a-{{version}}/python-src/namespace_project/py.typed
+namespace_project_a-{{version}}/src/add_module.cpp

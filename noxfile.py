@@ -35,6 +35,9 @@ version = "0.2.0a8.dev0"
 project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
+test_packages = "namespace-project-a", "namespace-project-b"
+
+purity = {"namespace-project-b": True}
 
 
 def get_contents_subs(ext_suffix: str):
@@ -58,12 +61,16 @@ def get_contents_subs(ext_suffix: str):
 
 
 def check_pkg_contents(
-    session: nox.Session, name: str, ext_suffix: str, with_sdist=True
+    session: nox.Session,
+    name: str,
+    ext_suffix: str,
+    with_sdist=True,
+    pure=False,
 ):
     d = project_dir / "tests" / "expected_contents" / name
     template_env = jinja2.Environment(loader=jinja2.FileSystemLoader(d))
     normname = re.sub(r"[-_.]+", "_", name).lower()
-    plat = get_platform().replace(".", "_").replace("-", "_")
+    plat = "none" if pure else get_platform().replace(".", "_").replace("-", "_")
     subs = get_contents_subs(ext_suffix)
     # Compare sdist contents
     sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
@@ -91,12 +98,15 @@ def check_pkg_contents(
         session.error("Wheel contents mismatch:\n" + diff)
 
 
-def test_example_project(session: nox.Session, name: str, ext_suffix: str):
-    with session.chdir("examples/" + name):
+def test_example_project(
+    session: nox.Session, name: str, ext_suffix: str, dir: Path = Path("examples")
+):
+    with session.chdir(dir / name):
         shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
         shutil.rmtree("dist-nox", ignore_errors=True)
         session.run("python", "-m", "build", ".", "-o", "dist-nox")
-        check_pkg_contents(session, name, ext_suffix)
+        pure = purity.get(name, False)
+        check_pkg_contents(session, name, ext_suffix, pure=pure)
         session.install(".")
         session.run("pytest")
 
@@ -131,6 +141,22 @@ def example_projects(session: nox.Session):
         ext_suffix = get_ext_suffix(name)
         if ext_suffix is not None:
             test_example_project(session, name, ext_suffix)
+
+
+@nox.session
+def test_projects(session: nox.Session):
+    dir = Path("test-packages")
+    session.install("-U", "pip", "build", "pytest")
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
+    if dist_dir is None:
+        session.run("python", "-m", "build", ".")
+        dist_dir = "dist"
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
+    session.install(f"py-build-cmake=={version}")
+    for name in test_packages:
+        ext_suffix = get_ext_suffix(name)
+        if ext_suffix is not None:
+            test_example_project(session, name, ext_suffix, dir=dir)
 
 
 @nox.session
