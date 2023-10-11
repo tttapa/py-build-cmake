@@ -24,10 +24,10 @@ dynamic = ["version", "description"]
 
 [project.optional-dependencies]
 docs = ["sphinx~=5.1", "matplotlib", "breathe", "furo"]
-debug = ["minimal-debug==0.2.0a8.dev0"]
+debug = ["minimal-debug==0.2.0a8"]
 
 [build-system]
-requires = ["py-build-cmake~=0.2.0a8.dev0"]
+requires = ["py-build-cmake~=0.2.0a8"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
