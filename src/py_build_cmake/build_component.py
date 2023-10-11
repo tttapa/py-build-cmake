@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .build import _BuildBackend as std_backend
 from .commands.cmd_runner import CommandRunner
-from .common import ComponentConfig, PackageInfo
+from .common import ComponentConfig, ExcFormatter, PackageInfo
 from .config import load as config_load
 from .export import metadata as export_metadata
 
@@ -27,18 +27,19 @@ class _BuildComponentBackend:
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        self.parse_config_settings(config_settings)
+        with ExcFormatter():
+            self.parse_config_settings(config_settings)
 
-        comp_source_dir = Path().resolve()
-        comp_cfg = self.read_all_metadata(
-            comp_source_dir, config_settings, self.verbose
-        )
-        cfg = std_backend.read_config(
-            Path(comp_cfg.component["main_project"]),
-            config_settings,
-            self.verbose,
-        )
-        return std_backend.get_requires_build_project(config_settings, cfg, self.runner)
+            comp_source_dir = Path().resolve()
+            comp_cfg = self.read_all_metadata(
+                comp_source_dir, config_settings, self.verbose
+            )
+            cfg = std_backend.read_config(
+                Path(comp_cfg.component["main_project"]),
+                config_settings,
+                self.verbose,
+            )
+            return std_backend.get_requires_build_project(config_settings, cfg, self.runner)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -52,16 +53,17 @@ class _BuildComponentBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
-        assert metadata_directory is None
+        with ExcFormatter():
+            assert metadata_directory is None
 
-        # Parse options
-        self.parse_config_settings(config_settings)
+            # Parse options
+            self.parse_config_settings(config_settings)
 
-        # Build wheel
-        with tempfile.TemporaryDirectory() as tmp_build_dir:
-            return self.build_wheel_in_dir(
-                wheel_directory, tmp_build_dir, config_settings
-            )
+            # Build wheel
+            with tempfile.TemporaryDirectory() as tmp_build_dir:
+                return self.build_wheel_in_dir(
+                    wheel_directory, tmp_build_dir, config_settings
+                )
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
@@ -85,7 +87,7 @@ class _BuildComponentBackend:
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        return config_load.read_full_component_config_checked(
+        return config_load.read_full_component_config(
             src_dir / "pyproject.toml", config_settings, verbose
         )
 

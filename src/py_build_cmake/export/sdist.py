@@ -44,9 +44,13 @@ from typing import Iterable
 
 from pyproject_metadata import StandardMetadata
 
-from ..common import Module, PackageInfo
+from ..common import Module, PackageInfo, ConfigError
 
 logger = logging.getLogger(__name__)
+
+
+class SdistError(ConfigError):
+    """Problem packaging the project's sdist"""
 
 
 def normalize_file_permissions(st_mode):
@@ -155,7 +159,8 @@ class SdistBuilder:
 
     def crucial_files(self):
         make_rel = lambda p: p.relative_to(self.module.base_path)
-        yield make_rel(self.module.full_file)
+        if not self.module.is_namespace:
+            yield make_rel(self.module.full_file)
         yield from map(make_rel, self.extra_files)
 
     def apply_includes_excludes(self, files: Iterable[Path]):
@@ -187,7 +192,7 @@ class SdistBuilder:
         missing_crucial = crucial_files - files
         if missing_crucial:
             msg = f"Crucial files were excluded from the sdist: {', '.join(map(str, missing_crucial))}"
-            raise Exception(msg)
+            raise SdistError(msg)
 
         return sorted(files)
 

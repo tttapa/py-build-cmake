@@ -144,3 +144,35 @@ class BuildPaths:
 class Command:
     args: Sequence[str]
     kwargs: dict[str, Any]
+
+
+class ExcFormatter:
+    """Context manager to catch common exceptions and format a nice message for
+    the user."""
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            return
+        if issubclass(exc_type, ConfigError):
+            logger.error("Error in user configuration", exc_info=exc_value)
+            exc_value.args = (
+                "\n\n\t\u274C Error in user configuration:\n\n"
+                f"\t\t{exc_value}\n"
+                "\n",
+            )
+        elif issubclass(exc_type, Exception):
+            logger.error(
+                "Internal error while processing the configuration", exc_info=exc_value
+            )
+            exc_value.args = (
+                "\n"
+                "\n"
+                "\t\u274C Internal error while processing the configuration\n"
+                "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
+                "\n"
+                f"\t\t{exc_value}\n"
+                "\n",
+            )

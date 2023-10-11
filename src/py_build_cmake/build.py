@@ -21,6 +21,7 @@ from .common import (
     BuildPaths,
     ComponentConfig,
     Config,
+    ExcFormatter,
     Module,
     PackageInfo,
     ProblemInModule,
@@ -52,11 +53,12 @@ class _BuildBackend:
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        self.parse_config_settings(config_settings)
+        with ExcFormatter():
+            self.parse_config_settings(config_settings)
 
-        src_dir = Path().resolve()
-        cfg = self.read_config(src_dir, config_settings, self.verbose)
-        return self.get_requires_build_project(config_settings, cfg, self.runner)
+            src_dir = Path().resolve()
+            cfg = self.read_config(src_dir, config_settings, self.verbose)
+            return self.get_requires_build_project(config_settings, cfg, self.runner)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -70,58 +72,41 @@ class _BuildBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
-        assert metadata_directory is None
+        with ExcFormatter():
+            assert metadata_directory is None
 
-        # Parse options
-        self.parse_config_settings(config_settings)
+            # Parse options
+            self.parse_config_settings(config_settings)
 
-        # Build wheel
-        with tempfile.TemporaryDirectory() as tmp_build_dir:
-            return self.build_wheel_in_dir(
-                wheel_directory, tmp_build_dir, config_settings
-            )
+            # Build wheel
+            with tempfile.TemporaryDirectory() as tmp_build_dir:
+                return self.build_wheel_in_dir(
+                    wheel_directory, tmp_build_dir, config_settings
+                )
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0660/#build-editable"""
-        assert metadata_directory is None
+        with ExcFormatter():
+            assert metadata_directory is None
 
-        # Parse options
-        self.parse_config_settings(config_settings)
+            # Parse options
+            self.parse_config_settings(config_settings)
 
-        # Build wheel
-        with tempfile.TemporaryDirectory() as tmp_build_dir:
-            return self.build_wheel_in_dir(
-                wheel_directory, tmp_build_dir, config_settings, editable=True
-            )
+            # Build wheel
+            with tempfile.TemporaryDirectory() as tmp_build_dir:
+                return self.build_wheel_in_dir(
+                    wheel_directory, tmp_build_dir, config_settings, editable=True
+                )
 
     def build_sdist(self, sdist_directory, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
+        with ExcFormatter():
+            # Parse options
+            self.parse_config_settings(config_settings)
 
-        # Parse options
-        self.parse_config_settings(config_settings)
-
-        # Load metadata
-        src_dir = Path().resolve()
-        pyproject = src_dir / "pyproject.toml"
-        cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
-        pkg_info = self.get_pkg_info(cfg, module)
-
-        # Export dist
-        extra_files = [pyproject, *cfg.referenced_files]
-        sdist_cfg = cfg.sdist["cross" if cfg.cross else util.get_os_name()]
-        sdist_builder = SdistBuilder(
-            module,
-            pkg_info,
-            metadata=cfg.standard_metadata,
-            cfgdir=src_dir,
-            extra_files=extra_files,
-            include_patterns=sdist_cfg.get("include_patterns", []),
-            exclude_patterns=sdist_cfg.get("exclude_patterns", []),
-        )
-        sdist_tar = sdist_builder.build(Path(sdist_directory))
-        return os.path.relpath(sdist_tar, sdist_directory)
+            return self.do_build_sdist(sdist_directory, config_settings)
 
     # --- Parsing config options and metadata ---------------------------------
 
@@ -275,7 +260,7 @@ class _BuildBackend:
     ) -> tuple[Config, Module | None]:
         cfg = _BuildBackend.read_config(src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
-        modfile = module.full_file if module is not None else None
+        modfile = module.full_file
         try:
             update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:
@@ -307,7 +292,7 @@ class _BuildBackend:
     @staticmethod
     def read_config(src_dir, config_settings, verbose):
         """Read the configuration without the dynamic data."""
-        return config_load.read_full_config_checked(
+        return config_load.read_full_config(
             src_dir / "pyproject.toml", config_settings, verbose
         )
 
@@ -344,6 +329,30 @@ class _BuildBackend:
             return cfg.cmake[util.get_os_name()]
         else:
             return cfg.cmake["cross"]
+
+    # --- Building sdists -----------------------------------------------------
+
+    def do_build_sdist(self, sdist_directory, config_settings):
+        # Load metadata
+        src_dir = Path().resolve()
+        pyproject = src_dir / "pyproject.toml"
+        cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
+        pkg_info = self.get_pkg_info(cfg, module)
+
+        # Export dist
+        extra_files = [pyproject, *cfg.referenced_files]
+        sdist_cfg = cfg.sdist["cross" if cfg.cross else util.get_os_name()]
+        sdist_builder = SdistBuilder(
+            module,
+            pkg_info,
+            metadata=cfg.standard_metadata,
+            cfgdir=src_dir,
+            extra_files=extra_files,
+            include_patterns=sdist_cfg.get("include_patterns", []),
+            exclude_patterns=sdist_cfg.get("exclude_patterns", []),
+        )
+        sdist_tar = sdist_builder.build(Path(sdist_directory))
+        return os.path.relpath(sdist_tar, sdist_directory)
 
     # --- CMake builds --------------------------------------------------------
 
@@ -435,6 +444,9 @@ class _BuildBackend:
         # Add output folder argument if not already specified in cfg['args']
         if "args" not in cfg or not ({"-o", "--output"} & set(cfg["args"])):
             args += ["-o", str(paths.staging_dir)]
+        # Add search path argument if not already specified in cfg['args']
+        if "args" not in cfg or not "--search-path" in cfg["args"]:
+            args += ["--search-path", str(paths.staging_dir)]
         env = os.environ.copy()
         env.setdefault("MYPY_CACHE_DIR", str(paths.temp_dir))
         # Call mypy stubgen in a subprocess

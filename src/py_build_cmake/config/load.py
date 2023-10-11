@@ -29,30 +29,12 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-
-def read_full_config_checked(
+def read_full_config(
     pyproject_path: Path, config_settings: dict | None, verbose: bool
 ) -> Config:
     config_settings = config_settings or {}
-    try:
-        overrides = parse_config_settings_overrides(config_settings, verbose)
-        cfg = read_config(pyproject_path, overrides)
-    except ConfigError as e:
-        logger.error("Error in user configuration", exc_info=e)
-        e.args = ("\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n",)
-        raise
-    except Exception as e:
-        logger.error("Internal error while processing the configuration", exc_info=e)
-        e.args = (
-            "\n"
-            "\n"
-            "\t\u274C Internal error while processing the configuration\n"
-            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
-            "\n"
-            f"\t\t{e}\n"
-            "\n",
-        )
-        raise
+    overrides = parse_config_settings_overrides(config_settings, verbose)
+    cfg = read_config(pyproject_path, overrides)
     if verbose:
         print_config_verbose(cfg)
     return cfg
@@ -276,31 +258,14 @@ class ComponentConfig:
     component: dict[str, Any] = field(default_factory=dict)
 
 
-def read_full_component_config_checked(
+def read_full_component_config(
     pyproject_path: Path, config_settings: dict | None, verbose: bool
 ) -> ComponentConfig:
     config_settings = config_settings or {}
-    try:
-        cfg = read_component_config(pyproject_path)
-        if cfg.standard_metadata.dynamic:
-            msg = "Dynamic metadata not supported for components."
-            raise ConfigError(msg)
-    except ConfigError as e:
-        logger.error("Invalid user configuration", exc_info=e)
-        e.args = ("\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n",)
-        raise
-    except Exception as e:
-        logger.error("Internal error while processing configuration", exc_info=e)
-        e.args = (
-            "\n"
-            "\n"
-            "\t\u274C Internal error while processing the configuration\n"
-            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
-            "\n"
-            f"\t\t{e}\n"
-            "\n",
-        )
-        raise
+    cfg = read_component_config(pyproject_path)
+    if cfg.standard_metadata.dynamic:
+        msg = "Dynamic metadata not supported for components."
+        raise ConfigError(msg)
     if verbose:
         print_component_config_verbose(cfg)
     return cfg
