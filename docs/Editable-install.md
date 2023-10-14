@@ -23,7 +23,7 @@ Alternatively, you can add it to your local configuration,
 
 ```toml
 [editable]
-mode = "symlink"
+mode = "hook"
 ```
 
 > **Note**: only Python files are made “editable”. You'll still have to run
@@ -215,5 +215,9 @@ hidden folder in the project's source directory, [as proposed by PEP 660](https:
 
 (\*) Specifically, to create symbolic links on Windows without administrator
 rights, you need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+Otherwise, you'll see `OSError: symbolic link privilege not held` or
+`[WinError 1314] A required privilege is not held by the client`. If you
+cannot change the privilege, you can override the editable mode in a
+`py-build-cmake.local.toml` file as described above.
 
 </small>
