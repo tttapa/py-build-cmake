@@ -88,7 +88,7 @@ def get_options(project_path: Path, *, test: bool = False):
                          "Either write a wrapper __init__.py file, install an "
                          "import hook, or install symlinks to the original "
                          "files.",
-                         default=DefaultValueValue("wrapper"),
+                         default=DefaultValueValue("symlink"),
                          options=["wrapper", "hook", "symlink"]),
     ])  # fmt: skip
 

@@ -675,7 +675,7 @@ def test_real_config_inherit_cross_cmake():
                         "namespace": False,
                     },
                     "editable": {
-                        "mode": "wrapper",
+                        "mode": "symlink",
                     },
                     "sdist": {
                         "include": [],
@@ -711,7 +711,7 @@ def test_real_config_inherit_cross_cmake():
                             "/project/aarch64-linux-gnu.cmake"
                         ),
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -744,7 +744,7 @@ def test_real_config_inherit_cross_cmake():
                     },
                     "linux": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -774,7 +774,7 @@ def test_real_config_inherit_cross_cmake():
                     },
                     "windows": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -804,7 +804,7 @@ def test_real_config_inherit_cross_cmake():
                     },
                     "mac": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -887,7 +887,7 @@ def test_real_config_no_cross():
                         "namespace": False,
                     },
                     "editable": {
-                        "mode": "wrapper",
+                        "mode": "symlink",
                     },
                     "sdist": {
                         "include": [],
@@ -916,7 +916,7 @@ def test_real_config_no_cross():
                     },
                     "linux": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -946,7 +946,7 @@ def test_real_config_no_cross():
                     },
                     "windows": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -976,7 +976,7 @@ def test_real_config_no_cross():
                     },
                     "mac": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -1036,7 +1036,7 @@ def test_real_config_no_cmake():
                         "namespace": False,
                     },
                     "editable": {
-                        "mode": "wrapper",
+                        "mode": "symlink",
                     },
                     "sdist": {
                         "include": [],
@@ -1044,7 +1044,7 @@ def test_real_config_no_cmake():
                     },
                     "linux": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -1053,7 +1053,7 @@ def test_real_config_no_cmake():
                     },
                     "windows": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -1062,7 +1062,7 @@ def test_real_config_no_cmake():
                     },
                     "mac": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -1103,7 +1103,7 @@ def test_real_config_local_override():
                         "namespace": False,
                     },
                     "editable": {
-                        "mode": "wrapper",
+                        "mode": "symlink",
                     },
                     "sdist": {
                         "include": ["somefile*"],
@@ -1111,7 +1111,7 @@ def test_real_config_local_override():
                     },
                     "linux": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": ["somefile*"],
@@ -1120,7 +1120,7 @@ def test_real_config_local_override():
                     },
                     "windows": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": ["somefile*"],
@@ -1129,7 +1129,7 @@ def test_real_config_local_override():
                     },
                     "mac": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": ["somefile*"],
@@ -1192,7 +1192,7 @@ def test_real_config_local_override_windows():
                         "namespace": False,
                     },
                     "editable": {
-                        "mode": "wrapper",
+                        "mode": "symlink",
                     },
                     "sdist": {
                         "include": [],
@@ -1200,7 +1200,7 @@ def test_real_config_local_override_windows():
                     },
                     "linux": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],
@@ -1218,7 +1218,7 @@ def test_real_config_local_override_windows():
                     },
                     "mac": {
                         "editable": {
-                            "mode": "wrapper",
+                            "mode": "symlink",
                         },
                         "sdist": {
                             "include": [],

@@ -32,7 +32,7 @@ mode = "symlink"
 
 The following sections go into the details of the different modes.
 
-## Wrapper (default)
+## Wrapper
 
 The `wrapper` mode installs all files generated using CMake, but not the Python
 source files in your package. To make these Python files available, a wrapper
@@ -166,7 +166,7 @@ This file is loaded by the `my_package.pth` file, which contains:
 import my_package_editable_hook
 ```
 
-## Symlink
+## Symlink (default)
 
 The disadvantage of the previous two methods is that they split up the package
 across different folders, and not all external tools and IDEs deal with this
