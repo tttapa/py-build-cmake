@@ -215,6 +215,11 @@ def format_and_rethrow_exception(e):
     elif isinstance(e, Exception):
         logger.error("Uncaught exception:", exc_info=e)
         msg = (
-            "\n" "\n" f"\t\u274C Uncaught exception: {type(e)}\n" "\n" f"\t\t{e}\n" "\n"
+            "\n"
+            "\n"
+            f"\t\u274C Uncaught exception: {type(e).__name__}\n"
+            "\n"
+            f"\t\t{e}\n"
+            "\n"
         )
         raise FormattedErrorMessage(msg) from e
