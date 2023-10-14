@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .build import _BuildBackend as std_backend
 from .commands.cmd_runner import CommandRunner
-from .common import ComponentConfig, ExcFormatter, PackageInfo
+from .common import ComponentConfig, PackageInfo, format_and_rethrow_exception
 from .config import load as config_load
 from .export import metadata as export_metadata
 
@@ -27,7 +27,7 @@ class _BuildComponentBackend:
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        with ExcFormatter():
+        try:
             self.parse_config_settings(config_settings)
 
             comp_source_dir = Path().resolve()
@@ -42,6 +42,8 @@ class _BuildComponentBackend:
             return std_backend.get_requires_build_project(
                 config_settings, cfg, self.runner
             )
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -55,7 +57,7 @@ class _BuildComponentBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
-        with ExcFormatter():
+        try:
             assert metadata_directory is None
 
             # Parse options
@@ -66,6 +68,8 @@ class _BuildComponentBackend:
                 return self.build_wheel_in_dir(
                     wheel_directory, tmp_build_dir, config_settings
                 )
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None

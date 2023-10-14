@@ -22,10 +22,11 @@ from .common import (
     ComponentConfig,
     Config,
     ConfigError,
-    ExcFormatter,
+    FormattedErrorMessage,
     Module,
     PackageInfo,
     ProblemInModule,
+    format_and_rethrow_exception,
     logformat,
     util,
 )
@@ -54,12 +55,14 @@ class _BuildBackend:
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        with ExcFormatter():
+        try:
             self.parse_config_settings(config_settings)
 
             src_dir = Path().resolve()
             cfg = self.read_config(src_dir, config_settings, self.verbose)
             return self.get_requires_build_project(config_settings, cfg, self.runner)
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -73,7 +76,7 @@ class _BuildBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
-        with ExcFormatter():
+        try:
             assert metadata_directory is None
 
             # Parse options
@@ -84,12 +87,14 @@ class _BuildBackend:
                 return self.build_wheel_in_dir(
                     wheel_directory, tmp_build_dir, config_settings
                 )
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0660/#build-editable"""
-        with ExcFormatter():
+        try:
             assert metadata_directory is None
 
             # Parse options
@@ -100,14 +105,18 @@ class _BuildBackend:
                 return self.build_wheel_in_dir(
                     wheel_directory, tmp_build_dir, config_settings, editable=True
                 )
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     def build_sdist(self, sdist_directory, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#build-sdist"""
-        with ExcFormatter():
+        try:
             # Parse options
             self.parse_config_settings(config_settings)
 
             return self.do_build_sdist(sdist_directory, config_settings)
+        except Exception as e:
+            format_and_rethrow_exception(e)
 
     # --- Parsing config options and metadata ---------------------------------
 
@@ -269,28 +278,27 @@ class _BuildBackend:
             update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:
             logger.error("Error importing %s for reading metadata", str(modfile))
-            if hasattr(e, "msg"):
-                e.msg = (
-                    "\n"
-                    "\n"
-                    f"\t\u274C Error importing {modfile} for reading metadata:\n"
-                    "\n"
-                    f"\t\t{e.msg}\n"
-                    "\n"
-                )
-            raise
+            msg = (
+                "\n"
+                "\n"
+                f"\t\u274C Error importing {modfile} for reading metadata:\n"
+                "\n"
+                f"\t\t{e.msg}\n"
+                "\n"
+            )
+            raise FormattedErrorMessage(msg) from e
         except ProblemInModule as e:
             logger.error("Error reading metadata from %s", str(modfile))
-            e.args = (
+            msg = (
                 "\n"
                 "\n"
                 f"\t\u274C Error reading metadata from {modfile}:"
                 "\n"
                 "\n"
                 f"\t\t{e}\n"
-                "\n",
+                "\n"
             )
-            raise
+            raise FormattedErrorMessage(msg) from e
         return cfg, module
 
     @staticmethod

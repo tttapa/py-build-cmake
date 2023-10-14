@@ -4,11 +4,17 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from subprocess import CalledProcessError
 from typing import Any, Sequence
 
 import pyproject_metadata
 
 logger = logging.getLogger(__name__)
+
+
+class FormattedErrorMessage(Exception):
+    """Wrapper exception for any error that already has a nicely formatted
+    error message."""
 
 
 class ConfigError(ValueError):
@@ -148,33 +154,45 @@ class Command:
     kwargs: dict[str, Any]
 
 
-class ExcFormatter:
-    """Context manager to catch common exceptions and format a nice message for
-    the user."""
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is None:
-            return
-        if issubclass(exc_type, ConfigError):
-            logger.error("Error in user configuration", exc_info=exc_value)
-            exc_value.args = (
-                "\n\n\t\u274C Error in user configuration:\n\n"
-                f"\t\t{exc_value}\n"
-                "\n",
-            )
-        elif issubclass(exc_type, Exception):
-            logger.error(
-                "Internal error while processing the configuration", exc_info=exc_value
-            )
-            exc_value.args = (
-                "\n"
-                "\n"
-                "\t\u274C Internal error while processing the configuration\n"
-                "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
-                "\n"
-                f"\t\t{exc_value}\n"
-                "\n",
-            )
+def format_and_rethrow_exception(e):
+    """Raises a FormattedErrorMessage from the given exception"""
+    if isinstance(e, FormattedErrorMessage):
+        raise e
+    if isinstance(e, ConfigError):
+        logger.error("Error in user configuration", exc_info=e)
+        msg = "\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n"
+        raise FormattedErrorMessage(msg) from e
+    if isinstance(e, CalledProcessError):
+        logger.error("Subprocess failed", exc_info=e)
+        if e.cmd[:2] == ["cmake", "--build"]:
+            msg = "CMake build failed"
+        elif e.cmd[:2] == ["cmake", "--install"]:
+            msg = "CMake install failed"
+        elif e.cmd[:1] == ["cmake"]:
+            msg = "CMake failed"
+        elif e.cmd[:1] == ["stubgen"]:
+            msg = "Stub generation failed"
+        else:
+            msg = f"Subprocess {e.cmd[0]} failed"
+        msg = (
+            f"\n\n\t\u274C {msg}:\n\n"
+            f"\t\t{e}\n"
+            "\n\t(scroll up for subprocess output)"
+        )
+        raise FormattedErrorMessage(msg) from e
+    elif isinstance(e, AssertionError):
+        logger.error("Internal error:", exc_info=e)
+        msg = (
+            "\n"
+            "\n"
+            "\t\u274C Internal error:\n"
+            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
+            "\n"
+            f"\t\t{e}\n"
+            "\n"
+        )
+        raise FormattedErrorMessage(msg) from e
+    elif isinstance(e, Exception):
+        logger.error("Uncaught exception:", exc_info=e)
+        msg = "\n" "\n" "\t\u274C Uncaught exception:\n" "\n" f"\t\t{e}\n" "\n"
+        raise FormattedErrorMessage(msg) from e
