@@ -123,10 +123,16 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
             )
             config_files[str(fullpath)] = try_load_toml(fullpath)
 
-    return process_config(pyproject_path, pyproject, config_files, extra_options)
+    return process_config(pyproject_path, config_files, extra_options)
 
 
-def process_config(pyproject_path: Path, pyproject, config_files, extra_options):
+def process_config(
+    pyproject_path: Path,
+    config_files: dict,
+    extra_options: list[OverrideConfigOption],
+    test: bool = False,
+) -> Config:
+    pyproject = config_files["pyproject.toml"]
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:
@@ -148,7 +154,7 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
     cfg.package_name = meta.name
 
     # Additional options from command-line overrides
-    opts = get_options(pyproject_path.parent)
+    opts = get_options(pyproject_path.parent, test=test)
     for o in extra_options:
         opts.insert(o)
 
@@ -214,6 +220,9 @@ def process_config(pyproject_path: Path, pyproject, config_files, extra_options)
     s = "cross"
     if s in tool_cfg:
         cfg.cross = tool_cfg[s]
+
+    # Check for incompatible options
+    cfg.check()
 
     return cfg
 

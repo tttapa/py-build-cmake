@@ -88,7 +88,7 @@ class Config:
 
     standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default="")
-    module: dict[str, str] = field(default_factory=dict)
+    module: dict[str, str | bool] = field(default_factory=dict)
     editable: dict[str, Any] = field(default_factory=dict)
     sdist: dict[str, dict[str, Any]] = field(default_factory=dict)
     cmake: dict[str, Any] | None = field(default=None)
@@ -104,6 +104,14 @@ class Config:
         if metadata.license is not None and metadata.license.file is not None:
             res += [metadata.license.file]
         return res
+
+    def check(self):
+        """Check for any incompatible options."""
+        if self.module["namespace"] and any(
+            e["mode"] == "wrapper" for e in self.editable.values()
+        ):
+            msg = "Namespace packages cannot use editable mode 'wrapper'"
+            raise ConfigError(msg)
 
 
 @dataclass
@@ -192,7 +200,21 @@ def format_and_rethrow_exception(e):
             "\n"
         )
         raise FormattedErrorMessage(msg) from e
+    elif isinstance(e, KeyError):
+        logger.error("Internal KeyError:", exc_info=e)
+        msg = (
+            "\n"
+            "\n"
+            "\t\u274C Internal KeyError:\n"
+            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
+            "\n"
+            f"\t\t{e}\n"
+            "\n"
+        )
+        raise FormattedErrorMessage(msg) from e
     elif isinstance(e, Exception):
         logger.error("Uncaught exception:", exc_info=e)
-        msg = "\n" "\n" "\t\u274C Uncaught exception:\n" "\n" f"\t\t{e}\n" "\n"
+        msg = (
+            "\n" "\n" f"\t\u274C Uncaught exception: {type(e)}\n" "\n" f"\t\t{e}\n" "\n"
+        )
         raise FormattedErrorMessage(msg) from e
