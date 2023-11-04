@@ -190,15 +190,17 @@ class CMaker:
         )
 
     def get_cmake_generator_platform(self) -> list[str]:
-        if self.cmake_settings.os == "windows" and not self.cross_compiling():
+        win = self.cmake_settings.os == "windows"
+        gen = self.conf_settings.generator
+        vs_gen = win and (not gen or gen.lower().startswith("visual studio"))
+        if vs_gen and not self.cross_compiling():
             plat = sysconfig.get_platform()
             cmake_plat = python_sysconfig_platform_to_cmake_platform_win(plat)
             if cmake_plat:
                 return ["-A", cmake_plat]
             else:
-                logger.warning(
-                    "Unknown platform, CMake generator platform option (-A) will not be set"
-                )
+                msg = "Unknown platform, CMake generator platform option (-A) will not be set"
+                logger.warning(msg)
         return []
 
     def get_configure_command(self):
