@@ -147,7 +147,7 @@ def process_config(
         Metadata = pyproject_metadata.StandardMetadata
         meta = Metadata.from_pyproject(pyproject, pyproject_path.parent)
     except pyproject_metadata.ConfigurationError as e:
-        raise ConfigError() from e
+        raise ConfigError(str(e)) from e
 
     # Create our own config data structure
     cfg = Config(meta)
@@ -311,7 +311,7 @@ def process_component_config(pyproject_path: Path, pyproject, config_files):
             pyproject, pyproject_path.parent
         )
     except pyproject_metadata.ConfigurationError as e:
-        raise ConfigError() from e
+        raise ConfigError(str(e)) from e
 
     # Create our own config data structure
     cfg = ComponentConfig(meta)
