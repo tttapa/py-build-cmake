@@ -150,16 +150,14 @@ class SdistBuilder:
         This is overridden in flit itself to use information from a VCS to
         include tests, docs, etc. for a 'gold standard' sdist.
         """
-
-        def make_rel(p: Path) -> Path:
-            return p.relative_to(self.module.base_path)
-
-        yield from map(make_rel, self.module.iter_files_abs())
+        make_rel = lambda p: p.relative_to(self.module.base_path)
+        if not self.module.is_generated:
+            yield from map(make_rel, self.module.iter_files_abs())
         yield from map(make_rel, self.extra_files)
 
     def crucial_files(self):
         make_rel = lambda p: p.relative_to(self.module.base_path)
-        if not self.module.is_namespace:
+        if not self.module.is_generated and not self.module.is_namespace:
             yield make_rel(self.module.full_file)
         yield from map(make_rel, self.extra_files)
 

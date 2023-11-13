@@ -203,10 +203,11 @@ class _BuildBackend:
         )
 
         # Copy the module's Python source files to the temporary folder
-        if not editable:
-            export_util.copy_pkg_source_to(paths.staging_dir, module)
-        else:
-            paths = export_editable.do_editable_install(cfg, paths, module)
+        if not module.is_generated:
+            if not editable:
+                export_util.copy_pkg_source_to(paths.staging_dir, module)
+            else:
+                paths = export_editable.do_editable_install(cfg, paths, module)
 
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
@@ -265,15 +266,17 @@ class _BuildBackend:
         )
 
     @staticmethod
-    def read_all_metadata(
-        src_dir, config_settings, verbose
-    ) -> tuple[Config, Module | None]:
+    def read_all_metadata(src_dir, config_settings, verbose) -> tuple[Config, Module]:
         cfg = _BuildBackend.read_config(src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
         modfile = module.full_file
-        if module.is_namespace and cfg.standard_metadata.dynamic:
-            msg = "Dynamic metadata is not supported for namespace packages"
-            raise ConfigError(msg)
+        if cfg.standard_metadata.dynamic:
+            if module.is_generated:
+                msg = "Dynamic metadata is not supported for generated modules/packages"
+                raise ConfigError(msg)
+            elif module.is_namespace:
+                msg = "Dynamic metadata is not supported for namespace packages"
+                raise ConfigError(msg)
         try:
             update_dynamic_metadata(cfg.standard_metadata, modfile)
         except ImportError as e:

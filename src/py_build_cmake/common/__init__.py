@@ -47,6 +47,7 @@ class Module:
     base_path: Path
     is_package: bool
     is_namespace: bool
+    is_generated: bool = False
 
     @property
     def prefix(self):
