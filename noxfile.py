@@ -116,7 +116,8 @@ def get_ext_suffix(name: str):
     py_v = sys.version_info
     ext_suffix = dist_sysconfig.get_config_var("EXT_SUFFIX")
     assert isinstance(ext_suffix, str)
-    if name == "minimal" and ext_suffix.endswith(".pyd") and py_v < (3, 8):
+    simple = name in ["minimal", "bare-c-module"]
+    if simple and ext_suffix.endswith(".pyd") and py_v < (3, 8):
         ext_suffix = ".pyd"  # what a mess ...
     if name == "nanobind-project":
         if py_v < (3, 8):
