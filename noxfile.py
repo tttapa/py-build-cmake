@@ -35,7 +35,7 @@ version = "0.2.0a9.dev0"
 project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
-test_packages = "namespace-project-a", "namespace-project-b"
+test_packages = "namespace-project-a", "namespace-project-b", "bare-c-module"
 
 purity = {"namespace-project-b": True}
 
