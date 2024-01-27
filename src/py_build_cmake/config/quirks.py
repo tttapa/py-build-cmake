@@ -11,7 +11,9 @@ import sysconfig
 from pathlib import Path
 from typing import Any
 
-from distlib.util import get_platform as get_platform_dashes  # type: ignore[import]
+from distlib.util import (  # type: ignore[import-untyped]
+    get_platform as get_platform_dashes,
+)
 
 from ..common.util import (
     archflags_to_platform_tag,

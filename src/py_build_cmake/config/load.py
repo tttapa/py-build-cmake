@@ -9,7 +9,7 @@ from pprint import pprint
 from typing import Any, cast
 
 import pyproject_metadata
-from distlib.util import normalize_name  # type: ignore[import]
+from distlib.util import normalize_name  # type: ignore[import-untyped]
 
 from .. import __version__
 from ..common import Config, ConfigError

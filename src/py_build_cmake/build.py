@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from distlib.wheel import Wheel  # type: ignore[import]
+from distlib.wheel import Wheel  # type: ignore[import-untyped]
 
 from .commands.cmake import (
     CMakeBuildSettings,

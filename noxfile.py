@@ -11,6 +11,7 @@ Tests for the py-build-cmake package.
    -  Install in editable mode and run the package's pytest
  - Run the py-build-cmake pytest tests
 """
+
 from __future__ import annotations
 
 import os

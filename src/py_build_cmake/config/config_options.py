@@ -2,6 +2,7 @@
 Classes to define hierarchical configuration options which support inheriting
 from other options, default values, overriding options, etc.
 """
+
 from __future__ import annotations
 
 import logging
@@ -136,12 +137,10 @@ class DefaultValue(ABC):
         cfg: ConfigNode,
         cfgpath: ConfPath,
         optpath: ConfPath,
-    ) -> DefaultValueWrapper | None:
-        ...
+    ) -> DefaultValueWrapper | None: ...
 
     @abstractmethod
-    def get_name(self) -> str:
-        ...
+    def get_name(self) -> str: ...
 
 
 class DefaultValueValue(DefaultValue):

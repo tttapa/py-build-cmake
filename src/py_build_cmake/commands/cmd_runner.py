@@ -6,7 +6,7 @@ from pprint import pprint
 from subprocess import CalledProcessError
 from subprocess import run as sp_run
 
-from distlib.version import NormalizedVersion  # type: ignore[import]
+from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
 
 class CommandRunner:

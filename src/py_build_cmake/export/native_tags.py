@@ -4,6 +4,7 @@ returns all tags supported by the interpreter, not the tags that should be used
 for the generated wheels. Therefore the only option here is to write our own
 (kind of hacky) functions based on packaging.tags.
 """
+
 from __future__ import annotations
 
 import sys
@@ -11,7 +12,9 @@ import sysconfig
 from importlib.machinery import EXTENSION_SUFFIXES
 from typing import Dict, List
 
-from distlib.util import get_platform as get_platform_dashes  # type: ignore[import]
+from distlib.util import (  # type: ignore[import-untyped]
+    get_platform as get_platform_dashes,
+)
 
 from ..common.util import platform_to_platform_tag
 
