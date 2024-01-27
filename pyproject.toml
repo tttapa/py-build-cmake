@@ -98,6 +98,7 @@ extend-ignore = [
 "examples/**" = ["T20"]
 "scripts/**" = ["T20"]
 "src/py_build_cmake/build.py" = ["T20"]
+"src/py_build_cmake/commands/cmake.py" = ["T20"]
 "src/py_build_cmake/commands/cmd_runner.py" = ["T20"]
 "src/py_build_cmake/config/load.py" = ["T20"]
 "src/py_build_cmake/help.py" = ["T20"]

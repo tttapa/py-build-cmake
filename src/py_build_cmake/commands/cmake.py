@@ -59,6 +59,14 @@ class CMakeInstallSettings:
     prefix: Path | None
 
 
+@dataclass
+class Option:
+    name: str
+    value: str
+    type: str = "STRING"
+    description: str = ""
+
+
 class CMaker:
     def __init__(
         self,
@@ -95,12 +103,12 @@ class CMaker:
     def cross_compiling(self) -> bool:
         return self.conf_settings.cross_compiling
 
-    def get_configure_options_package(self) -> list[str]:
+    def get_configure_options_package(self) -> list[Option]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
         return [
-            "PY_BUILD_CMAKE_PACKAGE_VERSION:STRING=" + self.package_info.version,
-            "PY_BUILD_CMAKE_PACKAGE_NAME:STRING=" + self.package_info.norm_name,
-            "PY_BUILD_CMAKE_MODULE_NAME:STRING=" + self.package_info.module_name,
+            Option("PY_BUILD_CMAKE_PACKAGE_VERSION", self.package_info.version),
+            Option("PY_BUILD_CMAKE_PACKAGE_NAME", self.package_info.norm_name),
+            Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
         ]
 
     def get_native_python_prefixes(self) -> str:
@@ -127,37 +135,37 @@ class CMaker:
 
     def get_native_python_hints(self, prefix):
         """FindPython hints and artifacts for this (native) Python installation."""
-        yield prefix + "_ROOT_DIR=" + self.get_native_python_prefixes()
+        yield Option(prefix + "_ROOT_DIR", self.get_native_python_prefixes())
         impl = self.get_native_python_implementation()
         if impl:
-            yield prefix + "_FIND_IMPLEMENTATIONS=" + impl
+            yield Option(prefix + "_FIND_IMPLEMENTATIONS", impl)
         return
         # FIND_ABI seems to confuse CMake
-        yield prefix + "_FIND_ABI=" + self.get_native_python_abi_tuple()
+        yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
         if impl == "PyPy":
-            yield prefix + "_INCLUDE_DIR=" + sysconfig.get_path("platinclude")
+            yield Option(prefix + "_INCLUDE_DIR", sysconfig.get_path("platinclude"))
 
     def get_cross_python_hints(self, prefix):
         """FindPython hints and artifacts to set when cross-compiling."""
         if self.conf_settings.python_prefix:
             pfx = str(self.conf_settings.python_prefix)
-            yield prefix + "_ROOT_DIR=" + pfx
+            yield Option(prefix + "_ROOT_DIR", pfx, "PATH")
         if self.conf_settings.python_library:
             lib = str(self.conf_settings.python_library)
-            yield prefix + "_LIBRARY=" + lib
+            yield Option(prefix + "_LIBRARY", lib, "FILEPATH")
         if self.conf_settings.python_include_dir:
             inc = str(self.conf_settings.python_include_dir)
-            yield prefix + "_INCLUDE_DIR=" + inc
+            yield Option(prefix + "_INCLUDE_DIR=", inc, "PATH")
 
-    def get_configure_options_python(self) -> list[str]:
+    def get_configure_options_python(self) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
 
         def get_opts(prefix):
-            yield prefix + "_EXECUTABLE:FILEPATH=" + sys.executable
-            yield prefix + "_FIND_REGISTRY=NEVER"
-            yield prefix + "_FIND_FRAMEWORK=NEVER"
-            yield prefix + "_FIND_STRATEGY=LOCATION"
-            yield prefix + "_FIND_VIRTUALENV=FIRST"
+            yield Option(prefix + "_EXECUTABLE", sys.executable, "FILEPATH")
+            yield Option(prefix + "_FIND_REGISTRY", "NEVER")
+            yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")
+            yield Option(prefix + "_FIND_STRATEGY", "LOCATION")
+            yield Option(prefix + "_FIND_VIRTUALENV", "FIRST")
             if not self.cross_compiling():
                 yield from self.get_native_python_hints(prefix)
             else:
@@ -182,12 +190,46 @@ class CMaker:
         return [k + "=" + v for k, v in self.conf_settings.options.items()]
 
     def get_configure_options(self) -> list[str]:
+        """Get the list of options (-D) passed to the CMake configure step
+        through the command line."""
         return (
-            self.get_configure_options_package()
-            + self.get_configure_options_python()
-            + self.get_configure_options_toolchain()
+            self.get_configure_options_toolchain()
             + self.get_configure_options_settings()
         )
+
+    def get_preload_options(self) -> list[Option]:
+        """Get the list of options set in the CMake pre-load script (-C)."""
+        return (
+            self.get_configure_options_package() + self.get_configure_options_python()
+        )
+
+    def write_preload_options(self) -> list[str]:
+        """Write the options into the CMake pre-load script and return the
+        command-line flags that tell CMake to load it."""
+        opts = self.get_preload_options()
+        if not opts:
+            return []
+
+        def fmt_opt(o: Option):
+            return (
+                f'set({o.name} "{o.value}"'
+                f' CACHE {o.type} "{o.description}" FORCE)\n'
+            )
+
+        preload_file = self.cmake_settings.build_path / "py-build-cmake-preload.cmake"
+        if self.runner.verbose:
+            print("Writing CMake pre-load file")
+            print(f"{preload_file}")
+            print("---------------------------")
+            for o in opts:
+                print(fmt_opt(o), end="")
+            print("---------------------------\n")
+        if not self.runner.dry:
+            self.cmake_settings.build_path.mkdir(parents=True, exist_ok=True)
+            with preload_file.open("w", encoding="utf-8") as f:
+                for o in opts:
+                    f.write(fmt_opt(o))
+        return ["-C", str(preload_file)]
 
     def get_cmake_generator_platform(self) -> list[str]:
         win = self.cmake_settings.os == "windows"
@@ -214,6 +256,7 @@ class CMaker:
         if self.conf_settings.generator:
             cmd += ["-G", self.conf_settings.generator]
         cmd += self.get_cmake_generator_platform()
+        cmd += self.write_preload_options()
         cmd += [f for opt in options for f in ("-D", opt)]
         cmd += self.conf_settings.args
         return cmd
