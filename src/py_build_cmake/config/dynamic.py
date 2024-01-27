@@ -219,18 +219,16 @@ def find_module(module_metadata: dict, src_dir: Path) -> Module:
     name: str = module_metadata["name"]
     base_dir: Path = src_dir / module_metadata["directory"]
     is_namespace: bool = module_metadata["namespace"]
-    generated: str = module_metadata.get("generated")
+    generated: str | None = module_metadata.get("generated")
 
     # If the module is to be generated later by CMake, don't search for it now
     if generated:
-        is_pkg = generated == "package"
-        # This won't have the right extension, but that's not an issue
-        full_path = base_dir / name
         return Module(
             name=name,
-            full_path=full_path,
+            # This won't have the right extension, but that's not an issue
+            full_path=base_dir / name,
             base_path=src_dir,
-            is_package=is_pkg,
+            is_package=generated == "package",
             is_namespace=is_namespace,
             is_generated=True,
         )
