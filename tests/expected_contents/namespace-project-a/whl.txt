@@ -8,7 +8,5 @@ namespace_project/_add_module/__init__.pyi
 namespace_project/add_module.py
 namespace_project/py.typed
 {% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
-{% if not 'TODO: why does stubgen fail here?' %}
 namespace_project/add_module.pyi
-{% endif %}
 {% endif %}
