@@ -184,7 +184,7 @@ jobs:
         name: py_build_cmake-whl-3.11
         path: dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@39a63b5912f086dd459cf6fcb13dcdd3fe3bc24d
+      uses: pypa/cibuildwheel@ce3fb7832089eb3e723a0a99cab7f3eaccf074fd
       with:
         package-dir: examples/pybind11-project
         output-dir: dist
