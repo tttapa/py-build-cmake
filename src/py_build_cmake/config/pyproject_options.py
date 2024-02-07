@@ -151,20 +151,6 @@ def get_options(project_path: Path, *, test: bool = False):
         StrConfigOption("preset",
                         "CMake preset to use for configuration. Passed as "
                         "`--preset <?>` during the configuration phase."),
-        ListOfStrConfigOption("build_presets",
-                              "CMake presets to use for building. Passed as "
-                              "`--preset <?>` during the build phase, once "
-                              "for each preset.",
-                              default=RefDefaultValue(pth("preset"),
-                                                      relative=True),
-                              convert_str_to_singleton=True),
-        ListOfStrConfigOption("install_presets",
-                              "CMake presets to use for installing. Passed as "
-                              "`--preset <?>` during the installation phase, "
-                              "once for each preset.",
-                              default=RefDefaultValue(pth("build_presets"),
-                                                      relative=True),
-                              convert_str_to_singleton=True),
         StrConfigOption("generator",
                         "CMake generator to use, passed to the "
                         "configuration step, as "
@@ -458,19 +444,6 @@ def get_component_options(project_path: Path, *, test: bool = False):
                          default=DefaultValueValue(".."),
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
-        ListOfStrConfigOption("build_presets",
-                              "CMake presets to use for building. Passed as "
-                              "`--preset <?>` during the build phase, once "
-                              "for each preset.",
-                              default=NoDefaultValue(),
-                              convert_str_to_singleton=True),
-        ListOfStrConfigOption("install_presets",
-                              "CMake presets to use for installing. Passed as "
-                              "`--preset <?>` during the installation phase, "
-                              "once for each preset.",
-                              default=RefDefaultValue(pth("build_presets"),
-                                                      relative=True),
-                              convert_str_to_singleton=True),
         ListOfStrConfigOption("build_args",
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\", \"--target\", \"foo\"]",

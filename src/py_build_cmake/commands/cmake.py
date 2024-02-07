@@ -251,8 +251,7 @@ class CMaker:
         cmd += ["-S", str(self.cmake_settings.source_path)]
         if self.conf_settings.preset:
             cmd += ["--preset", self.conf_settings.preset]
-        else:
-            cmd += ["-B", str(self.cmake_settings.build_path)]
+        cmd += ["-B", str(self.cmake_settings.build_path)]
         if self.conf_settings.generator:
             cmd += ["-G", self.conf_settings.generator]
         cmd += self.get_cmake_generator_platform()
@@ -284,10 +283,7 @@ class CMaker:
 
     def get_build_command(self, config, preset):
         cmd = [str(self.cmake_settings.command), "--build"]
-        if preset is not None:
-            cmd += ["--preset", preset]
-        else:
-            cmd += [str(self.cmake_settings.build_path)]
+        cmd += [str(self.cmake_settings.build_path)]
         if config is not None:
             cmd += ["--config", config]
         if self.build_settings.args:
@@ -310,10 +306,7 @@ class CMaker:
     def get_install_command(self, config, preset):
         for component in self.install_settings.components:
             cmd = [str(self.cmake_settings.command), "--install"]
-            if preset is not None:
-                cmd += ["--preset", preset]
-            else:
-                cmd += [str(self.cmake_settings.build_path)]
+            cmd += [str(self.cmake_settings.build_path)]
             if config is not None:
                 cmd += ["--config", config]
             if component:
