@@ -1,0 +1,21 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "the-cmake-preset",
+            "displayName": "Custom CMake Config",
+            "binaryDir": "${sourceDir}/build/default",
+            "cacheVariables": {
+                "PRESET_SECRET": {
+                    "type": "STRING",
+                    "value": "secret-preset-value"
+                }
+            }
+        }
+    ]
+}

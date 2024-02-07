@@ -1,0 +1,7 @@
+cmake_preset-{{version}}/CMakeLists.txt
+cmake_preset-{{version}}/LICENSE
+cmake_preset-{{version}}/PKG-INFO
+cmake_preset-{{version}}/README.md
+cmake_preset-{{version}}/pyproject.toml
+cmake_preset-{{version}}/generate.py
+cmake_preset-{{version}}/CMakePresets.json
