@@ -42,12 +42,12 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache'` |
 | `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
-| `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list | `[]` |
+| `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list+ | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = true` | bool | `false` |
 | `find_python3` | Specify hints for CMake&#x27;s FindPython3 module.<br/>For example: `find_python3 = false` | bool | `true` |
-| `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list | `[]` |
-| `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list | `[]` |
-| `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list | `[]` |
+| `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list+ | `[]` |
+| `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list+ | `[]` |
+| `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list+ | `[]` |
 | `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`.<br/>Use an empty string to specify the default component. | list | `['']` |
 | `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}` (but not `$VAR`).<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
 | `pure_python` | Indicate that this package contains no platform-specific binaries, only Python scripts and other platform-agnostic files. It causes the Wheel tags to be set to `py3-none-any`.<br/>For example: `pure_python = true` | bool | `false` |
@@ -62,7 +62,7 @@ If specified, mypy&#x27;s stubgen utility will be used to generate typed stubs f
 | `packages` | List of packages to generate stubs for, passed to stubgen as -p &lt;?&gt;. | list | `none` |
 | `modules` | List of modules to generate stubs for, passed to stubgen as -m &lt;?&gt;. | list | `none` |
 | `files` | List of files to generate stubs for, passed to stubgen without any flags. | list | `none` |
-| `args` | List of extra arguments passed to stubgen. | list | `[]` |
+| `args` | List of extra arguments passed to stubgen. | list+ | `[]` |
 
 ## linux
 Override options for Linux. 
@@ -134,3 +134,41 @@ The same flag may appear multiple times, for example:
 python -m build . -C--local=conf-A.toml -C--local=conf-B.toml
 ```
 For PyPA pip, you can use the `--config-settings` flag instead.
+
+# Combining lists
+
+Many options are specified as lists of strings. When one of these options inherits from or is overridden by another option, these lists can be merged in different ways.
+
+In the table above, when the data type is `list`, the original list of options is simply replaced by the list it is overridden by.  
+When the data type is `list+`, the value of the overriding option is appended to the original value. This is used primarily for combining lists of command line options.
+
+If you want full control of what happens when overriding a list option, you can use a dictionary with one or more of the following keys:
+
+  - `"="`: replace the original list by this list (default behavior for options of type `list`)
+  - `"+"`: append the values of this list to the end of the original list (default behavior for options of type `list+`)
+  - `"-"`: remove the values in this list from the original list (if present)
+  - `"prepend"`: prepend the values of this list to the beginning of the original list
+
+Some examples:
+
+```toml
+[cmake]
+build_args = ["--verbose", "--clean-first"]
+[linux.cmake]
+build_args = ["--target", "foo"]
+[windows.cmake]
+build_args = {"-" = ["--verbose"], "+" = ["--target", "bar"]}
+[macos.cmake]
+build_args = {"=" = ["--target", "macos"]}
+```
+Because `linux.cmake` inherits from `cmake`, and because `build_args` has type `list+`, this will result in a value of `["--verbose", "--clean-first", "--target", "foo"]` for the `linux.cmake.build_args` option. The value of `windows.cmake.build_args` will be `["--clean_first", "--target", "bar"]`, and the value of `macos.cmake.build_args` will be `["--target", "macos"]`.
+
+```toml
+[cmake]
+config = ["Debug", "Release"]
+[linux.cmake]
+config = ["RelWithDebInfo"]
+[windows.cmake]
+config = {"prepend" = ["RelWithDebInfo"], "-" = ["Debug"], "+" = ["Debug"]}
+```
+The `build_args` option has type `list`, so the value of `linux.cmake.config` is simply `["RelWithDebInfo"]`. The value of `windows.cmake.config` is `["RelWithDebInfo", "Release", "Debug"]`.

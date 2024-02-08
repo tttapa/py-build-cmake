@@ -256,7 +256,64 @@ def format(md, component):
             "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
             "```\n"
             "For PyPA pip, you can use the `--config-settings` flag "
-            "instead."
+            "instead.\n"
+        )
+        pr_md("# Combining lists\n")
+        pr_md(
+            "Many options are specified as lists of strings. When one of "
+            "these options inherits from or is overridden by another option, "
+            "these lists can be merged in different ways.\n\n"
+            "In the table above, when the data type is `list`, the original "
+            "list of options is simply replaced by the list it is overridden "
+            "by.  \n"
+            "When the data type is `list+`, the value of the overriding "
+            "option is appended to the original value. This is used primarily "
+            "for combining lists of command line options.\n\n"
+            "If you want full control of what happens when overriding a list "
+            "option, you can use a dictionary with one or more of the "
+            "following keys:\n\n"
+            '  - `"="`: replace the original list by this list (default '
+            "behavior for options of type `list`)\n"
+            '  - `"+"`: append the values of this list to the end of the '
+            "original list (default behavior for options of type `list+`)\n"
+            '  - `"-"`: remove the values in this list from the original '
+            "list (if present)\n"
+            '  - `"prepend"`: prepend the values of this list to the '
+            "beginning of the original list\n\n"
+            "Some examples:\n"
+            """
+```toml
+[cmake]
+build_args = ["--verbose", "--clean-first"]
+[linux.cmake]
+build_args = ["--target", "foo"]
+[windows.cmake]
+build_args = {"-" = ["--verbose"], "+" = ["--target", "bar"]}
+[macos.cmake]
+build_args = {"=" = ["--target", "macos"]}
+```
+"""
+            "Because `linux.cmake` inherits from `cmake`, and because "
+            "`build_args` has type `list+`, this will result in a value of "
+            '`["--verbose", "--clean-first", "--target", "foo"]` for the '
+            "`linux.cmake.build_args` option. The value of "
+            "`windows.cmake.build_args` will be "
+            '`["--clean_first", "--target", "bar"]`, and the value of '
+            '`macos.cmake.build_args` will be `["--target", "macos"]`.\n'
+            """
+```toml
+[cmake]
+config = ["Debug", "Release"]
+[linux.cmake]
+config = ["RelWithDebInfo"]
+[windows.cmake]
+config = {"prepend" = ["RelWithDebInfo"], "-" = ["Debug"], "+" = ["Debug"]}
+```
+"""
+            "The `build_args` option has type `list`, so the value of "
+            '`linux.cmake.config` is simply `["RelWithDebInfo"]`. The value '
+            "of `windows.cmake.config` is "
+            '`["RelWithDebInfo", "Release", "Debug"]`.'
         )
 
 
