@@ -766,6 +766,7 @@ class ListOfStrConfigOption(ConfigOption):
         inherit_from: ConfPath | None = None,
         create_if_inheritance_target_exists: bool = False,
         convert_str_to_singleton=False,
+        append_by_default=False,
     ) -> None:
         super().__init__(
             name,
@@ -776,9 +777,33 @@ class ListOfStrConfigOption(ConfigOption):
             create_if_inheritance_target_exists,
         )
         self.convert_str_to_singleton = convert_str_to_singleton
+        self.append_by_default = append_by_default
+
+    list_op_keys = frozenset(("+", "-", "=", "append", "prepend"))
 
     def get_typename(self, md: bool = False):
-        return "list"
+        return "list+" if self.append_by_default else "list"
+
+    def _override_list(self, selfcfg, overridecfg):
+        assert isinstance(overridecfg.value, list)
+        if self.append_by_default:
+            selfcfg.value += deepcopy(overridecfg.value)
+        else:
+            selfcfg.value = deepcopy(overridecfg.value)
+
+    def _override_dict(self, selfcfg, overridecfg):
+        if "=" in overridecfg.sub:
+            selfcfg.value = deepcopy(overridecfg.sub["="].value)
+            return
+        if "-" in overridecfg.sub:
+            remove = set(overridecfg.sub["-"].value)
+            selfcfg.value = [v for v in selfcfg.value if v not in remove]
+        if "+" in overridecfg.sub:
+            selfcfg.value += deepcopy(overridecfg.sub["+"].value)
+        if "append" in overridecfg.sub:
+            selfcfg.value += deepcopy(overridecfg.sub["append"].value)
+        if "prepend" in overridecfg.sub:
+            selfcfg.value = deepcopy(overridecfg.sub["prepend"].value) + selfcfg.value
 
     def explicit_override(
         self,
@@ -790,18 +815,39 @@ class ListOfStrConfigOption(ConfigOption):
     ):
         assert not self.sub
         assert not selfcfg.sub
-        assert not overridecfg.sub
+        if overridecfg.sub is not None:
+            if selfcfg.sub is not None:
+                msg = f"Type of {pth2str(selfpth)} should be {list}, not {dict}"
+                raise ConfigError(msg)
+            if selfcfg.value is None:
+                selfcfg.value = []
+            assert isinstance(selfcfg.value, list)
+            self._override_dict(selfcfg, overridecfg)
         if overridecfg.value is not None:
             if selfcfg.value is None:
                 selfcfg.value = []
             assert isinstance(selfcfg.value, list)
-            assert isinstance(overridecfg.value, list)
-            selfcfg.value += deepcopy(overridecfg.value)
+            self._override_list(selfcfg, overridecfg)
 
     def verify(self, rootopts: ConfigOption, cfg: ConfigNode, cfgpath: ConfPath):
-        if cfg[cfgpath].sub:
-            msg = f"Type of {pth2str(cfgpath)} should be {list}, not {dict}"
-            raise ConfigError(msg)
+        if cfg[cfgpath].sub is not None:
+            value = cfg[cfgpath].sub
+            invalid_keys = set(value.keys()) - self.list_op_keys
+            if invalid_keys:
+                inv_str = ", ".join(map(str, invalid_keys))
+                val_str = ", ".join(map(str, self.list_op_keys))
+                msg = f"Invalid keys in {pth2str(cfgpath)}: {inv_str} (valid keys are: {val_str})"
+            for k, v in value.items():
+                pthname = f"{pth2str(cfgpath)}[{k}]"
+                if v.sub is not None:
+                    msg = f"Type of {pthname} should be {list}, not {dict}"
+                    raise ConfigError(msg)
+                if not isinstance(v.value, list):
+                    msg = f"Type of {pthname} should be {list}, not {type(v.value)}"
+                    raise ConfigError(msg)
+                if not all(isinstance(el, str) for el in v.value):
+                    msg = f"Type of elements in {pthname} should be {str}"
+                    raise ConfigError(msg)
         elif not isinstance(cfg[cfgpath].value, list):
             if self.convert_str_to_singleton and isinstance(cfg[cfgpath].value, str):
                 cfg[cfgpath].value = [cfg[cfgpath].value]
@@ -811,6 +857,42 @@ class ListOfStrConfigOption(ConfigOption):
         elif not all(isinstance(el, str) for el in cfg[cfgpath].value):
             msg = f"Type of elements in {pth2str(cfgpath)} should be {str}"
             raise ConfigError(msg)
+
+    def _dict_to_list(self, d: dict) -> list[str]:
+        if not d:
+            return []
+        if "=" in d:
+            return d["="].value
+        r = []
+        if "prepend" in d:
+            r = d["prepend"].value
+        if "append" in d:
+            r += d["append"].value
+        if "+" in d:
+            r += d["+"].value
+        return r
+
+    def update_default(
+        self,
+        rootopts: ConfigOption,
+        cfg: ConfigNode,
+        cfgpath: ConfPath,
+        selfpath: ConfPath | None = None,
+        max_depth: int = 5,
+    ) -> DefaultValueWrapper | None:
+        # This is a bit of a hack, but the user might have specified a dict
+        # (the override syntax) for the base option. This is not allowed, but
+        # we cannot really detect it any earlier, because we have to know
+        # whether it's going to be overriding anything first (for which we
+        # would have to traverse the entire option tree up to the root, because
+        # our parents might be overriding something).
+        cfgnode = cfg.get(cfgpath)
+        if cfgnode is not None and cfgnode.sub is not None:
+            cfgnode.value = self._dict_to_list(cfgnode.sub)
+            cfgnode.sub = None
+            msg = f"Type of {pth2str(cfgpath)} should be {list}, not {dict}"
+            raise ConfigError(msg)
+        return super().update_default(rootopts, cfg, cfgpath, selfpath, max_depth)
 
 
 class DirPatternsConfigOption(ListOfStrConfigOption):

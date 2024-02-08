@@ -289,6 +289,92 @@ def test_override_trunk():
     }
 
 
+def test_override_append_prepend_assign():
+    opts = co.ConfigOption("root")
+    trunk = co.ConfigOption("trunk")
+    subopt = co.ConfigOption("subopt")
+    subopt.insert_multiple(
+        [
+            co.ListOfStrConfigOption("args0a", append_by_default=True),
+            co.ListOfStrConfigOption("args1a"),
+            co.ListOfStrConfigOption("args1b"),
+            co.ListOfStrConfigOption("args1c"),
+            co.ListOfStrConfigOption("args2a"),
+            co.ListOfStrConfigOption("args2b"),
+            co.ListOfStrConfigOption("args3a"),
+            co.ListOfStrConfigOption("args3b"),
+            co.ListOfStrConfigOption("args3c"),
+        ]
+    )
+    trunk.insert(subopt)
+    opts.insert(trunk)
+
+    d = {
+        "trunk": {
+            "subopt": {
+                "args0a": ["abc", "def", "ghi"],
+                "args1a": ["abc", "def", "ghi"],
+                "args1b": ["abc", "def", "ghi"],
+                "args1c": ["abc", "def", "ghi"],
+                "args2a": [],
+                "args2b": [],
+            },
+        },
+        "override_trunk": {
+            "subopt": {
+                "args0a": ["123"],
+                "args1a": ["123"],
+                "args1b": {"=": ["456"]},
+                "args1c": {"-": ["def", "xyz"], "+": ["jkl"], "prepend": ["000"]},
+                "args2a": {"+": ["789"]},
+                "args2b": {"=": ["321"]},
+                "args3a": {"+": ["654"]},
+                "args3b": {"=": ["987"]},
+                "args3c": {"-": ["foo"]},
+            },
+        },
+    }
+    opts[co.pth("")].insert(
+        co.OverrideConfigOption(
+            "override_trunk",
+            "",
+            targetpath=co.pth("trunk"),
+        )
+    )
+    cfg = co.ConfigNode.from_dict(d)
+    opts.verify_all(cfg)
+    opts.override_all(cfg)
+    opts.update_default_all(cfg)
+    assert cfg.to_dict() == {
+        "trunk": {
+            "subopt": {
+                "args0a": ["abc", "def", "ghi", "123"],
+                "args1a": ["123"],
+                "args1b": ["456"],
+                "args1c": ["000", "abc", "ghi", "jkl"],
+                "args2a": ["789"],
+                "args2b": ["321"],
+                "args3a": ["654"],
+                "args3b": ["987"],
+                "args3c": [],
+            },
+        },
+        "override_trunk": {
+            "subopt": {
+                "args0a": ["123"],
+                "args1a": ["123"],
+                "args1b": {"=": ["456"]},
+                "args1c": {"-": ["def", "xyz"], "+": ["jkl"], "prepend": ["000"]},
+                "args2a": {"+": ["789"]},
+                "args2b": {"=": ["321"]},
+                "args3a": {"+": ["654"]},
+                "args3b": {"=": ["987"]},
+                "args3c": {"-": ["foo"]},
+            },
+        },
+    }
+
+
 def test_verify_override_unknown_keys():
     opts = gen_test_opts()
     d = {
@@ -552,6 +638,7 @@ def test_real_config_inherit_cross_cmake():
                         "args": ["arg1", "arg2"],
                         "find_python": False,
                         "find_python3": True,
+                        "install_components": ["all_install"],
                     },
                     "cross": {
                         "implementation": "cp",
@@ -568,12 +655,18 @@ def test_real_config_inherit_cross_cmake():
                     },
                     "linux": {
                         "cmake": {
+                            "args": ["linux_arg"],
                             "install_components": ["linux_install"],
                         }
                     },
                     "windows": {
                         "cmake": {
-                            "install_components": ["win_install"],
+                            "args": {
+                                "-": ["arg1"],
+                                "prepend": ["win_arg"],
+                                "+": ["arg1"],
+                            },
+                            "install_components": {"+": ["win_install"]},
                         }
                     },
                 },
@@ -597,6 +690,7 @@ def test_real_config_inherit_cross_cmake():
                         "source_path": os.path.normpath("/project/src"),
                         "args": ["arg1", "arg2"],
                         "env": {"foo": "bar"},
+                        "install_components": ["all_install"],
                         "find_python": False,
                         "find_python3": True,
                     },
@@ -613,6 +707,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Unix Makefiles",
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2", "arg3", "arg4"],
+                            "install_components": ["all_install"],
                             "find_python": False,
                             "find_python3": True,
                             "env": {
@@ -626,7 +721,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "Release",
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
-                            "args": ["arg1", "arg2"],
+                            "args": ["arg1", "arg2", "linux_arg"],
                             "env": {"foo": "bar"},
                             "install_components": ["linux_install"],
                             "find_python": False,
@@ -638,9 +733,9 @@ def test_real_config_inherit_cross_cmake():
                             "build_type": "Release",
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
-                            "args": ["arg1", "arg2"],
+                            "args": ["win_arg", "arg2", "arg1"],
                             "env": {"foo": "bar"},
-                            "install_components": ["win_install"],
+                            "install_components": ["all_install", "win_install"],
                             "find_python": False,
                             "find_python3": True,
                         }
@@ -652,6 +747,7 @@ def test_real_config_inherit_cross_cmake():
                             "source_path": os.path.normpath("/project/src"),
                             "args": ["arg1", "arg2"],
                             "env": {"foo": "bar"},
+                            "install_components": ["all_install"],
                             "find_python": False,
                             "find_python3": True,
                         }
@@ -696,7 +792,7 @@ def test_real_config_inherit_cross_cmake():
                         "build_args": [],
                         "build_tool_args": [],
                         "install_args": [],
-                        "install_components": [""],
+                        "install_components": ["all_install"],
                         "env": {"foo": "bar"},
                         "pure_python": False,
                         "python_abi": "auto",
@@ -732,7 +828,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
-                            "install_components": [""],
+                            "install_components": ["all_install"],
                             "env": {
                                 "foo": "bar",
                                 "crosscompiling": "true",
@@ -759,7 +855,7 @@ def test_real_config_inherit_cross_cmake():
                                 "/project/.py-build-cmake_cache"
                             ),
                             "options": {},
-                            "args": ["arg1", "arg2"],
+                            "args": ["arg1", "arg2", "linux_arg"],
                             "find_python": False,
                             "find_python3": True,
                             "build_args": [],
@@ -789,13 +885,13 @@ def test_real_config_inherit_cross_cmake():
                                 "/project/.py-build-cmake_cache"
                             ),
                             "options": {},
-                            "args": ["arg1", "arg2"],
+                            "args": ["win_arg", "arg2", "arg1"],
                             "find_python": False,
                             "find_python3": True,
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
-                            "install_components": ["win_install"],
+                            "install_components": ["all_install", "win_install"],
                             "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",
@@ -825,7 +921,7 @@ def test_real_config_inherit_cross_cmake():
                             "build_args": [],
                             "build_tool_args": [],
                             "install_args": [],
-                            "install_components": [""],
+                            "install_components": ["all_install"],
                             "env": {"foo": "bar"},
                             "pure_python": False,
                             "python_abi": "auto",

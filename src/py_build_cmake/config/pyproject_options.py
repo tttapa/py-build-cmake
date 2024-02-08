@@ -179,7 +179,8 @@ def get_options(project_path: Path, *, test: bool = False):
                               "Extra arguments passed to the configuration "
                               "step.",
                               "args = [\"--debug-find\", \"-Wdev\"]",
-                              default=DefaultValueValue([])),
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
         BoolConfigOption("find_python",
                          "Specify hints for CMake's FindPython module.",
                          "find_python = true",
@@ -191,17 +192,20 @@ def get_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption("build_args",
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\", \"--target\", \"foo\"]",
-                              default=DefaultValueValue([])),
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
         ListOfStrConfigOption("build_tool_args",
                               "Extra arguments passed to the build tool in the "
                               "build step (e.g. to Make or Ninja).",
                               "build_tool_args = "
                               "[\"--verbose\", \"-d\", \"explain\"]",
-                              default=DefaultValueValue([])),
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
         ListOfStrConfigOption("install_args",
                               "Extra arguments passed to the install step.",
                               "install_args = [\"--strip\"]",
-                              default=DefaultValueValue([])),
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
         ListOfStrConfigOption("install_components",
                               "List of components to install, the install step "
                               "is executed once for each component, with the "
@@ -274,7 +278,8 @@ def get_options(project_path: Path, *, test: bool = False):
                               "stubgen without any flags."),
         ListOfStrConfigOption("args",
                               "List of extra arguments passed to stubgen.",
-                              default=DefaultValueValue([])),
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.{linux,windows,mac}]
@@ -447,13 +452,15 @@ def get_component_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption("build_args",
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\", \"--target\", \"foo\"]",
-                              default=NoDefaultValue()),
+                              default=NoDefaultValue(),
+                              append_by_default=True),
         ListOfStrConfigOption("build_tool_args",
                               "Extra arguments passed to the build tool in the "
                               "build step (e.g. to Make or Ninja).",
                               "build_tool_args = "
                               "[\"--verbose\", \"-d\", \"explain\"]",
-                              default=NoDefaultValue()),
+                              default=NoDefaultValue(),
+                              append_by_default=True),
         BoolConfigOption("install_only",
                          "Do not build the project, only install it.",
                          "install_only = true",
@@ -461,7 +468,8 @@ def get_component_options(project_path: Path, *, test: bool = False):
         ListOfStrConfigOption("install_args",
                               "Extra arguments passed to the install step.",
                               "install_args = [\"--strip\"]",
-                              default=NoDefaultValue()),
+                              default=NoDefaultValue(),
+                              append_by_default=True),
         ListOfStrConfigOption("install_components",
                               "List of components to install, the install step "
                               "is executed once for each component, with the "
