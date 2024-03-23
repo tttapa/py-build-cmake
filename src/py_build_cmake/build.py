@@ -386,11 +386,18 @@ class _BuildBackend:
         # Optionally include the cross-compilation settings
         if cross_cfg:
             cross_compiling = True
+
+            def cvt_path(x):
+                if x is None:
+                    return None
+                assert isinstance(x, (Path, str))
+                return Path(x)
+
             cross_opts = {
-                "toolchain_file": cross_cfg.get("toolchain_file"),
-                "python_prefix": cross_cfg.get("prefix"),
-                "python_library": cross_cfg.get("library"),
-                "python_include_dir": cross_cfg.get("include_dir"),
+                "toolchain_file": cvt_path(cross_cfg.get("toolchain_file")),
+                "python_prefix": cvt_path(cross_cfg.get("prefix")),
+                "python_library": cvt_path(cross_cfg.get("library")),
+                "python_include_dir": cvt_path(cross_cfg.get("include_dir")),
             }
         else:
             cross_compiling = False
