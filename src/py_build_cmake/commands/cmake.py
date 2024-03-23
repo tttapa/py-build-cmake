@@ -324,6 +324,8 @@ class CMaker:
         for component in self.install_settings.components:
             cmd = [str(self.cmake_settings.command), "--install"]
             cmd += [str(self.cmake_settings.build_path)]
+            if self.install_settings.prefix:
+                cmd += ["--prefix", str(self.install_settings.prefix)]
             if config is not None:
                 cmd += ["--config", config]
             if component:
