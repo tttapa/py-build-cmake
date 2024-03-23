@@ -11,6 +11,8 @@ import pyproject_metadata
 
 logger = logging.getLogger(__name__)
 
+CMAKE_MINIMUM_REQUIRED = "3.15"
+
 
 class FormattedErrorMessage(Exception):
     """Wrapper exception for any error that already has a nicely formatted

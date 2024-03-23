@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ...common import CMAKE_MINIMUM_REQUIRED
 from .bool import BoolConfigOption
 from .config_option import ConfigOption, UncheckedConfigOption
 from .config_path import ConfPath
@@ -118,11 +119,13 @@ def get_options(project_path: Path, *, test: bool = False):
     cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
     cmake.insert_multiple([
         StringConfigOption("minimum_version",
-                           "Minimum required CMake version. If this version is "
-                           "not available in the system PATH, it will be "
-                           "installed automatically as a build dependency.",
+                           "Minimum required CMake version. Used for policies "
+                           "in the automatically generated CMake cache pre-"
+                           "load files. If this version is not available in "
+                           "the system PATH, it will be installed "
+                           "automatically as a build dependency (using Pip).",
                            "minimum_version = \"3.18\"",
-                           default=None),
+                           default=DefaultValueValue(CMAKE_MINIMUM_REQUIRED)),
         StringConfigOption("build_type",
                            "Build type passed to the configuration step, as "
                            "`-DCMAKE_BUILD_TYPE=<?>`.",

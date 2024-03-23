@@ -24,6 +24,7 @@ class CMakeSettings:
     os: str
     find_python: bool
     find_python3: bool
+    minimum_required: str
     command: Path = Path("cmake")
 
 
@@ -122,10 +123,10 @@ class CMaker:
         """Get the prefix paths to locate this (native) Python installation in,
         as a semicolon-separated string."""
         pfxs = [
-            sys.exec_prefix,
-            sys.prefix,
-            sys.base_exec_prefix,
-            sys.base_prefix,
+            Path(sys.exec_prefix).as_posix(),
+            Path(sys.prefix).as_posix(),
+            Path(sys.base_exec_prefix).as_posix(),
+            Path(sys.base_prefix).as_posix(),
         ]
         return ";".join(pfxs)
 
@@ -155,20 +156,21 @@ class CMaker:
     def get_cross_python_hints(self, prefix):
         """FindPython hints and artifacts to set when cross-compiling."""
         if self.conf_settings.python_prefix:
-            pfx = str(self.conf_settings.python_prefix)
+            pfx = self.conf_settings.python_prefix.as_posix()
             yield Option(prefix + "_ROOT_DIR", pfx, "PATH")
         if self.conf_settings.python_library:
-            lib = str(self.conf_settings.python_library)
+            lib = self.conf_settings.python_library.as_posix()
             yield Option(prefix + "_LIBRARY", lib, "FILEPATH")
         if self.conf_settings.python_include_dir:
-            inc = str(self.conf_settings.python_include_dir)
+            inc = self.conf_settings.python_include_dir.as_posix()
             yield Option(prefix + "_INCLUDE_DIR=", inc, "PATH")
 
     def get_configure_options_python(self) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
 
         def get_opts(prefix):
-            yield Option(prefix + "_EXECUTABLE", sys.executable, "FILEPATH")
+            executable = Path(sys.executable).as_posix()
+            yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
             yield Option(prefix + "_FIND_REGISTRY", "NEVER")
             yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")
             yield Option(prefix + "_FIND_STRATEGY", "LOCATION")
@@ -235,16 +237,19 @@ class CMaker:
             )
 
         preload_file = self.cmake_settings.build_path / "py-build-cmake-preload.cmake"
+        version = self.cmake_settings.minimum_required
         if self.runner.verbose:
             print("Writing CMake pre-load file")
             print(f"{preload_file}")
             print("---------------------------")
+            print(f"cmake_minimum_required(VERSION {version})")
             for o in opts:
                 print(fmt_opt(o), end="")
             print("---------------------------\n")
         if not self.runner.dry:
             self.cmake_settings.build_path.mkdir(parents=True, exist_ok=True)
             with preload_file.open("w", encoding="utf-8") as f:
+                f.write(f"cmake_minimum_required(VERSION {version})\n")
                 for o in opts:
                     f.write(fmt_opt(o))
         return ["-C", str(preload_file)]

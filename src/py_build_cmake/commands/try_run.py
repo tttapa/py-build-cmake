@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
-from ..common import Config
+from ..common import CMAKE_MINIMUM_REQUIRED, Config
 from ..common.util import get_os_name
 from .cmd_runner import CommandRunner
-
-_CMAKE_MINIMUM_REQUIRED = NormalizedVersion("3.15")
 
 
 def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
@@ -19,7 +17,7 @@ def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
     cross_cfg = cfg.cmake.get("cross", {})
     # Find the strictest version requirement
     min_cmake_ver = max(
-        _CMAKE_MINIMUM_REQUIRED,
+        NormalizedVersion(CMAKE_MINIMUM_REQUIRED),
         NormalizedVersion(native_cfg.get("minimum_version", "0.0")),
         NormalizedVersion(cross_cfg.get("minimum_version", "0.0")),
     )

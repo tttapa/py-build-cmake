@@ -416,6 +416,7 @@ class _BuildBackend:
                 os=util.get_os_name(),
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
+                minimum_required=cmake_cfg["minimum_version"],
                 command=Path("cmake"),
             ),
             conf_settings=CMakeConfigureSettings(
