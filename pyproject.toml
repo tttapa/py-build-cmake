@@ -60,6 +60,7 @@ testpaths = ["tests"]
 norecursedirs = ["tests/packages"]
 
 [tool.ruff]
+[tool.ruff.lint]
 select = [
     "E",
     "F",
@@ -91,9 +92,11 @@ extend-ignore = [
     "RET505",  # Unnecessary `elif` after `return`
     "RET506",  # Unnecessary `elif` after `raise`
     "PGH003",  # Specific rules `type: ignore`
+    "UP006",   # Using dict[...] instead of Dict[...]
+    "UP037",   # Quoted annotations
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["T20"]                               # Removes print statements
 "examples/**" = ["T20"]
 "scripts/**" = ["T20"]
