@@ -7,6 +7,7 @@ import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from string import Template
+from typing import Dict
 
 from .. import __version__
 from ..common import PackageInfo
@@ -83,7 +84,7 @@ class CMaker:
         self.install_settings = install_settings
         self.package_info = package_info
         self.runner = runner
-        self.environment: dict | None = None
+        self.environment: Dict[str, str] | None = None
 
     def run(self, *args, **kwargs):
         return self.runner.run(*args, **kwargs)
@@ -191,7 +192,7 @@ class CMaker:
         prefix = self.install_settings.prefix
         if prefix:
             return [
-                Option("CMAKE_INSTALL_PREFIX", str(prefix), "PATH"),
+                Option("CMAKE_INSTALL_PREFIX", prefix.as_posix(), "PATH"),
                 Option("CMAKE_FIND_NO_INSTALL_PREFIX", "On", "BOOL"),
             ]
         return []
