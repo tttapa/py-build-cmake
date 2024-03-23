@@ -38,9 +38,10 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `build_type` | Build type passed to the configuration step, as `-DCMAKE_BUILD_TYPE=<?>`.<br/>For example: `build_type = "RelWithDebInfo"` | string | `none` |
 | `config` | Configuration type passed to the build and install steps, as `--config <?>`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `config = ["Debug", "Release"]` | list | `build_type` |
 | `preset` | CMake preset to use for configuration. Passed as `--preset <?>` during the configuration phase. | string | `none` |
+| `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `none` |
 | `generator` | CMake generator to use, passed to the configuration step, as `-G <?>`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
-| `build_path` | CMake build and cache folder.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache'` |
+| `build_path` | CMake build and cache folder. The placeholder `{build_config}` can be used to insert the name of the Python version and ABI, operating system, and architecture. This ensures that separate build directories are used for different host systems and Python versions/implementations.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache/{build_config}'` |
 | `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
 | `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list+ | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = true` | bool | `false` |

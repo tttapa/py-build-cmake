@@ -13,6 +13,7 @@ Options for a separately packaged component.
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `main_project` | Directory containing the main pyproject.toml file.<br/>Relative to project directory. | path | `'..'` |
+| `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `none` |
 | `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list+ | `none` |
 | `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list+ | `none` |
 | `install_only` | Do not build the project, only install it.<br/>For example: `install_only = true` | bool | `false` |
