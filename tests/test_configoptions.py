@@ -783,7 +783,7 @@ def test_real_config_inherit_cross_cmake():
                         "generator": "Ninja",
                         "source_path": os.path.normpath("/project/src"),
                         "build_path": os.path.normpath(
-                            "/project/.py-build-cmake_cache"
+                            "/project/.py-build-cmake_cache/{build_config}"
                         ),
                         "options": {},
                         "args": ["arg1", "arg2"],
@@ -819,7 +819,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Unix Makefiles",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2", "arg3", "arg4"],
@@ -852,7 +852,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2", "linux_arg"],
@@ -882,7 +882,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["win_arg", "arg2", "arg1"],
@@ -912,7 +912,7 @@ def test_real_config_inherit_cross_cmake():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -995,7 +995,7 @@ def test_real_config_no_cross():
                         "generator": "Ninja",
                         "source_path": os.path.normpath("/project/src"),
                         "build_path": os.path.normpath(
-                            "/project/.py-build-cmake_cache"
+                            "/project/.py-build-cmake_cache/{build_config}"
                         ),
                         "options": {},
                         "args": ["arg1", "arg2"],
@@ -1024,7 +1024,7 @@ def test_real_config_no_cross():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -1054,7 +1054,7 @@ def test_real_config_no_cross():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2"],
@@ -1084,7 +1084,7 @@ def test_real_config_no_cross():
                             "generator": "Ninja",
                             "source_path": os.path.normpath("/project/src"),
                             "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache"
+                                "/project/.py-build-cmake_cache/{build_config}"
                             ),
                             "options": {},
                             "args": ["arg1", "arg2"],

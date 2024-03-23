@@ -53,7 +53,6 @@ class CMakeBuildSettings:
 @dataclass
 class CMakeInstallSettings:
     args: list[str]
-    presets: list[str]
     configs: list[str]
     components: list[str]
     prefix: Path | None
@@ -94,6 +93,13 @@ class CMaker:
         if self.environment is None:
             self.environment = os.environ.copy()
             self.environment["PY_BUILD_CMAKE_VERSION"] = str(__version__)
+            self.environment["PY_BUILD_CMAKE_BINARY_DIR"] = str(
+                self.cmake_settings.build_path
+            )
+            if self.install_settings.prefix is not None:
+                self.environment["PY_BUILD_CMAKE_INSTALL_PREFIX"] = str(
+                    self.install_settings.prefix
+                )
             if self.conf_settings.environment:
                 for k, v in self.conf_settings.environment.items():
                     templ = Template(v)
@@ -106,6 +112,7 @@ class CMaker:
     def get_configure_options_package(self) -> list[Option]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
         return [
+            Option("PY_BUILD_CMAKE_VERSION", str(__version__)),
             Option("PY_BUILD_CMAKE_PACKAGE_VERSION", self.package_info.version),
             Option("PY_BUILD_CMAKE_PACKAGE_NAME", self.package_info.norm_name),
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
@@ -178,6 +185,15 @@ class CMaker:
             opts += list(get_opts("Python3"))
         return opts
 
+    def get_configure_options_install(self) -> list[Option]:
+        prefix = self.install_settings.prefix
+        if prefix:
+            return [
+                Option("CMAKE_INSTALL_PREFIX", str(prefix), "PATH"),
+                Option("CMAKE_FIND_NO_INSTALL_PREFIX", "On", "BOOL"),
+            ]
+        return []
+
     def get_configure_options_toolchain(self) -> list[str]:
         """Sets CMAKE_TOOLCHAIN_FILE."""
         return (
@@ -200,7 +216,9 @@ class CMaker:
     def get_preload_options(self) -> list[Option]:
         """Get the list of options set in the CMake pre-load script (-C)."""
         return (
-            self.get_configure_options_package() + self.get_configure_options_python()
+            self.get_configure_options_package()
+            + self.get_configure_options_python()
+            + self.get_configure_options_install()
         )
 
     def write_preload_options(self) -> list[str]:
@@ -251,7 +269,8 @@ class CMaker:
         cmd += ["-S", str(self.cmake_settings.source_path)]
         if self.conf_settings.preset:
             cmd += ["--preset", self.conf_settings.preset]
-        cmd += ["-B", str(self.cmake_settings.build_path)]
+        if not self.build_settings.presets:
+            cmd += ["-B", str(self.cmake_settings.build_path)]
         if self.conf_settings.generator:
             cmd += ["-G", self.conf_settings.generator]
         cmd += self.get_cmake_generator_platform()
@@ -270,32 +289,30 @@ class CMaker:
         cwd = self.get_working_dir()
         self.run(cmd, cwd=cwd, check=True, env=env)
 
-    def iter_presets_configs(self, settings, func):
-        done = False
-        for preset in settings.presets:
-            yield from func(None, preset)
-            done = True
-        for config in settings.configs:
-            yield from func(config, None)
-            done = True
-        if not done:
-            yield from func(None, None)
-
     def get_build_command(self, config, preset):
         cmd = [str(self.cmake_settings.command), "--build"]
-        cmd += [str(self.cmake_settings.build_path)]
+        if preset is not None:
+            cmd += ["--preset", preset]
+        else:
+            cmd += [str(self.cmake_settings.build_path)]
         if config is not None:
             cmd += ["--config", config]
         if self.build_settings.args:
             cmd += self.build_settings.args
         if self.build_settings.tool_args:
             cmd += ["--", *self.build_settings.tool_args]
-        yield cmd
+        return cmd
 
     def get_build_commands(self):
-        yield from self.iter_presets_configs(
-            self.build_settings, self.get_build_command
-        )
+        if self.build_settings.presets and self.build_settings.configs:
+            msg = "Mixing both CMake build presets and plain configs is not recommended"
+            logger.warning(msg)
+        for preset in self.build_settings.presets:
+            yield self.get_build_command(None, preset)
+        for config in self.build_settings.configs:
+            yield self.get_build_command(config, None)
+        if not self.build_settings.presets and not self.build_settings.configs:
+            yield self.get_build_command(None, None)
 
     def build(self):
         env = self.prepare_environment()
@@ -303,7 +320,7 @@ class CMaker:
         for cmd in self.get_build_commands():
             self.run(cmd, cwd=cwd, check=True, env=env)
 
-    def get_install_command(self, config, preset):
+    def get_install_command(self, config):
         for component in self.install_settings.components:
             cmd = [str(self.cmake_settings.command), "--install"]
             cmd += [str(self.cmake_settings.build_path)]
@@ -311,16 +328,15 @@ class CMaker:
                 cmd += ["--config", config]
             if component:
                 cmd += ["--component", component]
-            if self.install_settings.prefix:
-                cmd += ["--prefix", str(self.install_settings.prefix)]
             if self.install_settings.args:
                 cmd += self.install_settings.args
             yield cmd
 
     def get_install_commands(self):
-        yield from self.iter_presets_configs(
-            self.install_settings, self.get_install_command
-        )
+        for config in self.install_settings.configs:
+            yield from self.get_install_command(config)
+        if not self.install_settings.configs:
+            yield from self.get_install_command(None)
 
     def install(self):
         env = self.prepare_environment()

@@ -100,15 +100,31 @@ def cli(ctx: click.Context, **kwargs):
 
 @cli.command(help="Configure the CMake project.")
 @click.pass_obj
-@click.option("--preset", nargs=1, type=str, required=False, metavar="PRESET")
+@click.option(
+    "--preset",
+    nargs=1,
+    type=str,
+    required=False,
+    metavar="PRESET",
+    help="CMake configure preset to use.",
+)
+@click.option(
+    "--use-build-presets",
+    is_flag=True,
+    help="Indicate that a build preset will be used during the build stage. "
+    "This causes py-build-cmake to let CMake pick the build directory during "
+    "configuration, rather than explicitly overriding it.",
+)
 @click.argument("args", nargs=-1, required=False)
-def configure(obj, preset, args):
+def configure(obj, preset, use_build_presets, args):
     cmaker = obj()
     if cmaker is None:
         return
     cmaker.conf_settings.args += args or []
     if preset is not None:
         cmaker.conf_settings.preset = preset
+    if use_build_presets:
+        cmaker.build_settings.presets = [""]
     cmaker.configure()
 
 
@@ -139,25 +155,17 @@ def build(obj, preset, config, args):
 @cli.command(help="Install the CMake project.")
 @click.pass_obj
 @click.option(
-    "--preset", nargs=1, multiple=True, type=str, required=False, metavar="PRESET"
-)
-@click.option(
     "--config", nargs=1, multiple=True, type=str, required=False, metavar="CONFIG"
 )
 @click.option(
     "--component", nargs=1, multiple=True, type=str, required=False, metavar="COMP"
 )
 @click.argument("args", nargs=-1, required=False)
-def install(obj, preset, config, component, args):
+def install(obj, config, component, args):
     cmaker = obj()
     if cmaker is None:
         return
     cmaker.install_settings.args += args or []
-    if preset or config:
-        cmaker.install_settings.presets = []
-        cmaker.install_settings.configs = []
-    if preset:
-        cmaker.install_settings.presets = preset
     if config:
         cmaker.install_settings.configs = config
     if component:

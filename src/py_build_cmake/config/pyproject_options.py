@@ -151,6 +151,12 @@ def get_options(project_path: Path, *, test: bool = False):
         StrConfigOption("preset",
                         "CMake preset to use for configuration. Passed as "
                         "`--preset <?>` during the configuration phase."),
+        ListOfStrConfigOption('build_presets',
+                              "CMake presets to use for building. Passed as "
+                              "`--preset <?>` during the build phase, once "
+                              "for each preset.",
+                              default=NoDefaultValue(),
+                              convert_str_to_singleton=True),
         StrConfigOption("generator",
                         "CMake generator to use, passed to the "
                         "configuration step, as "
@@ -165,8 +171,15 @@ def get_options(project_path: Path, *, test: bool = False):
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
         PathConfigOption("build_path",
-                         "CMake build and cache folder.",
-                         default=DefaultValueValue(".py-build-cmake_cache"),
+                         "CMake build and cache folder. The placeholder "
+                         "`{build_config}` can be used to insert the name of "
+                         "the Python version and ABI, operating system, and "
+                         "architecture. This ensures that separate build "
+                         "directories are used for different host systems and "
+                         "Python versions/implementations.",
+                         default=DefaultValueValue(
+                             ".py-build-cmake_cache/{build_config}",
+                         ),
                          allow_abs=True,
                          base_path=RelativeToProject(project_path),
                          must_exist=False),
@@ -449,6 +462,12 @@ def get_component_options(project_path: Path, *, test: bool = False):
                          default=DefaultValueValue(".."),
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
+        ListOfStrConfigOption('build_presets',
+                              "CMake presets to use for building. Passed as "
+                              "`--preset <?>` during the build phase, once "
+                              "for each preset.",
+                              default=NoDefaultValue(),
+                              convert_str_to_singleton=True),
         ListOfStrConfigOption("build_args",
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\", \"--target\", \"foo\"]",

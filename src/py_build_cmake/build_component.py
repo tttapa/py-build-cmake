@@ -178,8 +178,6 @@ class _BuildComponentBackend:
         comp = comp_cfg.component
         if "build_presets" in comp:
             cmaker.build_settings.presets = comp["build_presets"]
-        if "install_presets" in comp:
-            cmaker.install_settings.presets = comp["install_presets"]
         if "build_args" in comp:
             cmaker.build_settings.args = comp["build_args"]
         if "build_tool_args" in comp:

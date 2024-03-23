@@ -254,7 +254,8 @@ class _BuildBackend:
     def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg, cmake_cfg):
         build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross)
         if cmake_cfg:
-            build_dir = Path(cmake_cfg["build_path"]) / build_cfg_name
+            path = cmake_cfg["build_path"]
+            build_dir = Path(path.replace("{build_config}", build_cfg_name))
         else:
             build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
         return BuildPaths(
@@ -435,7 +436,6 @@ class _BuildBackend:
             ),
             install_settings=CMakeInstallSettings(
                 args=cmake_cfg["install_args"],
-                presets=cmake_cfg.get("install_presets", []),
                 configs=cmake_cfg.get("config", []),
                 components=cmake_cfg.get("install_components", []),
                 prefix=install_dir,
