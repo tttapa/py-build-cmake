@@ -86,6 +86,11 @@ def get_options(project_path: Path, *, test: bool = False):
                          "files.",
                          default=DefaultValueValue("symlink"),
                          options=["wrapper", "hook", "symlink"]),
+        BoolConfigOption("build_hook",
+                         "Automatically re-build any changed files when the "
+                         "package is first imported. It is recommended to use "
+                         "a fast generator like Ninja.",
+                         default=DefaultValueValue(False)),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.sdist]

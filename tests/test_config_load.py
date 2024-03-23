@@ -31,7 +31,7 @@ def test_process_config_no_cmake_namespace_wrong_editable_mode():
             "some-other-tool": {},
             "py-build-cmake": {
                 "module": {"namespace": True},
-                "editable": {"mode": "wrapper"},
+                "editable": {"build_hook": False, "mode": "wrapper"},
             },
         },
     }
@@ -101,10 +101,10 @@ def test_inherit_cross_cmake():
         "namespace": False,
     }
     assert conf.editable == {
-        "cross": {"mode": "symlink"},
-        "linux": {"mode": "symlink"},
-        "windows": {"mode": "symlink"},
-        "mac": {"mode": "symlink"},
+        "cross": {"build_hook": False, "mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "cross": {"include_patterns": [], "exclude_patterns": []},
@@ -254,9 +254,9 @@ def test_real_config_no_cross():
         "namespace": False,
     }
     assert conf.editable == {
-        "linux": {"mode": "symlink"},
-        "windows": {"mode": "symlink"},
-        "mac": {"mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
@@ -351,9 +351,9 @@ def test_real_config_no_cmake():
         "namespace": False,
     }
     assert conf.editable == {
-        "linux": {"mode": "symlink"},
-        "windows": {"mode": "symlink"},
-        "mac": {"mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
@@ -389,9 +389,9 @@ def test_real_config_local_override():
         "namespace": False,
     }
     assert conf.editable == {
-        "linux": {"mode": "symlink"},
-        "windows": {"mode": "symlink"},
-        "mac": {"mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": ["somefile*"], "exclude_patterns": []},
@@ -432,9 +432,9 @@ def test_real_config_local_override_windows():
         "namespace": False,
     }
     assert conf.editable == {
-        "linux": {"mode": "symlink"},
-        "windows": {"mode": "hook"},
-        "mac": {"mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "hook"},
+        "mac": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},

@@ -50,4 +50,4 @@ def write_editable_wrapper(staging_dir: Path, module: Module):
     if py_typed.exists():
         shutil.copy2(py_typed, tmp_pkg)
     # Write a path file so IDEs find the correct files as well
-    (staging_dir / f"{name}.pth").write_text(str(module.full_path.parent))
+    (staging_dir / f"{name}.pth").write_text(f"{module.full_path.parent!s}\n")

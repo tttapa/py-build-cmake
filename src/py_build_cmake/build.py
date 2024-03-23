@@ -36,6 +36,7 @@ from .config.dynamic import find_module, update_dynamic_metadata
 from .export import editable as export_editable
 from .export import metadata as export_metadata
 from .export import util as export_util
+from .export.editable.build_hook import write_build_hook
 from .export.sdist import SdistBuilder
 from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is_pure
 
@@ -234,6 +235,9 @@ class _BuildBackend:
             cmaker.configure()
             cmaker.build()
             cmaker.install()
+
+            if editable:
+                write_build_hook(cfg, paths.pkg_staging_dir, module, cmaker)
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:

@@ -35,7 +35,5 @@ def write_editable_hook(staging_dir: Path, module: Module):
         """
     (pkg_hook / "__init__.py").write_text(textwrap.dedent(content), encoding="utf-8")
     # Write a path file to find the development files
-    content = f"""\
-        {module.full_path.parent!s}
-        import {name}_editable_hook"""
+    content = f"{module.full_path.parent!s}\n" f"import {name}_editable_hook\n"
     (staging_dir / f"{name}.pth").write_text(textwrap.dedent(content))
