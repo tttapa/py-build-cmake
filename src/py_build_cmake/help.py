@@ -6,15 +6,12 @@ import re
 import shutil
 import textwrap
 
-from .config.config_options import (
-    ConfigOption,
-    PathConfigOption,
-    RequiredValue,
-    pth2str,
-)
+from .config.options.config_option import ConfigOption
+from .config.options.default import RequiredValue
+from .config.options.path import PathConfigOption
 
 
-def _print_wrapped(text, indent, width=None):
+def _print_wrapped(text: str, indent, width: int | None = None):
     """Print the given string with the given indentation, wrapping it to the
     desired width, preserving line endings. If `width` is None, use the width
     of the terminal, or 80 columns as a fallback."""
@@ -37,12 +34,12 @@ def help_print_md(pbc_opts: ConfigOption):
     """
     Prints the top-level options in `pbc_opts` as MarkDown tables.
     """
-    for k, v in pbc_opts.sub.items():
+    for k, v in pbc_opts.sub_options.items():
         print("##", k)
         print(_get_full_description(v), "\n")
         print("| Option | Description | Type | Default |")
         print("|--------|-------------|------|---------|")
-        for kk, vv in v.sub.items() or {}:
+        for kk, vv in v.sub_options.items() or {}:
             typename = vv.get_typename(md=True) or ""
             print(
                 "|",
@@ -62,8 +59,8 @@ def _get_full_description(vv: ConfigOption):
     descr = _md_escape(vv.description)
     if isinstance(vv, PathConfigOption):
         descr += "<br/>" + _describe_path_option(vv).capitalize() + "."
-    if vv.inherit_from:
-        descr += "<br/>Inherits from: `/" + pth2str(vv.inherit_from) + "`"
+    if vv.inherits:
+        descr += "<br/>Inherits from: `/" + str(vv.inherits) + "`"
     if vv.example:
         descr += "<br/>For example: `" + vv.example + "`"
     return descr
@@ -84,12 +81,12 @@ def _md_escape(descr: str):
 
 def recursive_help_print(opt: ConfigOption, level=0):
     """Recursively prints the help messages for the options in `opt`."""
-    for k, v in opt.sub.items():
+    for k, v in opt.sub_options.items():
         if k == "project":
             continue
         indent = 4 * level * " "
         header = "\n" + k
-        if v.sub:
+        if v.sub_options:
             header += ":"
             print(textwrap.indent(header, indent))
             if v.description:
@@ -105,8 +102,8 @@ def recursive_help_print(opt: ConfigOption, level=0):
             is_required = isinstance(v.default, RequiredValue)
             if is_required:
                 headerfields += ["required"]
-            if v.inherit_from:
-                headerfields += ["inherits from /" + pth2str(v.inherit_from)]
+            if v.inherits:
+                headerfields += ["inherits from /" + str(v.inherits)]
             if headerfields:
                 header += " (" + ", ".join(headerfields) + ")"
             print(textwrap.indent(header + ":", indent))

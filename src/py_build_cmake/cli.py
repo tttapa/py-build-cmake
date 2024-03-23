@@ -184,14 +184,15 @@ def config():
     "--component", is_flag=True, help="Documentation for the build_component backend."
 )
 def format(md, component):
-    from .config.config_options import pth
-    from .config.pyproject_options import get_component_options, get_options
+    from .config.options.config_path import ConfPath
+    from .config.options.config_reference import ConfigReference
+    from .config.options.pyproject_options import get_component_options, get_options
 
     if md:
         from .help import help_print_md as help_print
     else:
         from .help import help_print
-    help_pth = pth("pyproject.toml/tool/py-build-cmake")
+    help_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake")
     pr_md = print if md else lambda *args, **kwargs: None
     pr_tx = lambda *args, **kwargs: None if md else print
     if component:
@@ -215,7 +216,9 @@ def format(md, component):
             "py-build-cmake/tree/main/examples/minimal-debug-component) "
             "for more information.\n"
         )
-        help_print(get_component_options(Path("/"))[help_pth])
+        opts = get_component_options(Path("/"))
+        root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+        help_print(root_ref.sub_ref(help_pth).config)
 
     else:
         pr_tx("List of py-build-cmake pyproject.toml options:")
@@ -224,7 +227,9 @@ def format(md, component):
             "These options go in the `[tool.py-build-cmake]` section of "
             "the `pyproject.toml` configuration file.\n"
         )
-        help_print(get_options(Path("/"))[help_pth])
+        opts = get_options(Path("/"))
+        root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+        help_print(root_ref.sub_ref(help_pth).config)
         pr_md("# Local overrides\n")
         pr_md(
             "Additionally, two extra configuration files can be placed in "
