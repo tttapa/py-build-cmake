@@ -1,116 +1,83 @@
-import os
-from pathlib import PurePosixPath
 from pprint import pprint
 
-import py_build_cmake.config.config_options as co
 import pytest
 from py_build_cmake.common import ConfigError
-from py_build_cmake.config.pyproject_options import get_options
+from py_build_cmake.config.options.config_option import ConfigOption
+from py_build_cmake.config.options.config_path import ConfPath
+from py_build_cmake.config.options.config_reference import ConfigReference
+from py_build_cmake.config.options.default import (
+    ConfigDefaulter,
+    DefaultValueValue,
+    MissingDefaultError,
+    NoDefaultValue,
+    RefDefaultValue,
+    RequiredValue,
+)
+from py_build_cmake.config.options.inherit import ConfigInheritor
+from py_build_cmake.config.options.list import ListOfStrConfigOption
+from py_build_cmake.config.options.override import ConfigOverrider
+from py_build_cmake.config.options.string import StringConfigOption
+from py_build_cmake.config.options.value_reference import ValueReference
+from py_build_cmake.config.options.verify import ConfigVerifier
 
 
 def gen_test_opts():
-    leaf11 = co.StrConfigOption("leaf11")
-    leaf12 = co.StrConfigOption("leaf12")
-    mid1 = co.ConfigOption("mid1")
+    leaf11 = StringConfigOption("leaf11")
+    leaf12 = StringConfigOption("leaf12")
+    mid1 = ConfigOption("mid1")
     mid1.insert(leaf11)
     mid1.insert(leaf12)
-    leaf21 = co.StrConfigOption("leaf21")
-    leaf22 = co.StrConfigOption("leaf22")
-    mid2 = co.ConfigOption("mid2")
+    leaf21 = StringConfigOption("leaf21")
+    leaf22 = StringConfigOption("leaf22")
+    mid2 = ConfigOption("mid2")
     mid2.insert(leaf21)
     mid2.insert(leaf22)
-    trunk = co.ConfigOption("trunk")
+    trunk = ConfigOption("trunk")
     trunk.insert(mid1)
     trunk.insert(mid2)
-    opts = co.ConfigOption("root")
+    opts = ConfigOption("root")
     opts.insert(trunk)
     return opts
 
 
-def test_iter():
-    opts = gen_test_opts()
-    result = list(opts.iter_opt_paths())
-    expected = [
-        ("trunk",),
-        ("trunk", "mid1"),
-        ("trunk", "mid1", "leaf11"),
-        ("trunk", "mid1", "leaf12"),
-        ("trunk", "mid2"),
-        ("trunk", "mid2", "leaf21"),
-        ("trunk", "mid2", "leaf22"),
-    ]
-    print(result)
-    assert result == expected
-
-
-def test_iter_leaf():
-    opts = gen_test_opts()
-    result = list(opts.iter_leaf_opt_paths())
-    expected = [
-        ("trunk", "mid1", "leaf11"),
-        ("trunk", "mid1", "leaf12"),
-        ("trunk", "mid2", "leaf21"),
-        ("trunk", "mid2", "leaf22"),
-    ]
-    print(result)
-    assert result == expected
-
-
 def test_update_defaults():
     opts = gen_test_opts()
-    trunk = opts[co.pth("trunk")]
-    assert trunk.name == "trunk"
-    mid1 = opts[co.pth("trunk/mid1")]
-    assert mid1.name == "mid1"
-    leaf12 = opts[co.pth("trunk/mid1/leaf12")]
-    assert leaf12.name == "leaf12"
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    trunk = root_ref.sub_ref(ConfPath.from_string("trunk"))
+    assert trunk.config.name == "trunk"
+    mid1 = root_ref.sub_ref(ConfPath.from_string("trunk/mid1"))
+    assert mid1.config.name == "mid1"
+    leaf12 = root_ref.sub_ref(ConfPath.from_string("trunk/mid1/leaf12"))
+    assert leaf12.config.name == "leaf12"
 
-    cfg = co.ConfigNode.from_dict({})
-    trunk.default = co.DefaultValueValue({})
-    res = trunk.update_default(opts, cfg, co.pth("trunk"))
-    assert res is not None
-    assert res.value == {}
-    assert cfg.to_dict() == {"trunk": {}}
-    opts.update_default_all(cfg)
-    assert cfg.to_dict() == {"trunk": {}}
+    values = {}
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    trunk.config.default = DefaultValueValue({})
+    ConfigDefaulter(root=root_ref, root_values=rval).update_default()
+    assert values == {"trunk": {}}
 
-    cfg = co.ConfigNode.from_dict({})
-    leaf12.default = co.DefaultValueValue("d12")
-    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None
-    assert res.value == "d12"
-    assert cfg.to_dict() == {}
-    opts.update_default_all(cfg)
-    assert cfg.to_dict() == {"trunk": {}}
+    values = {}
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    leaf12.config.default = DefaultValueValue("d12")
+    ConfigDefaulter(root=root_ref, root_values=rval).update_default()
+    assert values == {"trunk": {}}
 
-    cfg = co.ConfigNode.from_dict({})
-    mid1.default = co.DefaultValueValue({})
-    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None
-    assert res.value == "d12"
-    assert cfg.to_dict() == {}
-    opts.update_default_all(cfg)
-    assert cfg.to_dict() == {"trunk": {"mid1": {"leaf12": "d12"}}}
+    values = {}
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    mid1.config.default = DefaultValueValue({})
+    ConfigDefaulter(root=root_ref, root_values=rval).update_default()
+    assert values == {"trunk": {"mid1": {"leaf12": "d12"}}}
 
-    cfg = co.ConfigNode.from_dict({})
-    print(cfg)
-    print(cfg.value)
-    print(cfg.sub)
-    trunk.default = co.NoDefaultValue()
-    res = leaf12.update_default(opts, cfg, co.pth("trunk/mid1/leaf12"))
-    assert res is not None
-    assert res.value == "d12"
-    assert cfg.to_dict() == {}
-    print(cfg)
-    print(cfg.value)
-    print(cfg.sub)
-    opts.update_default_all(cfg)
-    assert cfg.to_dict() == {}
+    values = {}
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    trunk.config.default = NoDefaultValue()
+    ConfigDefaulter(root=root_ref, root_values=rval).update_default()
+    assert values == {}
 
 
 def test_override0():
     opts = gen_test_opts()
-    d = {
+    values = {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -121,19 +88,24 @@ def test_override0():
                 "leaf22": "22",
             },
         },
-        # No override
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_mid2",
-            "",
-            targetpath=co.pth("trunk/mid2"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    assert cfg.to_dict() == {
+    override_values = {}  # No override
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -149,7 +121,7 @@ def test_override0():
 
 def test_override1():
     opts = gen_test_opts()
-    d = {
+    values = {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -160,36 +132,32 @@ def test_override1():
                 "leaf22": "22",
             },
         },
-        "override_mid2": {"leaf21": "23"},
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_mid2",
-            "",
-            targetpath=co.pth("trunk/mid2"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    assert cfg.to_dict() == {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "23",
-                "leaf22": "22",
-            },
-        },
-        "override_mid2": {"leaf21": "23"},
+    override_values = {"leaf21": "23"}
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=rval.sub_ref(ConfPath.from_string("trunk/mid2")),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "leaf21": "23",
+        "leaf22": "22",
     }
 
 
 def test_override2():
     opts = gen_test_opts()
-    d = {
+    values = {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -200,42 +168,35 @@ def test_override2():
                 "leaf22": "22",
             },
         },
-        "override_mid2": {
-            "leaf21": "31",
-            "leaf22": "32",
-        },
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_mid2",
-            "",
-            targetpath=co.pth("trunk/mid2"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    assert cfg.to_dict() == {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "31",
-                "leaf22": "32",
-            },
-        },
-        "override_mid2": {
-            "leaf21": "31",
-            "leaf22": "32",
-        },
+    override_values = {
+        "leaf21": "31",
+        "leaf22": "32",
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=rval.sub_ref(ConfPath.from_string("trunk/mid2")),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "leaf21": "31",
+        "leaf22": "32",
     }
 
 
 def test_override_trunk():
     opts = gen_test_opts()
-    d = {
+    values = {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -246,7 +207,59 @@ def test_override_trunk():
                 "leaf22": "22",
             },
         },
-        "override_trunk": {
+    }
+    override_values = {
+        "mid1": {
+            "leaf12": "33",
+        },
+        "mid2": {
+            "leaf21": "31",
+            "leaf22": "32",
+        },
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=rval.sub_ref("trunk"),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "mid1": {
+            "leaf11": "11",
+            "leaf12": "33",
+        },
+        "mid2": {
+            "leaf21": "31",
+            "leaf22": "32",
+        },
+    }
+
+
+def test_override_root():
+    opts = gen_test_opts()
+    values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "12",
+            },
+            "mid2": {
+                "leaf21": "21",
+                "leaf22": "22",
+            },
+        },
+    }
+    override_values = {
+        "trunk": {
             "mid1": {
                 "leaf12": "33",
             },
@@ -254,19 +267,24 @@ def test_override_trunk():
                 "leaf21": "31",
                 "leaf22": "32",
             },
-        },
+        }
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_trunk",
-            "",
-            targetpath=co.pth("trunk"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    assert cfg.to_dict() == {
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -276,8 +294,26 @@ def test_override_trunk():
                 "leaf21": "31",
                 "leaf22": "32",
             },
+        }
+    }
+
+
+def test_override_root_verify():
+    opts = gen_test_opts()
+    values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "12",
+            },
+            "mid2": {
+                "leaf21": "21",
+                "leaf22": "22",
+            },
         },
-        "override_trunk": {
+    }
+    override_values = {
+        "trunk": {
             "mid1": {
                 "leaf12": "33",
             },
@@ -285,31 +321,152 @@ def test_override_trunk():
                 "leaf21": "31",
                 "leaf22": "32",
             },
-        },
+        }
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "33",
+            },
+            "mid2": {
+                "leaf21": "31",
+                "leaf22": "32",
+            },
+        }
     }
 
 
+def test_override_root_verify_unknown_option():
+    opts = gen_test_opts()
+    values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "12",
+            },
+            "mid2": {
+                "leaf21": "21",
+                "leaf22": "22",
+            },
+        },
+    }
+    override_values = {
+        "trunk": {
+            "mid1": {
+                "leaf12": "33",
+            },
+            "mid2": {
+                "leaf21": "31",
+                "leaf22": "32",
+                "leaf23": "32",
+            },
+        }
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    with pytest.raises(
+        ConfigError,
+        match="^Unknown option 'leaf23' in override/trunk/mid2. Did you mean: leaf22, leaf21$",
+    ):
+        ConfigVerifier(
+            root=root_ref,
+            ref=root_ref,
+            values=ValueReference(ConfPath.from_string("/override"), override_values),
+        ).verify()
+
+
+def test_override_root_verify_wrong_type():
+    opts = gen_test_opts()
+    values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "12",
+            },
+            "mid2": {
+                "leaf21": "21",
+                "leaf22": "22",
+            },
+        },
+    }
+    override_values = {
+        "trunk": {
+            "mid1": {
+                "leaf12": "33",
+            },
+            "mid2": {
+                "leaf21": "31",
+                "leaf22": 32,
+            },
+        }
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    with pytest.raises(
+        ConfigError,
+        match="^Type of override/trunk/mid2/leaf22 should be <class 'str'>, not <class 'int'>$",
+    ):
+        ConfigVerifier(
+            root=root_ref,
+            ref=root_ref,
+            values=ValueReference(ConfPath.from_string("/override"), override_values),
+        ).verify()
+
+
 def test_override_append_prepend_assign():
-    opts = co.ConfigOption("root")
-    trunk = co.ConfigOption("trunk")
-    subopt = co.ConfigOption("subopt")
+    opts = ConfigOption("root")
+    trunk = ConfigOption("trunk")
+    subopt = ConfigOption("subopt")
     subopt.insert_multiple(
         [
-            co.ListOfStrConfigOption("args0a", append_by_default=True),
-            co.ListOfStrConfigOption("args1a"),
-            co.ListOfStrConfigOption("args1b"),
-            co.ListOfStrConfigOption("args1c"),
-            co.ListOfStrConfigOption("args2a"),
-            co.ListOfStrConfigOption("args2b"),
-            co.ListOfStrConfigOption("args3a"),
-            co.ListOfStrConfigOption("args3b"),
-            co.ListOfStrConfigOption("args3c"),
+            ListOfStrConfigOption("args0a", append_by_default=True),
+            ListOfStrConfigOption("args1a"),
+            ListOfStrConfigOption("args1b"),
+            ListOfStrConfigOption("args1c"),
+            ListOfStrConfigOption("args2a"),
+            ListOfStrConfigOption("args2b"),
+            ListOfStrConfigOption("args3a"),
+            ListOfStrConfigOption("args3b"),
+            ListOfStrConfigOption("args3c"),
         ]
     )
     trunk.insert(subopt)
     opts.insert(trunk)
 
-    d = {
+    values = {
         "trunk": {
             "subopt": {
                 "args0a": ["abc", "def", "ghi"],
@@ -320,1020 +477,317 @@ def test_override_append_prepend_assign():
                 "args2b": [],
             },
         },
-        "override_trunk": {
-            "subopt": {
-                "args0a": ["123"],
-                "args1a": ["123"],
-                "args1b": {"=": ["456"]},
-                "args1c": {"-": ["def", "xyz"], "+": ["jkl"], "prepend": ["000"]},
-                "args2a": {"+": ["789"]},
-                "args2b": {"=": ["321"]},
-                "args3a": {"+": ["654"]},
-                "args3b": {"=": ["987"]},
-                "args3c": {"-": ["foo"]},
-            },
+    }
+    override_values = {
+        "subopt": {
+            "args0a": ["123"],
+            "args1a": ["123"],
+            "args1b": {"=": ["456"]},
+            "args1c": {"-": ["def", "xyz"], "+": ["jkl"], "prepend": ["000"]},
+            "args2a": {"+": ["789"]},
+            "args2b": {"=": ["321"]},
+            "args3a": {"+": ["654"]},
+            "args3b": {"=": ["987"]},
+            "args3c": {"-": ["foo"]},
         },
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_trunk",
-            "",
-            targetpath=co.pth("trunk"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    opts.update_default_all(cfg)
-    assert cfg.to_dict() == {
-        "trunk": {
-            "subopt": {
-                "args0a": ["abc", "def", "ghi", "123"],
-                "args1a": ["123"],
-                "args1b": ["456"],
-                "args1c": ["000", "abc", "ghi", "jkl"],
-                "args2a": ["789"],
-                "args2b": ["321"],
-                "args3a": ["654"],
-                "args3b": ["987"],
-                "args3c": [],
-            },
-        },
-        "override_trunk": {
-            "subopt": {
-                "args0a": ["123"],
-                "args1a": ["123"],
-                "args1b": {"=": ["456"]},
-                "args1c": {"-": ["def", "xyz"], "+": ["jkl"], "prepend": ["000"]},
-                "args2a": {"+": ["789"]},
-                "args2b": {"=": ["321"]},
-                "args3a": {"+": ["654"]},
-                "args3b": {"=": ["987"]},
-                "args3c": {"-": ["foo"]},
-            },
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=rval.sub_ref("trunk"),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "subopt": {
+            "args0a": ["abc", "def", "ghi", "123"],
+            "args1a": ["123"],
+            "args1b": ["456"],
+            "args1c": ["000", "abc", "ghi", "jkl"],
+            "args2a": ["789"],
+            "args2b": ["321"],
+            "args3a": ["654"],
+            "args3b": ["987"],
+            "args3c": [],
         },
     }
 
 
-def test_verify_override_unknown_keys():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-        },
-        "override_mid2": {
-            "blahblah": "31",
-            "leaf22": "32",
-        },
+class ConfigTestOption(ConfigOption):
+    def override(self, old_value, new_value):
+        if new_value.values is None:
+            return old_value.values
+        if old_value.values is None:
+            return new_value.values
+        return old_value.values + "+" + new_value.values
+
+
+def test_override_no_inherit():
+    root = ConfigOption("")
+    a = root.sub_options["a"] = ConfigOption("a")
+    a.sub_options["1"] = ConfigTestOption("1")
+    a.sub_options["2"] = ConfigTestOption("2")
+    a.sub_options["3"] = ConfigTestOption("3")
+    b = root.sub_options["b"] = ConfigOption("b")
+    b.sub_options["1"] = ConfigTestOption("1")
+
+    values = {"a": {"1": "a1", "2": "a2"}}
+    override_values = {"a": {"2": "A2", "3": "A3"}, "b": {"1": "B1"}}
+
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), values),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    print(overridden_values)
+    assert overridden_values == {
+        "a": {"1": "a1", "2": "a2+A2", "3": "A3"},
+        "b": {"1": "B1"},
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_mid2",
-            "",
-            targetpath=co.pth("trunk/mid2"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Unknown options in override_mid2: blahblah"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
 
 
-def test_override_trunk_unknown_keys():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-        },
-        "override_trunk": {
-            "mid1": {
-                "azertyop": "33",
-            },
-        },
+def test_override_inherit():
+    root = ConfigOption("")
+    a = root.sub_options["a"] = ConfigOption("a")
+    a.sub_options["1"] = ConfigTestOption("1")
+    a.sub_options["2"] = ConfigTestOption("2")
+    a.sub_options["3"] = ConfigTestOption("3")
+    b = root.sub_options["b"] = ConfigOption("b")
+    b.sub_options["1"] = ConfigTestOption("1")
+    c = root.sub_options["c"] = ConfigOption("c")
+    c.inherits = ConfPath.from_string("/a")
+    d = root.sub_options["d"] = ConfigOption("d")
+    d.inherits = ConfPath.from_string("/a/1")
+    e = root.sub_options["e"] = ConfigOption("e")
+    e.inherits = ConfPath.from_string("/c")
+
+    values = {"a": {"1": "a1", "2": "a2"}}
+    override_values = {
+        "a": {"2": "A2", "3": "A3"},
+        "b": {"1": "B1"},
+        "c": {"1": "C1"},
+        "d": "D",
+        "e": {"3": "E3"},
     }
-    opts[co.pth("")].insert(
-        co.OverrideConfigOption(
-            "override_trunk",
-            "",
-            targetpath=co.pth("trunk"),
-        )
-    )
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Unknown options in override_trunk/mid1: azertyop"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
 
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), values),
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
 
-def test_verify_unknown_keys1():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-            "mid3": "foobar",
-        },
+    print(overridden_values)
+    assert overridden_values == {
+        "a": {"1": "a1", "2": "a2+A2", "3": "A3"},
+        "b": {"1": "B1"},
+        "c": {"1": "C1"},
+        "d": "D",
+        "e": {"3": "E3"},
     }
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Unknown options in trunk: mid3"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
-
-
-def test_verify_unknown_keys2():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-                "foobar": 1234,
-            },
-        },
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Unknown options in trunk/mid2: foobar"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
-
-
-def test_verify_wrong_type_str():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": 1234,
-            },
-        },
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Type of trunk/mid2/leaf22 should be <class 'str'>, not <class 'int'>"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
-
-
-def test_verify_wrong_type_str_dict():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": {"21": 1234},
-            },
-        },
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    expected = "Type of trunk/mid2/leaf21 should be <class 'str'>, not <class 'dict'>"
-    with pytest.raises(ConfigError, match=expected) as e:
-        opts.verify_all(cfg)
-    print(e)
 
 
 def test_inherit():
-    opts = gen_test_opts()
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-            "mid3": {},
-        },
+    root = ConfigOption("")
+    a = root.sub_options["a"] = ConfigOption("a")
+    a.sub_options["1"] = ConfigTestOption("1")
+    a.sub_options["2"] = ConfigTestOption("2")
+    a.sub_options["3"] = ConfigTestOption("3")
+    b = root.sub_options["b"] = ConfigOption("b")
+    b.sub_options["1"] = ConfigTestOption("1")
+    c = root.sub_options["c"] = ConfigOption("c")
+    c.inherits = ConfPath.from_string("/a")
+    c.create_if_inheritance_target_exists = True
+    d = root.sub_options["d"] = ConfigOption("d")
+    d.inherits = ConfPath.from_string("/a/1")
+    d.create_if_inheritance_target_exists = True
+    e = root.sub_options["e"] = ConfigOption("e")
+    e.inherits = ConfPath.from_string("/c")
+    e.create_if_inheritance_target_exists = True
+
+    values = {
+        "a": {"1": "a1", "2": "a2"},
+        "b": {"1": "B1"},
+        "c": {"1": "C1"},
+        "d": "D1",
+        "e": {"1": "E1", "2": "E2", "3": "E3"},
     }
-    mid3 = opts[co.pth("trunk")].insert(
-        co.ConfigOption("mid3", inherit_from=co.pth("trunk/mid2"))
+
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    ConfigInheritor(
+        root=root_ref,
+        root_values=ValueReference(ConfPath.from_string("/"), values),
+    ).inherit()
+    inherited_values = values
+    pprint(inherited_values)
+    assert inherited_values == {
+        "a": {"1": "a1", "2": "a2"},
+        "b": {"1": "B1"},
+        "c": {"1": "a1+C1", "2": "a2"},
+        "d": "a1+D1",
+        "e": {"1": "a1+C1+E1", "2": "a2+E2", "3": "E3"},
+    }
+
+
+class VerifiedConfigOption(ConfigOption):
+    def __init__(self, name, verified: set) -> None:
+        super().__init__(name)
+        self.verified = verified
+
+    def verify(self, values: ValueReference):
+        self.verified.add(values.value_path.pth)
+        return values.values
+
+
+def test_verify():
+    verified = set()
+    root = ConfigOption("")
+    a = root.sub_options["a"] = ConfigOption("a")
+    a.sub_options["1"] = VerifiedConfigOption("1", verified)
+    a.sub_options["2"] = VerifiedConfigOption("2", verified)
+    a.sub_options["3"] = VerifiedConfigOption("3", verified)
+    b = root.sub_options["b"] = ConfigOption("b")
+    b.sub_options["1"] = VerifiedConfigOption("1", verified)
+    c = root.sub_options["c"] = ConfigOption("c")
+    c.inherits = ConfPath.from_string("/a")
+    c.create_if_inheritance_target_exists = True
+    d = root.sub_options["d"] = ConfigOption("d")
+    d.inherits = ConfPath.from_string("/a/1")
+    d.create_if_inheritance_target_exists = True
+    e = root.sub_options["e"] = ConfigOption("e")
+    e.inherits = ConfPath.from_string("/c")
+    e.create_if_inheritance_target_exists = True
+
+    values = {
+        "a": {"1": "a1", "2": "a2"},
+        "b": {"1": "B1"},
+        "c": {"1": "C1"},
+        "d": "D1",
+        "e": {"1": "E1", "2": "E2", "3": "E3"},
+    }
+
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    verified_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), values),
+    ).verify()
+
+    assert verified_values == values
+    assert verified == {
+        ConfPath.from_string("a/1").pth,
+        ConfPath.from_string("a/2").pth,
+        ConfPath.from_string("b/1").pth,
+        ConfPath.from_string("c/1").pth,
+        ConfPath.from_string("d").pth,
+        ConfPath.from_string("e/1").pth,
+        ConfPath.from_string("e/2").pth,
+        ConfPath.from_string("e/3").pth,
+    }
+
+
+def test_default():
+    root = ConfigOption("")
+    root.insert_multiple(
+        [
+            # Default value
+            ConfigTestOption("a", default=DefaultValueValue("foo")),
+            # Refer to other (existing) value
+            ConfigTestOption(
+                "b", default=RefDefaultValue(ConfPath.from_string("a"), relative=True)
+            ),
+            ConfigTestOption(
+                "c", default=RefDefaultValue(ConfPath.from_string("a"), relative=False)
+            ),
+            ConfigTestOption(
+                "d", default=RefDefaultValue(ConfPath.from_string("b"), relative=False)
+            ),
+            ConfigTestOption(
+                "e", default=RefDefaultValue(ConfPath.from_string("c"), relative=False)
+            ),
+            # Refer to other (existing) value, but it already has a value
+            ConfigTestOption(
+                "f", default=RefDefaultValue(ConfPath.from_string("a"), relative=True)
+            ),
+            ConfigTestOption(
+                "g", default=RefDefaultValue(ConfPath.from_string("f"), relative=True)
+            ),
+            ConfigTestOption(
+                "h", default=RefDefaultValue(ConfPath.from_string("g"), relative=True)
+            ),
+            # No default value (should not create any values)
+            ConfigTestOption("i"),
+            ConfigTestOption("j", default=NoDefaultValue()),
+            ConfigTestOption("k", default=NoDefaultValue()),
+            # Refer to another (unset) value
+            ConfigTestOption("l", default=RefDefaultValue(ConfPath.from_string("k"))),
+            ConfigTestOption("r", default=RequiredValue()),
+            ConfigOption("s", default=DefaultValueValue({})).insert_multiple(
+                [
+                    ConfigTestOption("1", default=DefaultValueValue("s1d")),
+                    ConfigTestOption(
+                        "2", default=RefDefaultValue(ConfPath.from_string("g"))
+                    ),
+                    ConfigTestOption("3", default=NoDefaultValue()),
+                    ConfigTestOption(
+                        "4",
+                        default=RefDefaultValue(
+                            ConfPath.from_string("2"), relative=True
+                        ),
+                    ),
+                ]
+            ),
+        ]
     )
+    values = {"f": "bar", "j": "zzz", "r": "baz"}
 
-    cfg = co.ConfigNode.from_dict(d)
-    mid3.inherit(opts, cfg, co.pth("trunk/mid3"))
-    assert cfg.to_dict() == {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-            "mid3": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-        },
-    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=ValueReference(ConfPath.from_string("/"), values),
+    ).update_default()
 
-    cfg = co.ConfigNode.from_dict(d)
-    cfg.setdefault(co.pth("trunk/mid3/leaf22"), co.ConfigNode(value="32"))
-    mid3.inherit(opts, cfg, co.pth("trunk/mid3"))
-    assert cfg.to_dict() == {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-            "mid3": {
-                "leaf21": "21",
-                "leaf22": "32",
-            },
+    print(values)
+    assert values == {
+        "a": "foo",
+        "b": "foo",
+        "c": "foo",
+        "d": "foo",
+        "e": "foo",
+        "f": "bar",
+        "g": "bar",
+        "h": "bar",
+        "j": "zzz",
+        "r": "baz",
+        "s": {
+            "1": "s1d",
+            "2": "bar",
+            "4": "bar",
         },
     }
 
 
-def test_config_node():
-    d = {
-        "trunk": {
-            "mid1": {
-                "leaf11": "11",
-                "leaf12": "12",
-            },
-            "mid2": {
-                "leaf21": "21",
-                "leaf22": "22",
-            },
-        },
-    }
-    nodes = co.ConfigNode.from_dict(d)
-    for pth, val in nodes.iter_dfs():
-        print(pth, val.value)
-    assert nodes[co.pth("")] is nodes
-    assert nodes[co.pth("")].value is None
-    assert nodes[co.pth("trunk")].value is None
-    assert nodes[co.pth("trunk/mid1")].value is None
-    assert nodes[co.pth("trunk/mid2")].value is None
-    assert nodes[co.pth("trunk/mid1/leaf11")].value == "11"
-    assert nodes[co.pth("trunk/mid1/leaf12")].value == "12"
-    assert nodes[co.pth("trunk/mid2/leaf21")].value == "21"
-    assert nodes[co.pth("trunk/mid2/leaf22")].value == "22"
+def test_default_missing():
+    root = ConfigOption("")
+    root.insert_multiple(
+        [
+            ConfigTestOption("a", default=RequiredValue()),
+            ConfigTestOption("mis", default=RequiredValue()),
+        ]
+    )
+    values = {"a": "foo"}
 
-    d2 = nodes.to_dict()
-    assert d2 == d
-
-
-def test_joinpth():
-    assert co.joinpth(co.pth("a/b/c"), co.pth("d/e")) == co.pth("a/b/c/d/e")
-    assert co.joinpth(co.pth("a/b/c"), co.pth("^/e")) == co.pth("a/b/e")
-    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/e")) == co.pth("a/e")
-    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/^/e")) == co.pth("e")
-    assert co.joinpth(co.pth("a/b/c"), co.pth("^/^/^/^/e")) == co.pth("^/e")
-
-
-def test_real_config_inherit_cross_cmake():
-    opts = get_options(PurePosixPath("/project"), test=True)
-    d = {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "cmake": {
-                        "build_type": "Release",
-                        "generator": "Ninja",
-                        "source_path": "src",
-                        "env": {"foo": "bar"},
-                        "args": ["arg1", "arg2"],
-                        "find_python": False,
-                        "find_python3": True,
-                        "install_components": ["all_install"],
-                    },
-                    "cross": {
-                        "implementation": "cp",
-                        "version": "310",
-                        "abi": "cp310",
-                        "arch": "linux_aarch64",
-                        "toolchain_file": "aarch64-linux-gnu.cmake",
-                        "cmake": {
-                            "generator": "Unix Makefiles",
-                            "build_type": "RelWithDebInfo",
-                            "env": {"crosscompiling": "true"},
-                            "args": ["arg3", "arg4"],
-                        },
-                    },
-                    "linux": {
-                        "cmake": {
-                            "args": ["linux_arg"],
-                            "install_components": ["linux_install"],
-                        }
-                    },
-                    "windows": {
-                        "cmake": {
-                            "args": {
-                                "-": ["arg1"],
-                                "prepend": ["win_arg"],
-                                "+": ["arg1"],
-                            },
-                            "install_components": {"+": ["win_install"]},
-                        }
-                    },
-                },
-            },
-        }
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    pprint(cfg.to_dict())
-    opts.inherit_all(cfg)
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "cmake": {
-                        "build_type": "Release",
-                        "generator": "Ninja",
-                        "source_path": os.path.normpath("/project/src"),
-                        "args": ["arg1", "arg2"],
-                        "env": {"foo": "bar"},
-                        "install_components": ["all_install"],
-                        "find_python": False,
-                        "find_python3": True,
-                    },
-                    "cross": {
-                        "implementation": "cp",
-                        "version": "310",
-                        "abi": "cp310",
-                        "arch": "linux_aarch64",
-                        "toolchain_file": os.path.normpath(
-                            "/project/aarch64-linux-gnu.cmake"
-                        ),
-                        "cmake": {
-                            "build_type": "RelWithDebInfo",
-                            "generator": "Unix Makefiles",
-                            "source_path": os.path.normpath("/project/src"),
-                            "args": ["arg1", "arg2", "arg3", "arg4"],
-                            "install_components": ["all_install"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "env": {
-                                "foo": "bar",
-                                "crosscompiling": "true",
-                            },
-                        },
-                    },
-                    "linux": {
-                        "cmake": {
-                            "build_type": "Release",
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "args": ["arg1", "arg2", "linux_arg"],
-                            "env": {"foo": "bar"},
-                            "install_components": ["linux_install"],
-                            "find_python": False,
-                            "find_python3": True,
-                        }
-                    },
-                    "windows": {
-                        "cmake": {
-                            "build_type": "Release",
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "args": ["win_arg", "arg2", "arg1"],
-                            "env": {"foo": "bar"},
-                            "install_components": ["all_install", "win_install"],
-                            "find_python": False,
-                            "find_python3": True,
-                        }
-                    },
-                    "mac": {
-                        "cmake": {
-                            "build_type": "Release",
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "args": ["arg1", "arg2"],
-                            "env": {"foo": "bar"},
-                            "install_components": ["all_install"],
-                            "find_python": False,
-                            "find_python3": True,
-                        }
-                    },
-                },
-            },
-        }
-    }
-
-    opts.update_default_all(cfg)
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "module": {
-                        "name": "foobar",
-                        "directory": os.path.normpath("/project"),
-                        "namespace": False,
-                    },
-                    "editable": {
-                        "mode": "symlink",
-                    },
-                    "sdist": {
-                        "include": [],
-                        "exclude": [],
-                    },
-                    "cmake": {
-                        "build_type": "Release",
-                        "config": ["Release"],
-                        "generator": "Ninja",
-                        "source_path": os.path.normpath("/project/src"),
-                        "build_path": os.path.normpath(
-                            "/project/.py-build-cmake_cache/{build_config}"
-                        ),
-                        "options": {},
-                        "args": ["arg1", "arg2"],
-                        "find_python": False,
-                        "find_python3": True,
-                        "build_args": [],
-                        "build_tool_args": [],
-                        "install_args": [],
-                        "install_components": ["all_install"],
-                        "env": {"foo": "bar"},
-                        "pure_python": False,
-                        "python_abi": "auto",
-                        "abi3_minimum_cpython_version": 32,
-                    },
-                    "cross": {
-                        "implementation": "cp",
-                        "version": "310",
-                        "abi": "cp310",
-                        "arch": "linux_aarch64",
-                        "toolchain_file": os.path.normpath(
-                            "/project/aarch64-linux-gnu.cmake"
-                        ),
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "RelWithDebInfo",
-                            "config": ["RelWithDebInfo"],
-                            "generator": "Unix Makefiles",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2", "arg3", "arg4"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["all_install"],
-                            "env": {
-                                "foo": "bar",
-                                "crosscompiling": "true",
-                            },
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                    "linux": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2", "linux_arg"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["linux_install"],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                    "windows": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["win_arg", "arg2", "arg1"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["all_install", "win_install"],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                    "mac": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["all_install"],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                },
-            },
-        }
-    }
-
-
-def test_real_config_no_cross():
-    opts = get_options(PurePosixPath("/project"), test=True)
-    d = {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "cmake": {
-                        "build_type": "Release",
-                        "generator": "Ninja",
-                        "source_path": "src",
-                        "env": {"foo": "bar"},
-                        "args": ["arg1", "arg2"],
-                        "find_python": False,
-                        "find_python3": True,
-                    },
-                    "linux": {
-                        "cmake": {
-                            "install_components": ["linux_install"],
-                        }
-                    },
-                    "windows": {
-                        "cmake": {
-                            "install_components": ["win_install"],
-                        }
-                    },
-                },
-            },
-        }
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.inherit_all(cfg)
-    pprint(cfg.to_dict())
-    opts.update_default_all(cfg)
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "module": {
-                        "name": "foobar",
-                        "directory": os.path.normpath("/project"),
-                        "namespace": False,
-                    },
-                    "editable": {
-                        "mode": "symlink",
-                    },
-                    "sdist": {
-                        "include": [],
-                        "exclude": [],
-                    },
-                    "cmake": {
-                        "build_type": "Release",
-                        "config": ["Release"],
-                        "generator": "Ninja",
-                        "source_path": os.path.normpath("/project/src"),
-                        "build_path": os.path.normpath(
-                            "/project/.py-build-cmake_cache/{build_config}"
-                        ),
-                        "options": {},
-                        "args": ["arg1", "arg2"],
-                        "find_python": False,
-                        "find_python3": True,
-                        "build_args": [],
-                        "build_tool_args": [],
-                        "install_args": [],
-                        "install_components": [""],
-                        "env": {"foo": "bar"},
-                        "pure_python": False,
-                        "python_abi": "auto",
-                        "abi3_minimum_cpython_version": 32,
-                    },
-                    "linux": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["linux_install"],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                    "windows": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": ["win_install"],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                    "mac": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                        "cmake": {
-                            "build_type": "Release",
-                            "config": ["Release"],
-                            "generator": "Ninja",
-                            "source_path": os.path.normpath("/project/src"),
-                            "build_path": os.path.normpath(
-                                "/project/.py-build-cmake_cache/{build_config}"
-                            ),
-                            "options": {},
-                            "args": ["arg1", "arg2"],
-                            "find_python": False,
-                            "find_python3": True,
-                            "build_args": [],
-                            "build_tool_args": [],
-                            "install_args": [],
-                            "install_components": [""],
-                            "env": {"foo": "bar"},
-                            "pure_python": False,
-                            "python_abi": "auto",
-                            "abi3_minimum_cpython_version": 32,
-                        },
-                    },
-                },
-            },
-        }
-    }
-
-
-def test_real_config_no_cmake():
-    opts = get_options(PurePosixPath("/project"), test=True)
-    d = {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {"some-other-tool": {}, "py-build-cmake": {}},
-        }
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.inherit_all(cfg)
-    pprint(cfg.to_dict())
-    opts.update_default_all(cfg)
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "module": {
-                        "name": "foobar",
-                        "directory": os.path.normpath("/project"),
-                        "namespace": False,
-                    },
-                    "editable": {
-                        "mode": "symlink",
-                    },
-                    "sdist": {
-                        "include": [],
-                        "exclude": [],
-                    },
-                    "linux": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                    },
-                    "windows": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                    },
-                    "mac": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                    },
-                },
-            },
-        }
-    }
-
-
-def test_real_config_local_override():
-    opts = get_options(PurePosixPath("/project"), test=True)
-    d = {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {"some-other-tool": {}, "py-build-cmake": {}},
-        },
-        "py-build-cmake.local.toml": {"sdist": {"include": ["somefile*"]}},
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    opts.verify_all(cfg)
-    opts.override_all(cfg)
-    opts.inherit_all(cfg)
-    pprint(cfg.to_dict())
-    opts.update_default_all(cfg)
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "module": {
-                        "name": "foobar",
-                        "directory": os.path.normpath("/project"),
-                        "namespace": False,
-                    },
-                    "editable": {
-                        "mode": "symlink",
-                    },
-                    "sdist": {
-                        "include": ["somefile*"],
-                        "exclude": [],
-                    },
-                    "linux": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": ["somefile*"],
-                            "exclude": [],
-                        },
-                    },
-                    "windows": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": ["somefile*"],
-                            "exclude": [],
-                        },
-                    },
-                    "mac": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": ["somefile*"],
-                            "exclude": [],
-                        },
-                    },
-                },
-            },
-        },
-        "py-build-cmake.local.toml": {"sdist": {"include": ["somefile*"]}},
-    }
-
-
-def test_real_config_local_override_windows():
-    opts = get_options(PurePosixPath("/project"), test=True)
-    d = {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    # "editable":{},
-                    # "sdist":{},
-                },
-            },
-        },
-        "py-build-cmake.local.toml": {
-            "windows": {
-                "editable": {
-                    "mode": "hook",
-                },
-                "sdist": {"include": ["somefile*"]},
-            }
-        },
-    }
-    cfg = co.ConfigNode.from_dict(d)
-    print("\ninitial")
-    pprint(cfg.to_dict())
-    opts.verify_all(cfg)
-    print("\nverified")
-    pprint(cfg.to_dict())
-    opts.override_all(cfg)
-    print("\noverridden")
-    pprint(cfg.to_dict())
-    opts.inherit_all(cfg)
-    print("\ninherited")
-    pprint(cfg.to_dict())
-    opts.update_default_all(cfg)
-    print("\ndefaulted")
-    pprint(cfg.to_dict())
-    assert cfg.to_dict() == {
-        "pyproject.toml": {
-            "project": {"name": "foobar"},
-            "tool": {
-                "some-other-tool": {},
-                "py-build-cmake": {
-                    "module": {
-                        "name": "foobar",
-                        "directory": os.path.normpath("/project"),
-                        "namespace": False,
-                    },
-                    "editable": {
-                        "mode": "symlink",
-                    },
-                    "sdist": {
-                        "include": [],
-                        "exclude": [],
-                    },
-                    "linux": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                    },
-                    "windows": {
-                        "editable": {
-                            "mode": "hook",
-                        },
-                        "sdist": {
-                            "include": ["somefile*"],
-                            "exclude": [],
-                        },
-                    },
-                    "mac": {
-                        "editable": {
-                            "mode": "symlink",
-                        },
-                        "sdist": {
-                            "include": [],
-                            "exclude": [],
-                        },
-                    },
-                },
-            },
-        },
-        "py-build-cmake.local.toml": {
-            "windows": {
-                "editable": {
-                    "mode": "hook",
-                },
-                "sdist": {"include": ["somefile*"]},
-            }
-        },
-    }
-
-
-if __name__ == "__main__":
-    test_real_config_inherit_cross_cmake()
+    root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    defaulter = ConfigDefaulter(
+        root=root_ref,
+        root_values=ValueReference(ConfPath.from_string("/"), values),
+    )
+    with pytest.raises(MissingDefaultError, match="^mis requires a value$"):
+        defaulter.update_default()

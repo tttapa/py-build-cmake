@@ -3,23 +3,31 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+from copy import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Any, cast
+from typing import Any, Dict
 
 import pyproject_metadata
 from distlib.util import normalize_name  # type: ignore[import-untyped]
 
 from .. import __version__
 from ..common import Config, ConfigError
-from .config_options import ConfigNode, OverrideConfigOption
-from .pyproject_options import (
+from .options.config_path import ConfPath
+from .options.config_reference import ConfigReference
+from .options.default import ConfigDefaulter
+from .options.finalize import ConfigFinalizer
+from .options.inherit import ConfigInheritor
+from .options.override import ConfigOverrider
+from .options.pyproject_options import (
     get_component_options,
     get_cross_path,
     get_options,
     get_tool_pbc_path,
 )
+from .options.value_reference import ValueReference
+from .options.verify import ConfigVerifier
 from .quirks import config_quirks
 
 try:
@@ -99,9 +107,10 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
         "pyproject.toml": pyproject,
         localconfig_fname: localconfig,
         crossconfig_fname: crossconfig,
+        "<command-line>": {},  # FIXME: implement this
     }
     # Additional options for config_options
-    extra_options: list[OverrideConfigOption] = []
+    overrides: Dict[ConfPath, ConfPath] = {}
 
     extra_flag_paths = {
         "--local": get_tool_pbc_path(),
@@ -114,22 +123,16 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
                 fullpath = path
             else:
                 fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
-            extra_options.append(
-                OverrideConfigOption(
-                    str(fullpath),
-                    "Command line override flag",
-                    targetpath=targetpath,
-                )
-            )
+            overrides[ConfPath((str(fullpath),))] = targetpath
             config_files[str(fullpath)] = try_load_toml(fullpath)
 
-    return process_config(pyproject_path, config_files, extra_options)
+    return process_config(pyproject_path, config_files, overrides)
 
 
 def process_config(
     pyproject_path: Path,
     config_files: dict,
-    extra_options: list[OverrideConfigOption],
+    overrides: Dict[ConfPath, ConfPath],
     test: bool = False,
 ) -> Config:
     pyproject = config_files["pyproject.toml"]
@@ -153,73 +156,116 @@ def process_config(
     cfg = Config(meta)
     cfg.package_name = meta.name
 
-    # Additional options from command-line overrides
+    # py-build-cmake option tree
     opts = get_options(pyproject_path.parent, test=test)
-    for o in extra_options:
-        opts.insert(o)
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    root_val = ValueReference(ConfPath.from_string("/"), config_files)
 
     # Verify the configuration and apply the overrides
-    tree_config = ConfigNode.from_dict(config_files)
-    opts.verify_all(tree_config)
-    opts.override_all(tree_config)
+    root_val.set_value(
+        "pyproject.toml",
+        ConfigVerifier(
+            root=root_ref,
+            ref=root_ref.sub_ref("pyproject.toml"),
+            values=root_val.sub_ref("pyproject.toml"),
+        ).verify(),
+    )
+    for override, target in overrides.items():
+        root_val.set_value(
+            override,
+            ConfigVerifier(
+                root=root_ref,
+                ref=root_ref.sub_ref(target),
+                values=root_val.sub_ref(override),
+            ).verify(),
+        )
+        root_val.set_value(
+            target,
+            ConfigOverrider(
+                root=root_ref,
+                ref=root_ref.sub_ref(target),
+                values=root_val.sub_ref(target),
+                new_values=root_val.sub_ref(override),
+            ).override(),
+        )
 
     # Tweak the configuration depending on the environment and platform
-    tool_tree_cfg = tree_config[("pyproject.toml", "tool", "py-build-cmake")]
-    config_quirks(tool_tree_cfg)
+    config_quirks(root_val.sub_ref(get_tool_pbc_path()))
+    set_up_os_specific_cross_inheritance(root_ref, root_val)
 
-    set_up_os_specific_cross_inheritance(opts, tool_tree_cfg)
-    opts.inherit_all(tree_config)
-    opts.update_default_all(tree_config)
-    dictcfg = cast(dict, tree_config.to_dict())
-    tool_cfg = dictcfg["pyproject.toml"]["tool"]["py-build-cmake"]
+    # Carry out inheritance between options
+    ConfigInheritor(
+        root=root_ref,
+        root_values=root_val,
+    ).inherit()
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=root_val,
+        ref=root_ref.sub_ref("pyproject.toml"),
+        value_path=ConfPath.from_string("pyproject.toml"),
+    ).update_default()
+    root_val.set_value(
+        "pyproject.toml",
+        ConfigFinalizer(
+            root=root_ref,
+            ref=root_ref.sub_ref("pyproject.toml"),
+            values=root_val.sub_ref("pyproject.toml"),
+        ).finalize(),
+    )
+    pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
 
     # Store the module configuration
     s = "module"
-    if s in tool_cfg:
+    if pbc_value_ref.is_value_set(s):
         # Normalize the import and wheel name of the package
-        normname = tool_cfg[s]["name"].replace("-", "_")
-        tool_cfg[s]["name"] = normname
-        cfg.module = tool_cfg[s]
+        name_path = ConfPath((s, "name"))
+        normname = pbc_value_ref.get_value(name_path).replace("-", "_")
+        pbc_value_ref.set_value(name_path, normname)
+        cfg.module = pbc_value_ref.get_value(s)
     else:
         msg = "Missing [tools.py-build-cmake.module] section"
         raise AssertionError(msg)
 
     # Store the editable configuration
     cfg.editable = {
-        os: tool_cfg[os]["editable"]
+        os: pbc_value_ref.get_value(ConfPath((os, "editable")))
         for os in ("linux", "windows", "mac", "cross")
-        if os in tool_cfg and "editable" in tool_cfg[os]
+        if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
     }
 
     # Store the sdist folders (this is based on flit)
-    def get_sdist_cludes(cfg):
+    def get_sdist_cludes(v: ValueReference):
         return {
-            clude + "_patterns": cfg["sdist"][clude] for clude in ("include", "exclude")
+            clude + "_patterns": v.get_value(ConfPath(("sdist", clude)))
+            for clude in ("include", "exclude")
         }
 
     cfg.sdist = {
-        os: get_sdist_cludes(tool_cfg[os])
+        os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
         for os in ("linux", "windows", "mac", "cross")
-        if os in tool_cfg
+        if pbc_value_ref.is_value_set(os)
     }
 
     # Store the CMake configuration
     cfg.cmake = {
-        os: tool_cfg[os]["cmake"]
+        os: pbc_value_ref.get_value(ConfPath((os, "cmake")))
         for os in ("linux", "windows", "mac", "cross")
-        if os in tool_cfg and "cmake" in tool_cfg[os]
+        if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
     }
     cfg.cmake = cfg.cmake or None
 
     # Store stubgen configuration
     s = "stubgen"
-    if s in tool_cfg:
-        cfg.stubgen = tool_cfg[s]
+    if pbc_value_ref.is_value_set(s):
+        cfg.stubgen = pbc_value_ref.get_value(s)
 
     # Store the cross compilation configuration
     s = "cross"
-    if s in tool_cfg:
-        cfg.cross = tool_cfg[s]
+    if pbc_value_ref.is_value_set(s):
+        cfg.cross = copy(pbc_value_ref.get_value(s))
+        if cfg.cross is not None:
+            for k in ("cmake", "sdist", "editable"):
+                cfg.cross.pop(k, None)
 
     # Check for incompatible options
     cfg.check()
@@ -227,17 +273,21 @@ def process_config(
     return cfg
 
 
-def set_up_os_specific_cross_inheritance(opts, tool_tree_cfg):
+def set_up_os_specific_cross_inheritance(
+    root_ref: ConfigReference, root_val: ValueReference
+):
     """Update the cross-compilation configuration to inherit from the
-    corresponding OS configuration."""
+    corresponding OS-specific configuration."""
     cross_os = None
     with contextlib.suppress(KeyError):
-        cross_os = tool_tree_cfg[("cross", "os")].value
+        os_path = get_tool_pbc_path().join("cross").join("os")
+        cross_os = root_val.get_value(os_path)
 
     if cross_os is not None:
         for s in ("cmake", "sdist", "editable"):
-            inherit_from = (*get_tool_pbc_path(), cross_os, s)
-            opts[(*get_cross_path(), s)].inherit_from = inherit_from
+            parent = get_tool_pbc_path().join(cross_os).join(s)
+            child = get_cross_path().join(s)
+            root_ref.sub_ref(child).config.inherits = parent
 
 
 def print_config_verbose(cfg: Config):
@@ -317,18 +367,43 @@ def process_component_config(pyproject_path: Path, pyproject, config_files):
     cfg = ComponentConfig(meta)
     cfg.package_name = meta.name
 
+    # py-build-cmake option tree
     opts = get_component_options(pyproject_path.parent)
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    root_val = ValueReference(ConfPath.from_string("/"), config_files)
 
-    tree_config = ConfigNode.from_dict(config_files)
-    opts.verify_all(tree_config)
-    opts.override_all(tree_config)
-    opts.inherit_all(tree_config)
-    opts.update_default_all(tree_config)
-    dictcfg = cast(dict, tree_config.to_dict())
-    tool_cfg = dictcfg["pyproject.toml"]["tool"]["py-build-cmake"]
+    # Verify the configuration and apply the overrides
+    root_val.set_value(
+        "pyproject.toml",
+        ConfigVerifier(
+            root=root_ref,
+            ref=root_ref.sub_ref("pyproject.toml"),
+            values=root_val.sub_ref("pyproject.toml"),
+        ).verify(),
+    )
+    # Carry out inheritance between options
+    ConfigInheritor(
+        root=root_ref,
+        root_values=root_val,
+    ).inherit()
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=root_val,
+        ref=root_ref.sub_ref("pyproject.toml"),
+        value_path=ConfPath.from_string("pyproject.toml"),
+    ).update_default()
+    root_val.set_value(
+        "pyproject.toml",
+        ConfigFinalizer(
+            root=root_ref,
+            ref=root_ref.sub_ref("pyproject.toml"),
+            values=root_val.sub_ref("pyproject.toml"),
+        ).finalize(),
+    )
+    pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
 
     # Store the component configuration
-    cfg.component = tool_cfg["component"]
+    cfg.component = pbc_value_ref.get_value("component")
 
     return cfg
 

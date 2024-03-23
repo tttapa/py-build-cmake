@@ -21,7 +21,8 @@ from ..common.util import (
     python_sysconfig_platform_to_cmake_platform_win,
     python_sysconfig_platform_to_cmake_processor_win,
 )
-from .config_options import ConfigNode, pth
+from .options.config_path import ConfPath
+from .options.value_reference import ValueReference
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def get_python_lib(library_dirs: str | list[str] | None) -> Path | None:
 
 
 def cross_compile_win(
-    config: ConfigNode, plat_name, library_dirs, cmake_platform, cmake_proc
+    config: ValueReference, plat_name, library_dirs, cmake_platform, cmake_proc
 ):
     """Update the configuration to include a cross-compilation configuration
     that builds for the given platform and processor. If library_dirs contains
@@ -61,7 +62,7 @@ def cross_compile_win(
         "Automatically enabling cross-compilation for %s",
         cmake_platform,
     )
-    assert not config.contains("cross")
+    assert not config.is_value_set("cross")
     cross_cfg = {
         "os": "windows",
         "arch": platform_to_platform_tag(plat_name),
@@ -83,11 +84,11 @@ def cross_compile_win(
         logger.warning(
             "Python library was not found in DIST_EXTRA_CONFIG.build_ext.library_dirs."
         )
-    config.setdefault(pth("cross"), ConfigNode.from_dict(cross_cfg))
+    config.set_value("cross", cross_cfg)
 
 
 def handle_cross_win(
-    config: ConfigNode, plat_name: str, library_dirs: str | list[str] | None
+    config: ValueReference, plat_name: str, library_dirs: str | list[str] | None
 ):
     """Try to configure cross-compilation for the given Windows platform.
     library_dirs should contain the directory with the Python library."""
@@ -104,7 +105,7 @@ def handle_cross_win(
         )
 
 
-def handle_dist_extra_config_win(config: ConfigNode, dist_extra_conf: str):
+def handle_dist_extra_config_win(config: ValueReference, dist_extra_conf: str):
     """Read the given distutils configuration file and use it to configure
     cross-compilation if appropriate."""
     distcfg = configparser.ConfigParser()
@@ -117,7 +118,7 @@ def handle_dist_extra_config_win(config: ConfigNode, dist_extra_conf: str):
         handle_cross_win(config, plat_name, library_dirs)
 
 
-def config_quirks_win(config: ConfigNode):
+def config_quirks_win(config: ValueReference):
     """
     Explanation:
     The cibuildwheel tool sets the DIST_EXTRA_CONFIG environment variable when
@@ -131,11 +132,11 @@ def config_quirks_win(config: ConfigNode):
     """
     dist_extra_conf = os.getenv("DIST_EXTRA_CONFIG")
     if dist_extra_conf is not None:
-        if config.contains("cross"):
+        if config.is_value_set("cross"):
             logger.warning(
                 "Cross-compilation configuration was not empty, so I'm ignoring DIST_EXTRA_CONFIG"
             )
-        elif not config.contains("cmake"):
+        elif not config.is_value_set("cmake"):
             logger.warning(
                 "CMake configuration was empty, so I'm ignoring DIST_EXTRA_CONFIG"
             )
@@ -143,7 +144,7 @@ def config_quirks_win(config: ConfigNode):
             handle_dist_extra_config_win(config, dist_extra_conf)
 
 
-def cross_compile_mac(config: ConfigNode, archs):
+def cross_compile_mac(config: ValueReference, archs):
     """Update the configuration to include a cross-compilation configuration
     that builds for the given architectures."""
     logger.info(
@@ -151,7 +152,7 @@ def cross_compile_mac(config: ConfigNode, archs):
         ", ".join(archs),
         platform.machine(),
     )
-    assert not config.contains("cross")
+    assert not config.is_value_set("cross")
     cross_cfg: dict[str, Any] = {
         "os": "mac",
         "cmake": {
@@ -171,10 +172,10 @@ def cross_compile_mac(config: ConfigNode, archs):
         abi = sys.abiflags
         env = cross_cfg["cmake"]["env"] = {}
         env["SETUPTOOLS_EXT_SUFFIX"] = f".cpython-{version}{abi}-darwin.so"
-    config.setdefault(pth("cross"), ConfigNode.from_dict(cross_cfg))
+    config.set_value("cross", cross_cfg)
 
 
-def config_quirks_mac(config: ConfigNode):
+def config_quirks_mac(config: ValueReference):
     """Sets CMAKE_OSX_ARCHITECTURES if $ENV{ARCHFLAGS} is set
     on macOS. This ensures compatibility with cibuildwheel. If the interpreter
     architecture is not in the ARCHFLAGS, also enables cross-compilation."""
@@ -187,12 +188,12 @@ def config_quirks_mac(config: ConfigNode):
             "ARCHFLAGS was set, but its value was not valid, so I'm ignoring it"
         )
         return
-    if config.contains("cross"):
+    if config.is_value_set("cross"):
         logger.warning(
             "Cross-compilation configuration was not empty, so I'm ignoring ARCHFLAGS"
         )
         return
-    if not config.contains("cmake"):
+    if not config.is_value_set("cmake"):
         logger.warning("CMake configuration was empty, so I'm ignoring ARCHFLAGS")
         return
     if platform.machine() not in archs:
@@ -203,19 +204,21 @@ def config_quirks_mac(config: ConfigNode):
             ", ".join(archs),
             platform.machine(),
         )
-        opts = config.setdefault(("cmake", "options"), ConfigNode())
-        opts.setdefault("CMAKE_OSX_ARCHITECTURES", ConfigNode(";".join(archs)))
+        config.set_value_default(ConfPath.from_string("cmake/options"), {})
+        config.set_value_default(
+            ConfPath.from_string("cmake/options/CMAKE_OSX_ARCHITECTURES"),
+            ";".join(archs),
+        )
 
 
-def config_quirks_pypy(config: ConfigNode):
-    assert config.sub is not None
+def config_quirks_pypy(config: ValueReference):
     if sys.version_info < (3, 8):
         with contextlib.suppress(KeyError):
-            del config.sub["stubgen"]
+            del config.values["stubgen"]
             logger.info("Mypy is not supported on PyPy <3.8, disabling stubgen")
 
 
-def config_quirks(config: ConfigNode):
+def config_quirks(config: ValueReference):
     dispatch = {
         "Windows": config_quirks_win,
         "Darwin": config_quirks_mac,
