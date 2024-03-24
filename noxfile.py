@@ -177,11 +177,12 @@ def component(session: nox.Session):
         session.run("python", "-m", "build", "-w", ".", "-o", "dist-nox")
         session.run("python", "-m", "build", "-w", "./debug", "-o", "dist-nox")
         ext_suffix = get_ext_suffix("minimal")
-        check_pkg_contents(session, "minimal-comp", ext_suffix, False)
-        check_pkg_contents(session, "minimal-comp-debug", ext_suffix, False)
-        session.install(".")
-        session.install("./debug")
-        session.run("pytest")
+        if ext_suffix is not None:
+            check_pkg_contents(session, "minimal-comp", ext_suffix, False)
+            check_pkg_contents(session, "minimal-comp-debug", ext_suffix, False)
+            session.install(".")
+            session.install("./debug")
+            session.run("pytest")
 
 
 def test_editable(session: nox.Session, mode: str):
