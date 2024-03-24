@@ -95,36 +95,24 @@ def read_config(
         raise ConfigError(msg)
 
     # Load local override
-    localconfig_fname = "py-build-cmake.local.toml"
-    localconfig_path = pyproject_folder / localconfig_fname
-    localconfig = None
+    localconfig_path = pyproject_folder / "py-build-cmake.local.toml"
     if localconfig_path.exists():
-        localconfig = try_load_toml(localconfig_path)
-        # treat empty local override as no local override
-        localconfig = localconfig or None
-
+        flag_overrides.setdefault("--local", []).insert(0, str(localconfig_path))
     # Load override for cross-compilation
-    crossconfig_fname = "py-build-cmake.cross.toml"
-    crossconfig_path = pyproject_folder / crossconfig_fname
-    crossconfig = None
+    crossconfig_path = pyproject_folder / "py-build-cmake.cross.toml"
     if crossconfig_path.exists():
-        crossconfig = try_load_toml(crossconfig_path)
-        crossconfig = crossconfig or None
+        flag_overrides.setdefault("--cross", []).insert(0, str(crossconfig_path))
 
     # File names mapping to the actual dict with the config
-    config_files: dict[str, dict[str, Any] | None] = {
+    config_files: dict[str, dict[str, Any]] = {
         "pyproject.toml": pyproject,
-        localconfig_fname: localconfig,
-        crossconfig_fname: crossconfig,
         "<command-line>": {},  # FIXME: implement this
     }
+
     # Additional options for config_options
     overrides: dict[ConfPath, ConfPath] = {}
-
-    extra_flag_paths = {
-        "--local": get_tool_pbc_path(),
-        "--cross": get_cross_path(),
-    }
+    # What to override
+    extra_flag_paths = {"--local": get_tool_pbc_path(), "--cross": get_cross_path()}
 
     for flag, targetpath in extra_flag_paths.items():
         for path in map(Path, flag_overrides[flag]):
@@ -132,15 +120,17 @@ def read_config(
                 fullpath = path
             else:
                 fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
-            overrides[ConfPath((str(fullpath),))] = targetpath
-            config_files[str(fullpath)] = try_load_toml(fullpath)
+            config = try_load_toml(fullpath)
+            if config:  # Treat empty file as no override
+                config_files[str(fullpath)] = config
+                overrides[ConfPath((str(fullpath),))] = targetpath
 
     return process_config(pyproject_path, config_files, overrides)
 
 
 def process_config(
     pyproject_path: Path,
-    config_files: dict[str, dict[str, Any] | None],
+    config_files: dict[str, dict[str, Any]],
     overrides: dict[ConfPath, ConfPath],
     test: bool = False,
 ) -> Config:
