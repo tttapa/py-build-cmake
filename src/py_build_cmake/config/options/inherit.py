@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Set
-
 from .config_path import ConfPath
 from .config_reference import ConfigReference
 from .override import ConfigOverrider
@@ -15,7 +13,7 @@ class ConfigInheritor:
         root_values: ValueReference,
         ref: ConfigReference | None = None,
         value_path: ConfPath | None = None,
-        done: Set[ConfPath] | None = None,
+        done: set[tuple[str, ...]] | None = None,
     ) -> None:
         if ref is None:
             ref = root

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import copy
 from difflib import get_close_matches
-from typing import Dict, Iterable
+from typing import Iterable
 
 from ...common import ConfigError
 from .config_path import ConfPath
@@ -27,7 +27,7 @@ class ConfigOption:
         self.name = name
         self.description = description
         self.example = example
-        self.sub_options: Dict[str, ConfigOption] = {}
+        self.sub_options: dict[str, ConfigOption] = {}
         self.inherits = inherit_from
         self.default: DefaultValue = default
         self.create_if_inheritance_target_exists = create_if_inheritance_target_exists

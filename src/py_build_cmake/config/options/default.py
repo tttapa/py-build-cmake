@@ -25,7 +25,7 @@ class DefaultValue(ABC):
     @abstractmethod
     def get_default(
         self,
-        defaulter: "ConfigDefaulter",
+        defaulter: ConfigDefaulter,
     ) -> DefaultValueWrapper | None: ...
 
     @abstractmethod

@@ -92,8 +92,6 @@ extend-ignore = [
     "RET505",  # Unnecessary `elif` after `return`
     "RET506",  # Unnecessary `elif` after `raise`
     "PGH003",  # Specific rules `type: ignore`
-    "UP006",   # Using dict[...] instead of Dict[...]
-    "UP037",   # Quoted annotations
 ]
 
 [tool.ruff.lint.per-file-ignores]

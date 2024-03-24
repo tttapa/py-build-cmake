@@ -68,8 +68,8 @@ class Module:
         """
         assert self.is_package or not self.is_namespace
 
-        def _include(p):
-            p = Path(p)
+        def _include(s: str | Path):
+            p = Path(s)
             return p.name != "__pycache__" and not p.name.endswith(".pyc")
 
         if self.is_package:
@@ -92,16 +92,16 @@ class Config:
     standard_metadata: pyproject_metadata.StandardMetadata
     package_name: str = field(default="")
     module: dict[str, str | bool] = field(default_factory=dict)
-    editable: dict[str, Any] = field(default_factory=dict)
+    editable: dict[str, dict[str, Any]] = field(default_factory=dict)
     sdist: dict[str, dict[str, Any]] = field(default_factory=dict)
-    cmake: dict[str, Any] | None = field(default=None)
+    cmake: dict[str, dict[str, Any]] | None = field(default=None)
     stubgen: dict[str, Any] | None = field(default=None)
     cross: dict[str, Any] | None = field(default=None)
 
     @property
     def referenced_files(self) -> list[Path]:
         metadata = self.standard_metadata
-        res = []
+        res: list[Path] = []
         if metadata.readme is not None and metadata.readme.file is not None:
             res += [metadata.readme.file]
         if metadata.license is not None and metadata.license.file is not None:
@@ -165,7 +165,7 @@ class Command:
     kwargs: dict[str, Any]
 
 
-def format_and_rethrow_exception(e):
+def format_and_rethrow_exception(e: BaseException):
     """Raises a FormattedErrorMessage from the given exception"""
     if isinstance(e, FormattedErrorMessage):
         raise e

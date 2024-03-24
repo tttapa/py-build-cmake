@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Tuple
-
 
 class ConfPath:
-    def __init__(self, pth: Tuple[str, ...] = ()):
+    def __init__(self, pth: tuple[str, ...] = ()):
         self.pth = pth
 
     @classmethod
@@ -14,7 +12,7 @@ class ConfPath:
     def __str__(self):
         return "/".join(".." if x == "^" else x for x in self.pth)
 
-    def join(self, suffix: str | "ConfPath"):
+    def join(self, suffix: str | ConfPath):
         if isinstance(suffix, str):
             suffix = ConfPath((suffix,))
         p1 = self.pth
@@ -24,10 +22,10 @@ class ConfPath:
             p2 = p2[1:]
         return ConfPath(p1 + p2)
 
-    def split(self) -> Tuple[ConfPath, str]:
+    def split(self) -> tuple[ConfPath, str]:
         return ConfPath(self.pth[:-1]), self.pth[-1]
 
-    def split_front(self) -> Tuple[str, ConfPath]:
+    def split_front(self) -> tuple[str, ConfPath]:
         return self.pth[0], ConfPath(self.pth[1:])
 
     def __bool__(self):

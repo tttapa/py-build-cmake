@@ -7,7 +7,7 @@ from copy import copy
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict
+from typing import Any, Dict, Optional, cast
 
 import pyproject_metadata
 from distlib.util import normalize_name  # type: ignore[import-untyped]
@@ -39,7 +39,9 @@ logger = logging.getLogger(__name__)
 
 
 def read_full_config(
-    pyproject_path: Path, config_settings: dict | None, verbose: bool
+    pyproject_path: Path,
+    config_settings: dict[str, str | list[str]] | None,
+    verbose: bool,
 ) -> Config:
     config_settings = config_settings or {}
     overrides = parse_config_settings_overrides(config_settings, verbose)
@@ -49,11 +51,16 @@ def read_full_config(
     return cfg
 
 
-def parse_config_settings_overrides(config_settings: dict, verbose: bool):
+def parse_config_settings_overrides(
+    config_settings: dict[str, str | list[str]], verbose: bool
+):
     if verbose:
         print("Configuration settings:")
         pprint(config_settings)
-    listify = lambda x: x if isinstance(x, list) else [x]
+
+    def listify(x: str | list[str]):
+        return x if isinstance(x, list) else [x]
+
     keys = ["--local", "--cross"]
     overrides = {key: listify(config_settings.get(key) or []) for key in keys}
     if verbose:
@@ -76,11 +83,13 @@ def try_load_toml(path: Path):
         raise ConfigError(msg) from e
 
 
-def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
+def read_config(
+    pyproject_path: str | Path, flag_overrides: dict[str, list[str]]
+) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
     pyproject_folder = pyproject_path.parent
-    pyproject = try_load_toml(pyproject_path)
+    pyproject: dict[str, Any] = try_load_toml(pyproject_path)
     if "project" not in pyproject:
         msg = "Missing [project] table"
         raise ConfigError(msg)
@@ -103,14 +112,14 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
         crossconfig = crossconfig or None
 
     # File names mapping to the actual dict with the config
-    config_files = {
+    config_files: dict[str, dict[str, Any] | None] = {
         "pyproject.toml": pyproject,
         localconfig_fname: localconfig,
         crossconfig_fname: crossconfig,
         "<command-line>": {},  # FIXME: implement this
     }
     # Additional options for config_options
-    overrides: Dict[ConfPath, ConfPath] = {}
+    overrides: dict[ConfPath, ConfPath] = {}
 
     extra_flag_paths = {
         "--local": get_tool_pbc_path(),
@@ -131,11 +140,12 @@ def read_config(pyproject_path, flag_overrides: dict[str, list[str]]) -> Config:
 
 def process_config(
     pyproject_path: Path,
-    config_files: dict,
-    overrides: Dict[ConfPath, ConfPath],
+    config_files: dict[str, dict[str, Any] | None],
+    overrides: dict[ConfPath, ConfPath],
     test: bool = False,
 ) -> Config:
     pyproject = config_files["pyproject.toml"]
+    assert pyproject is not None
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:
@@ -162,6 +172,81 @@ def process_config(
     root_val = ValueReference(ConfPath.from_string("/"), config_files)
 
     # Verify the configuration and apply the overrides
+    verify_and_override_config(overrides, root_ref, root_val)
+
+    # Tweak the configuration depending on the environment and platform
+    config_quirks(root_val.sub_ref(get_tool_pbc_path()))
+    set_up_os_specific_cross_inheritance(root_ref, root_val)
+
+    # Carry out inheritance between options
+    inherit_default_and_finalize_config(root_ref, root_val)
+    pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
+
+    # Store the module configuration
+    s = "module"
+    if pbc_value_ref.is_value_set(s):
+        # Normalize the import and wheel name of the package
+        name_path = ConfPath((s, "name"))
+        name = cast(str, pbc_value_ref.get_value(name_path))
+        normname = name.replace("-", "_")
+        pbc_value_ref.set_value(name_path, normname)
+        cfg.module = pbc_value_ref.get_value(s)
+    else:
+        msg = "Missing [tools.py-build-cmake.module] section"
+        raise AssertionError(msg)
+
+    # Store the editable configuration
+    cfg.editable = {
+        os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "editable"))))
+        for os in ("linux", "windows", "mac", "cross")
+        if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
+    }
+
+    # Store the sdist folders (this is based on flit)
+    def get_sdist_cludes(v: ValueReference) -> dict[str, Any]:
+        return {
+            clude + "_patterns": v.get_value(ConfPath(("sdist", clude)))
+            for clude in ("include", "exclude")
+        }
+
+    cfg.sdist = {
+        os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
+        for os in ("linux", "windows", "mac", "cross")
+        if pbc_value_ref.is_value_set(os)
+    }
+
+    # Store the CMake configuration
+    cfg.cmake = {
+        os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "cmake"))))
+        for os in ("linux", "windows", "mac", "cross")
+        if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
+    }
+    cfg.cmake = cfg.cmake or None
+
+    # Store stubgen configuration
+    s = "stubgen"
+    if pbc_value_ref.is_value_set(s):
+        cfg.stubgen = pbc_value_ref.get_value(s)
+
+    # Store the cross compilation configuration
+    s = "cross"
+    if pbc_value_ref.is_value_set(s):
+        cfg.cross = copy(cast(Optional[Dict[str, Any]], pbc_value_ref.get_value(s)))
+        if cfg.cross is not None:
+            for k in ("cmake", "sdist", "editable"):
+                cfg.cross.pop(k, None)
+
+    # Check for incompatible options
+    cfg.check()
+
+    return cfg
+
+
+def verify_and_override_config(
+    overrides: dict[ConfPath, ConfPath],
+    root_ref: ConfigReference,
+    root_val: ValueReference,
+):
     root_val.set_value(
         "pyproject.toml",
         ConfigVerifier(
@@ -189,11 +274,10 @@ def process_config(
             ).override(),
         )
 
-    # Tweak the configuration depending on the environment and platform
-    config_quirks(root_val.sub_ref(get_tool_pbc_path()))
-    set_up_os_specific_cross_inheritance(root_ref, root_val)
 
-    # Carry out inheritance between options
+def inherit_default_and_finalize_config(
+    root_ref: ConfigReference, root_val: ValueReference
+):
     ConfigInheritor(
         root=root_ref,
         root_values=root_val,
@@ -212,65 +296,6 @@ def process_config(
             values=root_val.sub_ref("pyproject.toml"),
         ).finalize(),
     )
-    pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
-
-    # Store the module configuration
-    s = "module"
-    if pbc_value_ref.is_value_set(s):
-        # Normalize the import and wheel name of the package
-        name_path = ConfPath((s, "name"))
-        normname = pbc_value_ref.get_value(name_path).replace("-", "_")
-        pbc_value_ref.set_value(name_path, normname)
-        cfg.module = pbc_value_ref.get_value(s)
-    else:
-        msg = "Missing [tools.py-build-cmake.module] section"
-        raise AssertionError(msg)
-
-    # Store the editable configuration
-    cfg.editable = {
-        os: pbc_value_ref.get_value(ConfPath((os, "editable")))
-        for os in ("linux", "windows", "mac", "cross")
-        if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
-    }
-
-    # Store the sdist folders (this is based on flit)
-    def get_sdist_cludes(v: ValueReference):
-        return {
-            clude + "_patterns": v.get_value(ConfPath(("sdist", clude)))
-            for clude in ("include", "exclude")
-        }
-
-    cfg.sdist = {
-        os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
-        for os in ("linux", "windows", "mac", "cross")
-        if pbc_value_ref.is_value_set(os)
-    }
-
-    # Store the CMake configuration
-    cfg.cmake = {
-        os: pbc_value_ref.get_value(ConfPath((os, "cmake")))
-        for os in ("linux", "windows", "mac", "cross")
-        if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
-    }
-    cfg.cmake = cfg.cmake or None
-
-    # Store stubgen configuration
-    s = "stubgen"
-    if pbc_value_ref.is_value_set(s):
-        cfg.stubgen = pbc_value_ref.get_value(s)
-
-    # Store the cross compilation configuration
-    s = "cross"
-    if pbc_value_ref.is_value_set(s):
-        cfg.cross = copy(pbc_value_ref.get_value(s))
-        if cfg.cross is not None:
-            for k in ("cmake", "sdist", "editable"):
-                cfg.cross.pop(k, None)
-
-    # Check for incompatible options
-    cfg.check()
-
-    return cfg
 
 
 def set_up_os_specific_cross_inheritance(
@@ -281,7 +306,7 @@ def set_up_os_specific_cross_inheritance(
     cross_os = None
     with contextlib.suppress(KeyError):
         os_path = get_tool_pbc_path().join("cross").join("os")
-        cross_os = root_val.get_value(os_path)
+        cross_os = cast(Optional[str], root_val.get_value(os_path))
 
     if cross_os is not None:
         for s in ("cmake", "sdist", "editable"):
@@ -319,7 +344,7 @@ class ComponentConfig:
 
 
 def read_full_component_config(
-    pyproject_path: Path, config_settings: dict | None, verbose: bool
+    pyproject_path: Path, config_settings: dict[str, list[Any]] | None, verbose: bool
 ) -> ComponentConfig:
     config_settings = config_settings or {}
     cfg = read_component_config(pyproject_path)
@@ -339,13 +364,17 @@ def read_component_config(pyproject_path: Path) -> ComponentConfig:
         raise ConfigError(msg)
 
     # File names mapping to the actual dict with the config
-    config_files = {
+    config_files: dict[str, dict[str, Any]] = {
         "pyproject.toml": pyproject,
     }
     return process_component_config(pyproject_path, pyproject, config_files)
 
 
-def process_component_config(pyproject_path: Path, pyproject, config_files):
+def process_component_config(
+    pyproject_path: Path,
+    pyproject: dict[str, Any],
+    config_files: dict[str, dict[str, Any]],
+):
     # Check the package/module name and normalize it
     f = "name"
     if f in pyproject["project"]:

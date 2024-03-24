@@ -7,7 +7,6 @@ import sysconfig
 from dataclasses import dataclass
 from pathlib import Path
 from string import Template
-from typing import Dict
 
 from .. import __version__
 from ..common import PackageInfo
@@ -84,7 +83,7 @@ class CMaker:
         self.install_settings = install_settings
         self.package_info = package_info
         self.runner = runner
-        self.environment: Dict[str, str] | None = None
+        self.environment: dict[str, str] | None = None
 
     def run(self, *args, **kwargs):
         return self.runner.run(*args, **kwargs)
