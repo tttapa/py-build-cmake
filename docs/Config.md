@@ -20,6 +20,7 @@ Defines how to perform an editable install (PEP 660). See https://tttapa.github.
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
 | `mode` | Mechanism to use for editable installations. Either write a wrapper \_\_init\_\_.py file, install an import hook, or install symlinks to the original files. | `'wrapper'` \| `'hook'` \| `'symlink'` | `'symlink'` |
+| `build_hook` | Automatically re-build any changed files and C extension modules when the package is first imported by Python. It is recommended to use a fast generator like Ninja. Currently, the only mode that supports build hooks is `symlink`. | bool | `false` |
 
 ## sdist
 Specifies the files that should be included in the source distribution for this package. 

@@ -87,9 +87,11 @@ def get_options(project_path: Path, *, test: bool = False):
                          default=DefaultValueValue("symlink"),
                          options=["wrapper", "hook", "symlink"]),
         BoolConfigOption("build_hook",
-                         "Automatically re-build any changed files when the "
-                         "package is first imported. It is recommended to use "
-                         "a fast generator like Ninja.",
+                         "Automatically re-build any changed files and C "
+                         "extension modules when the package is first "
+                         "imported by Python. It is recommended to use a fast "
+                         "generator like Ninja. Currently, the only "
+                         "mode that supports build hooks is `symlink`.",
                          default=DefaultValueValue(False)),
     ])  # fmt: skip
 

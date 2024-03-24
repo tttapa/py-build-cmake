@@ -26,11 +26,22 @@ Alternatively, you can add it to your local configuration,
 mode = "hook"
 ```
 
-> **Note**: only Python files are made “editable”. You'll still have to run
->           `pip install -e .` again to rebuild your C extension modules if you
->           modify any C/C++/Fortran source files.
+> **Note**: by default, only Python files are made “editable”. You'll still have
+>           to run `pip install -e .` again to rebuild your C extension modules
+>           if you modify any C/C++/Fortran source files.  
+>           To automatically rebuild C extension modules, set
+>           `editable.mode = "symlink"` and `editable.build_hook = true` in the
+>           [configuration](Config.html).
+>           See the [Build hooks](#build-hooks) section below for details.
 
-The following sections go into the details of the different modes.
+```toml
+[tool.py-build-cmake.editable]
+mode = "symlink"
+build_hook = true
+```
+
+The following sections go into the details of the different editable
+installation modes.
 
 ## Wrapper
 
@@ -208,6 +219,44 @@ site-packages
 The Wheel package format does not support symbolic links, so only a `.pth` file
 is included in the Wheel, and the actual files and symlinks are copied to a
 hidden folder in the project's source directory, [as proposed by PEP 660](https://peps.python.org/pep-0660/#what-to-put-in-the-wheel).
+
+# Build hooks
+
+During development, py-build-cmake can be configured to automatically recompile
+any C extension modules that changed. This is done by setting the
+`editable.build_hook` option to `true`. Under the hood, this will cause a hook
+to be installed in the [meta path](https://docs.python.org/3/reference/import.html#import-hooks),
+which will invoke `cmake --build` and `cmake --install` when your package is
+first imported.
+
+Modern build systems like Ninja are very fast at figuring out whether anything
+has to be recompiled, so the overhead of this hook is relatively low when no
+files changed.
+
+Keep in mind that C extension modules cannot be unloaded or reloaded after they
+have been imported once. You need to restart the Python interpreter for any
+changes to take effect. This is why the build is only carried out during the
+first import (and before the module is first loaded).
+
+To avoid depending on packages in Pip's temporary build directory or virtual
+environment, you can use the `--no-build-isolation` flag:
+
+```sh
+pip install -e . --no-build-isolation
+```
+
+This requires you to install any dependencies into your environment beforehand.
+
+The only mode that is currently supported is `symlink`. This is because
+`symlink` mode installs the extension modules into a hidden folder inside of the
+project folder, whereas the `hook` and `wrapper` modes include the extension
+modules in the package. In such a case, the build hook would have to install its
+artifacts into the Python site-packages directory directly. This comes with the
+risk of installing files that were not included in the original package's RECORD
+(e.g. if the user modifies any CMake code or options), and these files would not
+be cleaned up when uninstalling the package. Files left behind by old packages
+could cause all kinds of issues that are hard to debug, so py-build-cmake simply
+does not allow this.
 
 ---
 
