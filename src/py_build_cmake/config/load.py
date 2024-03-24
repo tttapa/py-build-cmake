@@ -61,8 +61,11 @@ def parse_config_settings_overrides(
     def listify(x: str | list[str]):
         return x if isinstance(x, list) else [x]
 
-    keys = ["--local", "--cross"]
-    overrides = {key: listify(config_settings.get(key) or []) for key in keys}
+    def get_as_list(key: str):
+        return listify(config_settings.get(key) or [])
+
+    keys = ["local", "cross"]
+    overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
     if verbose:
         print("Configuration settings for local and cross-compilation overrides:")
         pprint(overrides)
@@ -97,11 +100,11 @@ def read_config(
     # Load local override
     localconfig_path = pyproject_folder / "py-build-cmake.local.toml"
     if localconfig_path.exists():
-        flag_overrides.setdefault("--local", []).insert(0, str(localconfig_path))
+        flag_overrides.setdefault("local", []).insert(0, str(localconfig_path))
     # Load override for cross-compilation
     crossconfig_path = pyproject_folder / "py-build-cmake.cross.toml"
     if crossconfig_path.exists():
-        flag_overrides.setdefault("--cross", []).insert(0, str(crossconfig_path))
+        flag_overrides.setdefault("cross", []).insert(0, str(crossconfig_path))
 
     # File names mapping to the actual dict with the config
     config_files: dict[str, dict[str, Any]] = {
@@ -112,7 +115,7 @@ def read_config(
     # Additional options for config_options
     overrides: dict[ConfPath, ConfPath] = {}
     # What to override
-    extra_flag_paths = {"--local": get_tool_pbc_path(), "--cross": get_cross_path()}
+    extra_flag_paths = {"local": get_tool_pbc_path(), "cross": get_cross_path()}
 
     for flag, targetpath in extra_flag_paths.items():
         for path in map(Path, flag_overrides[flag]):
