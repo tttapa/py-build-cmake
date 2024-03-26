@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import textwrap
 from pathlib import Path
 
@@ -7,11 +8,16 @@ from ...commands.cmake import CMaker
 from ...common import Config, Module
 from ...common.util import get_os_name
 
+logger = logging.getLogger(__name__)
+
 
 def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMaker):
     """Write a hook that re-compiles extension modules."""
     edit_cfg = cfg.editable["cross" if cfg.cross else get_os_name()]
     if not edit_cfg.get("build_hook"):
+        return
+    if edit_cfg.get("mode") != "symlink":
+        logger.warning("Skipping build_hook: only supported for symlink mode")
         return
     name = module.name
     pkg_hook = staging_dir / (name + "_build_hook")

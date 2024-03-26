@@ -1,13 +1,13 @@
 """
 Tests for the py-build-cmake package.
 
- - Build all example projects
+ - Build all example and test projects
    - Run the package's pytest tests
    - Check the contents of the sdist and Wheel packages produced
  - Build the component backend example
    - Run the package's pytest tests
    - Check the contents of the Wheel packages produced
- - Test all three editable modes for the pybind11-project example
+ - Test all three (+1) editable modes for the example and test projects
    -  Install in editable mode and run the package's pytest
  - Run the py-build-cmake pytest tests
 """
@@ -185,30 +185,52 @@ def component(session: nox.Session):
             session.run("pytest")
 
 
-def test_editable(session: nox.Session, mode: str):
+def test_editable(
+    session: nox.Session, name: str, mode: str, dir: Path = Path("examples")
+):
     tmpdir = Path(session.create_tmp()).resolve()
+    m = mode.split("+", 1)
+    bh = str(len(m) > 1 and m[1] == "build_hook").lower()
+    skip_wrapper = ("namespace", "bare", "cmake-preset")
+    if m[0] == "wrapper" and any(k in name for k in skip_wrapper):
+        return
     try:
-        with session.chdir("examples/pybind11-project"):
+        with session.chdir(dir / name):
             shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
             with (tmpdir / f"{mode}.toml").open("w") as f:
-                f.write(f'[editable]\nmode = "{mode}"')
-            session.install("-e", ".", "--config-settings=--local=" + f.name)
+                f.write(f'[editable]\nmode = "{m[0]}"\nbuild_hook = {bh}')
+            args = ("--config-settings=--local=" + f.name,)
+            if bh:
+                args += ("--no-build-isolation",)
+            session.install("-e", ".", *args)
             session.run("pytest")
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 @nox.session
-def editable(session: nox.Session):
-    session.install("-U", "pip", "build", "pytest")
+@nox.parametrize("mode", ["symlink", "symlink+build_hook", "hook", "wrapper"])
+def editable(session: nox.Session, mode):
+    session.install(
+        "-U",
+        "pip",
+        "build",
+        "pytest",
+        "pybind11~=2.10.1",
+        "pybind11-stubgen~=0.16.2",
+        "nanobind~=1.5.1",
+        "nanobind-stubgen~=0.1.1",
+    )
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
         session.run("python", "-m", "build", ".")
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
-    for mode in "wrapper", "hook", "symlink":
-        test_editable(session, mode)
+    for name in examples:
+        test_editable(session, name, mode)
+    for name in test_packages:
+        test_editable(session, name, mode, dir=Path("test-packages"))
 
 
 @nox.session

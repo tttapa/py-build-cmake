@@ -205,11 +205,10 @@ class _BuildBackend:
         )
 
         # Copy the module's Python source files to the temporary folder
-        if not module.is_generated:
-            if not editable:
-                export_util.copy_pkg_source_to(paths.staging_dir, module)
-            else:
-                paths = export_editable.do_editable_install(cfg, paths, module)
+        if not editable:
+            export_util.copy_pkg_source_to(paths.staging_dir, module)
+        else:
+            paths = export_editable.do_editable_install(cfg, paths, module)
 
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"

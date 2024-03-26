@@ -22,7 +22,9 @@ def write_editable_hook(staging_dir: Path, module: Module):
             def find_spec(self, name, path=None, target=None):
                 if name.split('.', 1)[0] != self.name:
                     return None
-                path = (path or []) + [self.extra_path]
+                if path is None:
+                    path = []
+                path.append(self.extra_path)
                 return super().find_spec(name, path, target)
 
         def install(name: str):

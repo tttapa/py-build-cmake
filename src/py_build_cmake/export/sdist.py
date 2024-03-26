@@ -152,8 +152,7 @@ class SdistBuilder:
         include tests, docs, etc. for a 'gold standard' sdist.
         """
         make_rel = lambda p: p.relative_to(self.module.base_path)
-        if not self.module.is_generated:
-            yield from map(make_rel, self.module.iter_files_abs())
+        yield from map(make_rel, self.module.iter_files_abs())
         yield from map(make_rel, self.extra_files)
 
     def crucial_files(self):

@@ -68,6 +68,10 @@ class Module:
         """
         assert self.is_package or not self.is_namespace
 
+        if self.is_generated:
+            # Generated modules/packages don't exist in the source directory
+            return
+
         def _include(s: str | Path):
             p = Path(s)
             return p.name != "__pycache__" and not p.name.endswith(".pyc")
@@ -114,6 +118,11 @@ class Config:
             e["mode"] == "wrapper" for e in self.editable.values()
         ):
             msg = "Namespace packages cannot use editable mode 'wrapper'"
+            raise ConfigError(msg)
+        if self.module.get("generated") and any(
+            e["mode"] == "wrapper" for e in self.editable.values()
+        ):
+            msg = "Generated modules/packages cannot use editable mode 'wrapper'"
             raise ConfigError(msg)
 
 
