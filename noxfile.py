@@ -188,6 +188,9 @@ def component(session: nox.Session):
 def test_editable(
     session: nox.Session, name: str, mode: str, dir: Path = Path("examples")
 ):
+    ext_suffix = get_ext_suffix(name)
+    if ext_suffix is None:
+        return
     tmpdir = Path(session.create_tmp()).resolve()
     m = mode.split("+", 1)
     bh = len(m) > 1 and m[1] == "build_hook"
