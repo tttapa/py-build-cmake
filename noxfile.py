@@ -190,7 +190,7 @@ def test_editable(
 ):
     tmpdir = Path(session.create_tmp()).resolve()
     m = mode.split("+", 1)
-    bh = str(len(m) > 1 and m[1] == "build_hook").lower()
+    bh = len(m) > 1 and m[1] == "build_hook"
     skip_wrapper = ("namespace", "bare", "cmake-preset")
     if m[0] == "wrapper" and any(k in name for k in skip_wrapper):
         return
@@ -198,7 +198,8 @@ def test_editable(
         with session.chdir(dir / name):
             shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
             with (tmpdir / f"{mode}.toml").open("w") as f:
-                f.write(f'[editable]\nmode = "{m[0]}"\nbuild_hook = {bh}')
+                f.write(f'[editable]\nmode = "{m[0]}"\n')
+                f.write(f"build_hook = {str(bh).lower()}")
             args = ("--config-settings=--local=" + f.name,)
             if bh:
                 args += ("--no-build-isolation",)
@@ -220,6 +221,8 @@ def editable(session: nox.Session, mode):
         "pybind11-stubgen~=0.16.2",
         "nanobind~=1.5.1",
         "nanobind-stubgen~=0.1.1",
+        "cmake",
+        "ninja",
     )
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
     if dist_dir is None:
