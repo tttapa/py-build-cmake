@@ -11,7 +11,7 @@ from .config_path import ConfPath
 
 if TYPE_CHECKING:
     from .config_reference import ConfigReference
-    from .value_reference import ValueReference
+from .value_reference import ValueReference
 
 
 @dataclass
@@ -56,19 +56,25 @@ class ConfigDefaulter:
             return self.ref.config.default.get_default(self)
 
     def update_default(self):
+        value_set = True
         if not self.root_values.is_value_set(self.value_path):
             default = self.ref.config.default.get_default(self)
             if default is not None:
-                self.root_values.set_value(self.value_path, default.value)
-        for name in self.ref.sub_options:
-            ref = self.ref.sub_ref(name).resolve_inheritance(self.root)
-            val_path = self.value_path.join(name)
-            ConfigDefaulter(
-                root=self.root,
-                root_values=self.root_values,
-                ref=ref,
-                value_path=val_path,
-            ).update_default()
+                default_value = ValueReference(self.value_path, default.value)
+                value = self.ref.config.verify(default_value)
+                self.root_values.set_value(self.value_path, value)
+            else:
+                value_set = False
+        if value_set:
+            for name in self.ref.sub_options:
+                ref = self.ref.sub_ref(name).resolve_inheritance(self.root)
+                val_path = self.value_path.join(name)
+                ConfigDefaulter(
+                    root=self.root,
+                    root_values=self.root_values,
+                    ref=ref,
+                    value_path=val_path,
+                ).update_default()
 
 
 class DefaultValueValue(DefaultValue):

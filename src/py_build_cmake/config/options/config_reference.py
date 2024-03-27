@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from .config_option import ConfigOption
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config_option import ConfigOption
 from .config_path import ConfPath
 
 
