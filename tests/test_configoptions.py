@@ -1,4 +1,5 @@
 from pprint import pprint
+from typing import Any
 
 import pytest
 from py_build_cmake.common import ConfigError
@@ -522,7 +523,13 @@ class ConfigTestOption(ConfigOption):
             return old_value.values
         if old_value.values is None:
             return new_value.values
+        assert isinstance(old_value.values, str)
+        assert isinstance(new_value.values, str)
         return old_value.values + "+" + new_value.values
+
+    def verify(self, values: ValueReference) -> Any:
+        assert isinstance(values.values, str)
+        return values.values
 
 
 def test_override_no_inherit():
