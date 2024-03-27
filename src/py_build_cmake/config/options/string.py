@@ -6,7 +6,7 @@ from .value_reference import ValueReference
 
 
 class StringConfigOption(ConfigOption):
-    def get_typename(self, md: bool = False):
+    def get_typename(self, md: bool = False) -> str:
         return "string"
 
     def override(self, old_value, new_value):

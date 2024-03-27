@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import copy
 from difflib import get_close_matches
-from typing import Iterable
+from typing import Any, Iterable
 
 from ...common import ConfigError
 from .config_path import ConfPath
@@ -42,10 +42,10 @@ class ConfigOption:
             self.insert(opt)
         return self
 
-    def get_typename(self, md: bool = False):
+    def get_typename(self, md: bool = False) -> str | None:
         return None
 
-    def verify(self, values: ValueReference):
+    def verify(self, values: ValueReference) -> Any:
         if not isinstance(values.values, dict):
             msg = f"Type of {values.value_path} should be 'dict', "
             msg += f"not {type(values.values)}"
@@ -60,10 +60,10 @@ class ConfigOption:
             raise ConfigError(msg[:-1])
         return values.values
 
-    def finalize(self, values: ValueReference):
+    def finalize(self, values: ValueReference) -> Any:
         return values.values
 
-    def override(self, old_value: ValueReference, new_value: ValueReference):
+    def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
         return copy(old_value.values)
 
 
