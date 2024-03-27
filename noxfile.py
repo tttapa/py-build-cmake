@@ -197,6 +197,8 @@ def test_editable(
     skip_wrapper = ("namespace", "bare", "cmake-preset")
     if m[0] == "wrapper" and any(k in name for k in skip_wrapper):
         return
+    if m[0] == "symlink" and name == "minimal-program":
+        return
     try:
         with session.chdir(dir / name):
             shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)

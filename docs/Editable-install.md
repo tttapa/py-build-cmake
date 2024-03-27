@@ -158,7 +158,9 @@ class EditablePathFinder(PathFinder):
     def find_spec(self, name, path=None, target=None):
         if name.split('.', 1)[0] != self.name:
             return None
-        path = (path or []) + [self.extra_path]
+        if path is None:
+            path = []
+        path.append(self.extra_path)
         return super().find_spec(name, path, target)
 
 def install(name: str):
@@ -219,6 +221,10 @@ site-packages
 The Wheel package format does not support symbolic links, so only a `.pth` file
 is included in the Wheel, and the actual files and symlinks are copied to a
 hidden folder in the project's source directory, [as proposed by PEP 660](https://peps.python.org/pep-0660/#what-to-put-in-the-wheel).
+
+Note that any binaries installed into `my_package-1.2.3.data/scripts` will not
+be in the path, since they are installed in the `.py-build-cmake_cache/editable`
+folder, not in `site-packages/bin` or `site-packages/Scripts`.
 
 # Build hooks
 
