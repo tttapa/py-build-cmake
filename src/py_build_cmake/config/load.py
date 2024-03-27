@@ -257,6 +257,7 @@ def verify_and_override_config(
                 values=root_val.sub_ref(override),
             ).verify(),
         )
+        root_val.set_value_default(target, {})
         root_val.set_value(
             target,
             ConfigOverrider(
