@@ -58,6 +58,7 @@ def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMa
                             name=self.name,
                             path=self.cwd,
                         ) from e
+                sys.meta_path.remove(self)
 
         def install(name: str, cwd, env, cmd):
             sys.meta_path.insert(0, BuilderPathFinder(name, cwd, env, cmd))
