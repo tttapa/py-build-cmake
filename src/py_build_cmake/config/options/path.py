@@ -105,8 +105,4 @@ class PathConfigOption(StringConfigOption):
 
     def verify(self, values: ValueReference):
         values.values = super().verify(values)
-        self.check_path(values)
-        return values.values
-
-    def finalize(self, values: ValueReference):
         return self.check_path(values)
