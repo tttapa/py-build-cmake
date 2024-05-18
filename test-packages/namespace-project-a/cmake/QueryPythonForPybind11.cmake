@@ -8,7 +8,7 @@ mark_as_advanced(USE_GLOBAL_PYBIND11)
 function(find_pybind11_python_first)
 
     # Find Python
-    if (CMAKE_CROSSCOMPILING)
+    if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
         find_package(Python3 REQUIRED COMPONENTS Development.Module)
     else()
         find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
