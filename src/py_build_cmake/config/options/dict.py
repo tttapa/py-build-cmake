@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from py_build_cmake.config.options.value_reference import ValueReference
-
 from ...common import ConfigError
 from .config_option import ConfigOption
+from .value_reference import ValueReference
 
 
 class DictOfStrConfigOption(ConfigOption):
-    def get_typename(self, md: bool = False):
+    def get_typename(self, md: bool = False) -> str:
         return "dict"
 
     def override(self, old_value: ValueReference, new_value: ValueReference):

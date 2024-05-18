@@ -5,8 +5,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from py_build_cmake.common import ConfigError
-
+from ...common import ConfigError
 from .config_path import ConfPath
 
 if TYPE_CHECKING:

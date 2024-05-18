@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from ...common import ConfigError
 from .config_path import ConfPath
@@ -13,13 +13,13 @@ from .value_reference import ValueReference
 
 @dataclass
 class RelativeToCurrentConfig:
-    project_path: Path
+    project_path: Path | PurePosixPath
     description: str = "current configuration file"
 
 
 @dataclass
 class RelativeToProject:
-    project_path: Path
+    project_path: Path | PurePosixPath
     description: str = "project directory"
 
 

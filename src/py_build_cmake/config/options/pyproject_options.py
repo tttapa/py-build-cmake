@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from ...common import CMAKE_MINIMUM_REQUIRED
 from .bool import BoolConfigOption
@@ -24,7 +24,7 @@ def get_cross_path():
     return ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cross")
 
 
-def get_options(project_path: Path, *, test: bool = False):
+def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     root = ConfigOption("root")
     pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
     project = pyproject.insert(UncheckedConfigOption("project"))

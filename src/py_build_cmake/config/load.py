@@ -5,7 +5,7 @@ import logging
 import os
 from copy import copy
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from pprint import pprint
 from typing import Any, Dict, Optional, cast
 
@@ -132,7 +132,7 @@ def read_config(
 
 
 def process_config(
-    pyproject_path: Path,
+    pyproject_path: Path | PurePosixPath,
     config_files: dict[str, dict[str, Any]],
     overrides: dict[ConfPath, ConfPath],
     test: bool = False,
