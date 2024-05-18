@@ -24,6 +24,8 @@ find_pybind11_python_first()
 
 # Compile the example Python module
 pybind11_add_module(_add_module MODULE "src/add_module.cpp")
+set_target_properties(_add_module PROPERTIES
+    DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}${PYTHON_MODULE_DEBUG_POSTFIX}")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
