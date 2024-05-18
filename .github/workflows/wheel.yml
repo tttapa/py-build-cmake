@@ -119,10 +119,14 @@ jobs:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.on }}
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        on: ['macos-13', 'macos-latest']
+        exclude:
+          - python-version: '3.7'
+            on: 'macos-latest'
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
@@ -149,10 +153,14 @@ jobs:
 
   test-macos:
     needs: build-macos
-    runs-on: macos-latest
+    runs-on: ${{ matrix.on }}
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        on: ['macos-13', 'macos-latest']
+        exclude:
+          - python-version: '3.7'
+            on: 'macos-latest'
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
@@ -176,7 +184,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [ubuntu-20.04, windows-2019, macos-13, macos-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions/download-artifact@v3
