@@ -21,6 +21,7 @@ from ..common.util import (
     python_sysconfig_platform_to_cmake_platform_win,
     python_sysconfig_platform_to_cmake_processor_win,
 )
+from .options.cmake_opt import CMakeOption
 from .options.config_path import ConfPath
 from .options.value_reference import ValueReference
 
@@ -50,7 +51,7 @@ def get_python_lib(library_dirs: str | list[str] | None) -> Path | None:
 
 
 def cross_compile_win(
-    config: ValueReference, plat_name, library_dirs, cmake_platform, cmake_proc
+    config: ValueReference, plat_name, library_dirs, cmake_plat, cmake_proc
 ):
     """Update the configuration to include a cross-compilation configuration
     that builds for the given platform and processor. If library_dirs contains
@@ -60,7 +61,7 @@ def cross_compile_win(
     logger.info(
         "DIST_EXTRA_CONFIG.build_ext specified plat_name that is different from the current platform. "
         "Automatically enabling cross-compilation for %s",
-        cmake_platform,
+        cmake_plat,
     )
     assert not config.is_value_set("cross")
     cross_cfg = {
@@ -68,9 +69,9 @@ def cross_compile_win(
         "arch": platform_to_platform_tag(plat_name),
         "cmake": {
             "options": {
-                "CMAKE_SYSTEM_NAME": "Windows",
-                "CMAKE_SYSTEM_PROCESSOR": cmake_proc,
-                "CMAKE_GENERATOR_PLATFORM": cmake_platform,
+                "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
+                "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
+                "CMAKE_GENERATOR_PLATFORM": CMakeOption.create(cmake_plat, "STRING"),
             }
         },
     }
@@ -157,8 +158,8 @@ def cross_compile_mac(config: ValueReference, archs):
         "os": "mac",
         "cmake": {
             "options": {
-                "CMAKE_SYSTEM_NAME": "Darwin",
-                "CMAKE_OSX_ARCHITECTURES": ";".join(archs),
+                "CMAKE_SYSTEM_NAME": CMakeOption.create("Darwin", "STRING"),
+                "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(archs, "STRING"),
             }
         },
     }
@@ -182,7 +183,7 @@ def config_quirks_mac(config: ValueReference):
     archflags = os.getenv("ARCHFLAGS")
     if not archflags:
         return
-    archs = tuple(re.findall(r"-arch +(\S+)", archflags))
+    archs = list(re.findall(r"-arch +(\S+)", archflags))
     if not archs:
         logger.warning(
             "ARCHFLAGS was set, but its value was not valid, so I'm ignoring it"
@@ -207,7 +208,7 @@ def config_quirks_mac(config: ValueReference):
         config.set_value_default(ConfPath.from_string("cmake/options"), {})
         config.set_value_default(
             ConfPath.from_string("cmake/options/CMAKE_OSX_ARCHITECTURES"),
-            ";".join(archs),
+            CMakeOption.create(archs, "STRING"),
         )
 
 

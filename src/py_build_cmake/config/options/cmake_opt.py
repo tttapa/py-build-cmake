@@ -18,6 +18,15 @@ class CMakeOption:
     datatype: str | None = None
     strict: bool = True
 
+    @classmethod
+    def create(cls, x, datatype=None):
+        assert datatype is None or isinstance(datatype, str)
+        if isinstance(x, list):
+            assert all(isinstance(e, (bool, str)) for e in x)
+            return cls(values={"value": x}, datatype=datatype)
+        assert isinstance(x, (bool, str))
+        return cls(values={"value": [x]}, datatype=datatype)
+
 
 class CMakeOptConfigOption(DictOfStrConfigOption):
     """
@@ -246,7 +255,7 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             valdict[k] = self._convert_to_option(valdict[k], pth)
         return valdict
 
-    def finalize(self, values: ValueReference):
+    def finalize(self, values: ValueReference) -> dict[str, str]:
         """Converts the internal dict of CMakeOptions back into a dict of string
         that can be passed as CMake command-line arguments"""
 
@@ -261,7 +270,7 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             assert isinstance(x, CMakeOption)
             return f"{k}:{x.datatype}" if x.datatype else k
 
-        options = {}
+        options: dict[str, str] = {}
         for k, v in values.values.items():
             options[convert_key(k, v)] = convert(v)
         return options
