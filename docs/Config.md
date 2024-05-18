@@ -43,7 +43,7 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `generator` | CMake generator to use, passed to the configuration step, as `-G <?>`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder. The placeholder `{build_config}` can be used to insert the name of the Python version and ABI, operating system, and architecture. This ensures that separate build directories are used for different host systems and Python versions/implementations.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache/{build_config}'` |
-| `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = "On"}` | dict | `{}` |
+| `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = true}` | dict (CMake) | `{}` |
 | `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list+ | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = true` | bool | `false` |
 | `find_python3` | Specify hints for CMake&#x27;s FindPython3 module.<br/>For example: `find_python3 = false` | bool | `true` |
@@ -174,3 +174,13 @@ config = ["RelWithDebInfo"]
 config = {"prepend" = ["RelWithDebInfo"], "-" = ["Debug"], "+" = ["Debug"]}
 ```
 The `build_args` option has type `list`, so the value of `linux.cmake.config` is simply `["RelWithDebInfo"]`. The value of `windows.cmake.config` is `["RelWithDebInfo", "Release", "Debug"]`.
+
+The same rules also apply to CMake options:
+
+```toml
+[cmake.options]
+CMAKE_PREFIX_PATH = "/some/path"
+[linux.cmake.options]
+CMAKE_PREFIX_PATH = {"prepend" = "/some/linux-specific/path"}
+```
+This passes the option `-D CMAKE_PREFIX_PATH=/some/linux-specific/path;/some/path` to CMake.

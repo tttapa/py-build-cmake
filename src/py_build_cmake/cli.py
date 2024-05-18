@@ -326,7 +326,19 @@ config = {"prepend" = ["RelWithDebInfo"], "-" = ["Debug"], "+" = ["Debug"]}
             "The `build_args` option has type `list`, so the value of "
             '`linux.cmake.config` is simply `["RelWithDebInfo"]`. The value '
             "of `windows.cmake.config` is "
-            '`["RelWithDebInfo", "Release", "Debug"]`.'
+            '`["RelWithDebInfo", "Release", "Debug"]`.\n\n'
+            "The same rules also apply to CMake options:\n"
+            """
+```toml
+[cmake.options]
+CMAKE_PREFIX_PATH = "/some/path"
+[linux.cmake.options]
+CMAKE_PREFIX_PATH = {"prepend" = "/some/linux-specific/path"}
+```
+"""
+            "This passes the option "
+            "`-D CMAKE_PREFIX_PATH=/some/linux-specific/path;/some/path` to "
+            "CMake."
         )
 
 
