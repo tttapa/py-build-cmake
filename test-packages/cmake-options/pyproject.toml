@@ -29,3 +29,11 @@ OPTION_B = "foo;bar"
 OPTION_C = ["foo", "bar"]
 OPTION_D = true
 OPTION_E = {"value" = "/usr/bin/bash", "type" = "FILEPATH"}
+OPTION_F = "/usr/some/path"
+
+[tool.py-build-cmake.linux.cmake.options]
+OPTION_F = {"prepend" = "/some/linux/specific/path"}
+[tool.py-build-cmake.windows.cmake.options]
+OPTION_F = {"prepend" = "/some/windows/specific/path"}
+[tool.py-build-cmake.mac.cmake.options]
+OPTION_F = {"prepend" = "/some/macos/specific/path"}
