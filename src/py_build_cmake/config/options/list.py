@@ -32,7 +32,7 @@ class ListOfStrConfigOption(ConfigOption):
         self.convert_str_to_singleton = convert_str_to_singleton
         self.append_by_default = append_by_default
 
-    list_op_keys = frozenset(("+", "-", "=", "append", "prepend"))
+    list_op_keys = frozenset(("+", "-", "=", "value", "append", "prepend"))
 
     def get_typename(self, md: bool = False):
         return "list+" if self.append_by_default else "list"
@@ -47,9 +47,11 @@ class ListOfStrConfigOption(ConfigOption):
 
     def _override_dict(self, old_value: ValueReference, new_value: ValueReference):
         assert isinstance(new_value.values, dict)
-        result = copy(old_value.values)
         if "=" in new_value.values:
-            result = copy(new_value.values["="])
+            return copy(new_value.values["="])
+        if "value" in new_value.values:
+            return copy(new_value.values["value"])
+        result = copy(old_value.values)
         if "-" in new_value.values:
             remove = set(new_value.values["-"])
             result = [v for v in result if v not in remove]

@@ -4,6 +4,7 @@ from pathlib import Path, PurePosixPath
 
 from ...common import CMAKE_MINIMUM_REQUIRED
 from .bool import BoolConfigOption
+from .cmake_opt import CMakeOptConfigOption
 from .config_option import ConfigOption, UncheckedConfigOption
 from .config_path import ConfPath
 from .default import DefaultValueValue, NoDefaultValue, RefDefaultValue, RequiredValue
@@ -183,11 +184,11 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          allow_abs=True,
                          base_path=RelativeToProject(project_path),
                          must_exist=False),
-        DictOfStrConfigOption("options",
-                              "Extra options passed to the configuration step, "
-                              "as `-D<option>=<value>`.",
-                              "options = {\"WITH_FEATURE_X\" = \"On\"}",
-                              default=DefaultValueValue({})),
+        CMakeOptConfigOption("options",
+                             "Extra options passed to the configuration step, "
+                             "as `-D<option>=<value>`.",
+                             "options = {\"WITH_FEATURE_X\" = true}",
+                             default=DefaultValueValue({})),
         ListOfStrConfigOption("args",
                               "Extra arguments passed to the configuration "
                               "step.",

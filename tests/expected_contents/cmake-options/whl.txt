@@ -1,0 +1,6 @@
+cmake_options-{{version}}.dist-info/LICENSE
+cmake_options-{{version}}.dist-info/METADATA
+cmake_options-{{version}}.dist-info/RECORD
+cmake_options-{{version}}.dist-info/WHEEL
+cmake_options-{{version}}.dist-info/entry_points.txt
+cmake_options/__init__.py

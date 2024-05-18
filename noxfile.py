@@ -37,7 +37,7 @@ project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
 test_packages = "namespace-project-a", "namespace-project-b"
-test_packages += "bare-c-module", "cmake-preset"
+test_packages += "bare-c-module", "cmake-preset", "cmake-options"
 
 purity = {"namespace-project-b": True}
 
@@ -194,7 +194,7 @@ def test_editable(
     tmpdir = Path(session.create_tmp()).resolve()
     m = mode.split("+", 1)
     bh = len(m) > 1 and m[1] == "build_hook"
-    skip_wrapper = ("namespace", "bare", "cmake-preset")
+    skip_wrapper = ("namespace", "bare", "cmake-preset", "cmake-options")
     if m[0] == "wrapper" and any(k in name for k in skip_wrapper):
         return
     if m[0] == "symlink" and name == "minimal-program":
