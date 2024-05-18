@@ -20,7 +20,7 @@ jobs:
           - python-version: '3.12'
             image-suffix: '-rc'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build
       shell: bash
       run: |
@@ -29,12 +29,12 @@ jobs:
         python -m pip install -U pip build
         python -m build .
     - name: Upload Wheel
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
     - name: Upload source
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py_build_cmake-src-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.tar.gz
@@ -50,8 +50,8 @@ jobs:
           - python-version: '3.12'
             image-suffix: '-rc'
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist
@@ -68,8 +68,8 @@ jobs:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       name: Install Python
       with:
         python-version: ${{ matrix.python-version }}
@@ -84,15 +84,10 @@ jobs:
       env:
         PYTHONUTF8: 1
     - name: Upload Wheel
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py_build_cmake-whl-win-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
-    - name: Upload source
-      uses: actions/upload-artifact@v3
-      with:
-        name: py_build_cmake-src-${{ matrix.python-version }}
-        path: dist/py_build_cmake-*.tar.gz
 
   test-windows:
     needs: build-windows
@@ -101,13 +96,13 @@ jobs:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       name: Install Python
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-whl-win-${{ matrix.python-version }}
         path: dist
@@ -119,17 +114,17 @@ jobs:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
   build-macos:
-    runs-on: ${{ matrix.on }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
-        on: ['macos-13', 'macos-latest']
+        os: ['macos-13', 'macos-latest']
         exclude:
           - python-version: '3.7'
-            on: 'macos-latest'
+            os: 'macos-latest'
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       name: Install Python
       with:
         python-version: ${{ matrix.python-version }}
@@ -141,36 +136,31 @@ jobs:
         python -m pip install -U pip build
         python -m build .
     - name: Upload Wheel
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: py_build_cmake-whl-mac-${{ matrix.python-version }}
+        name: py_build_cmake-whl-${{ matrix.os }}-${{ matrix.python-version }}
         path: dist/py_build_cmake-*.whl
-    - name: Upload source
-      uses: actions/upload-artifact@v3
-      with:
-        name: py_build_cmake-src-${{ matrix.python-version }}
-        path: dist/py_build_cmake-*.tar.gz
 
   test-macos:
     needs: build-macos
-    runs-on: ${{ matrix.on }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
-        on: ['macos-13', 'macos-latest']
+        os: ['macos-13', 'macos-latest']
         exclude:
           - python-version: '3.7'
-            on: 'macos-latest'
+            os: 'macos-latest'
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       name: Install Python
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: py_build_cmake-whl-mac-${{ matrix.python-version }}
+        name: py_build_cmake-whl-${{ matrix.os }}-${{ matrix.python-version }}
         path: dist
     - name: Run Nox
       run: |
@@ -186,8 +176,8 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-13, macos-latest]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-whl-3.11
         path: dist
@@ -205,9 +195,9 @@ jobs:
         CIBW_ENVIRONMENT_LINUX: 'PIP_FIND_LINKS=/project/dist PY_BUILD_CMAKE_VERBOSE=1'
         CIBW_ENVIRONMENT_WINDOWS: 'PIP_FIND_LINKS=D:/a/py-build-cmake/py-build-cmake/dist PY_BUILD_CMAKE_VERBOSE=1'
     - name: Upload Wheels
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: pybind11_project-whl
+        name: pybind11_project-${{ matrix.os }}-whl
         path: dist/*.whl
 
   check-release:
@@ -219,8 +209,8 @@ jobs:
       matrix:
         python-version: ['3.11']
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-whl-${{ matrix.python-version }}
         path: dist
@@ -241,13 +231,13 @@ jobs:
     permissions:
       id-token: write  # mandatory for trusted publishing
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-whl-3.11
         path: dist
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: py_build_cmake-src-3.11
         path: dist
     - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
+      uses: pypa/gh-action-pypi-publish@81e9d935c883d0b210363ab89cf05f3894778450
