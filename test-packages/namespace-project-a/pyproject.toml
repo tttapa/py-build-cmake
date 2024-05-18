@@ -14,7 +14,7 @@ dependencies = []
 [build-system]
 requires = [
     "py-build-cmake~=0.2.0a13.dev0",
-    "pybind11~=2.10.1",
+    "pybind11~=2.12.0",
     "pybind11-stubgen~=0.16.2",
 ]
 build-backend = "py_build_cmake.build"
@@ -32,7 +32,7 @@ include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
 exclude = []
 
 [tool.py-build-cmake.cmake]
-minimum_version = "3.17"
+minimum_version = "3.18"
 build_type = "Release"
 source_path = "." # Containing CMakeLists.txt
 build_args = ["-j"]

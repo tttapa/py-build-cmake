@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.18)
 project(pybind11-project VERSION 0.2.0)
 set(PY_VERSION_SUFFIX "a13.dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
@@ -9,6 +9,13 @@ if (DEFINED PY_BUILD_CMAKE_PACKAGE_VERSION)
         message(FATAL_ERROR "Version number does not match "
                              "(${PY_BUILD_CMAKE_PACKAGE_VERSION} - ${PY_FULL_VERSION}).")
     endif()
+endif()
+
+# Find the Python interpreter and the development files
+if (CMAKE_CROSSCOMPILING)
+    find_package(Python3 REQUIRED COMPONENTS Development.Module)
+else()
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 
 # Find the pybind11 package

@@ -222,7 +222,7 @@ def editable(session: nox.Session, mode):
         "pip",
         "build",
         "pytest",
-        "pybind11~=2.10.1",
+        "pybind11~=2.12.0",
         "pybind11-stubgen~=0.16.2",
         "nanobind~=1.5.1",
         "nanobind-stubgen~=0.1.1",
