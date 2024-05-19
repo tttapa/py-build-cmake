@@ -258,7 +258,7 @@ class _BuildBackend:
         build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross)
         if cmake_cfg:
             path = cmake_cfg["build_path"]
-            build_dir = Path(path.replace("{build_config}", build_cfg_name))
+            build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
         else:
             build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
         return BuildPaths(
@@ -339,7 +339,7 @@ class _BuildBackend:
             tags = convert_wheel_tags(tags, cmake_cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         logger.debug("Built Wheel: %s", wheel_path)
-        return os.path.relpath(wheel_path, paths.wheel_dir)
+        return str(Path(wheel_path).relative_to(paths.wheel_dir))
 
     @staticmethod
     def get_cmake_config(cfg: Config):
@@ -372,7 +372,7 @@ class _BuildBackend:
             exclude_patterns=sdist_cfg.get("exclude_patterns", []),
         )
         sdist_tar = sdist_builder.build(Path(sdist_directory))
-        return os.path.relpath(sdist_tar, sdist_directory)
+        return str(Path(sdist_tar).relative_to(sdist_directory))
 
     # --- CMake builds --------------------------------------------------------
 

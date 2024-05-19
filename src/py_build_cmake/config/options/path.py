@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
@@ -60,11 +59,10 @@ class PathConfigOption(StringConfigOption):
         return "path" if self.is_folder else "filepath"
 
     def check_path(self, values: ValueReference):
-        osp = os.path
         assert isinstance(values.values, str)
-        path = osp.normpath(values.values)
+        path: Path | PurePosixPath = Path(values.values)
         # Absolute or relative path?
-        if osp.isabs(path):
+        if path.is_absolute():
             # Absolute path
             if not self.allow_abs:
                 msg = f'{values.value_path}: "{path!s}" must be a relative path'
@@ -73,35 +71,34 @@ class PathConfigOption(StringConfigOption):
         elif isinstance(self.base_path, RelativeToCurrentConfig):
             # value_path[0] is relative for files inside of the project,
             # otherwise it is absolute
-            path = osp.join(osp.dirname(values.value_path.pth[0]), path)
-            if not osp.isabs(path):
-                path = osp.join(self.base_path.project_path, path)
+            path = Path(PurePosixPath(values.value_path.pth[0]).parent / path)
+            if not path.is_absolute():
+                path = self.base_path.project_path / path
         elif isinstance(self.base_path, RelativeToProject):
-            path = osp.join(self.base_path.project_path, path)
+            path = self.base_path.project_path / path
         else:
             msg = "Invalid relative path type"
             raise AssertionError(msg)
-        assert osp.isabs(path), "Failed to make path absolute"
+        assert path.is_absolute(), f"Failed to make path absolute: {path!s}"
         # Does the path exist?
         if self.must_exist:
-            if not osp.exists(path):
+            path = Path(path)
+            if not path.exists():
                 msg = f'{values.value_path}: "{path!s}" does not exist'
                 raise ConfigError(msg)
-            if self.is_folder != osp.isdir(path):
+            if self.is_folder != path.is_dir():
                 type_ = "directory" if self.is_folder else "file"
                 msg = f'{values.value_path}: "{path!s}" should be a {type_}'
                 raise ConfigError(msg)
             # Are any of the required contents missing?
             missing = [
-                sub
-                for sub in self.expected_contents
-                if not osp.exists(osp.join(path, sub))
+                sub for sub in self.expected_contents if not (path / Path(sub)).exists()
             ]
             if missing:
                 missingstr = '", "'.join(missing)
                 msg = f'{values.value_path}: "{path!s}" does not contain the following required files or folders: "{missingstr}"'
                 raise ConfigError(msg)
-        return osp.normpath(path)
+        return path.resolve() if isinstance(path, Path) else path
 
     def verify(self, values: ValueReference):
         values.values = super().verify(values)

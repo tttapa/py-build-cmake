@@ -1,4 +1,3 @@
-import os
 from pathlib import PurePosixPath
 
 import pytest
@@ -19,7 +18,7 @@ def test_process_config_no_cmake():
     assert not cfg.stubgen
     assert cfg.package_name == "foobar"
     assert cfg.module["name"] == "foobar"
-    assert cfg.module["directory"] == os.path.normpath("/project")
+    assert cfg.module["directory"] == PurePosixPath("/project")
     assert not cfg.module["namespace"]
 
 
@@ -97,7 +96,7 @@ def test_inherit_cross_cmake():
     assert conf.standard_metadata.description == "descr"
     assert conf.module == {
         "name": "foobar",
-        "directory": os.path.normpath("/project"),
+        "directory": PurePosixPath("/project"),
         "namespace": False,
     }
     assert conf.editable == {
@@ -117,8 +116,8 @@ def test_inherit_cross_cmake():
             "build_type": "RelWithDebInfo",
             "config": ["RelWithDebInfo"],
             "generator": "Unix Makefiles",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -142,8 +141,8 @@ def test_inherit_cross_cmake():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -164,8 +163,8 @@ def test_inherit_cross_cmake():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -186,8 +185,8 @@ def test_inherit_cross_cmake():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -210,7 +209,7 @@ def test_inherit_cross_cmake():
         "version": "310",
         "abi": "cp310",
         "arch": "linux_aarch64",
-        "toolchain_file": os.path.normpath("/project/aarch64-linux-gnu.cmake"),
+        "toolchain_file": PurePosixPath("/project/aarch64-linux-gnu.cmake"),
     }
 
 
@@ -250,7 +249,7 @@ def test_real_config_no_cross():
     assert conf.standard_metadata.description == "descr"
     assert conf.module == {
         "name": "foobar",
-        "directory": os.path.normpath("/project"),
+        "directory": PurePosixPath("/project"),
         "namespace": False,
     }
     assert conf.editable == {
@@ -268,8 +267,8 @@ def test_real_config_no_cross():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -290,8 +289,8 @@ def test_real_config_no_cross():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -312,8 +311,8 @@ def test_real_config_no_cross():
             "build_type": "Release",
             "config": ["Release"],
             "generator": "Ninja",
-            "source_path": os.path.normpath("/project/src"),
-            "build_path": os.path.normpath(
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
@@ -347,7 +346,7 @@ def test_real_config_no_cmake():
     assert conf.standard_metadata.description == "descr"
     assert conf.module == {
         "name": "foobar",
-        "directory": os.path.normpath("/project"),
+        "directory": PurePosixPath("/project"),
         "namespace": False,
     }
     assert conf.editable == {
@@ -385,7 +384,7 @@ def test_real_config_local_override():
     assert conf.standard_metadata.description == "descr"
     assert conf.module == {
         "name": "foobar",
-        "directory": os.path.normpath("/project"),
+        "directory": PurePosixPath("/project"),
         "namespace": False,
     }
     assert conf.editable == {
@@ -428,7 +427,7 @@ def test_real_config_local_override_windows():
     assert conf.standard_metadata.description == "descr"
     assert conf.module == {
         "name": "foobar",
-        "directory": os.path.normpath("/project"),
+        "directory": PurePosixPath("/project"),
         "namespace": False,
     }
     assert conf.editable == {

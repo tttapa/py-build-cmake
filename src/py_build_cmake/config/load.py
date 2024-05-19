@@ -125,8 +125,8 @@ def read_config(
                 fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
             config = try_load_toml(fullpath)
             if config:  # Treat empty file as no override
-                config_files[str(fullpath)] = config
-                overrides[ConfPath((str(fullpath),))] = targetpath
+                config_files[fullpath.as_posix()] = config
+                overrides[ConfPath((fullpath.as_posix(),))] = targetpath
 
     return process_config(pyproject_path, config_files, overrides)
 
