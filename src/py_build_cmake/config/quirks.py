@@ -170,7 +170,7 @@ def cross_compile_mac(config: ValueReference, archs):
         cross_cfg["arch"] = platform_to_platform_tag("_".join(cross_arch))
     if sys.implementation.name == "cpython":
         version = "".join(map(str, sys.version_info[:2]))
-        abi = sys.abiflags
+        abi = getattr(sys, "abiflags", "")
         env = cross_cfg["cmake"]["env"] = {}
         env["SETUPTOOLS_EXT_SUFFIX"] = f".cpython-{version}{abi}-darwin.so"
     config.set_value("cross", cross_cfg)
