@@ -224,8 +224,8 @@ def editable(session: nox.Session, mode):
         "pytest",
         "pybind11~=2.12.0",
         "pybind11-stubgen~=0.16.2",
-        "nanobind~=1.5.1",
-        "nanobind-stubgen~=0.1.1",
+        "nanobind~=1.9.2",
+        "nanobind-stubgen~=0.1.5",
         "cmake",
         "ninja",
     )
