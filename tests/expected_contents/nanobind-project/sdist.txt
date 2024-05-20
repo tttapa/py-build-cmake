@@ -4,6 +4,7 @@ nanobind_project-{{version}}/PKG-INFO
 nanobind_project-{{version}}/README.md
 nanobind_project-{{version}}/cmake/NanobindStubgen.cmake
 nanobind_project-{{version}}/cmake/QueryPythonForNanobind.cmake
+nanobind_project-{{version}}/cmake/nanobindGuessPythonExtSuffix.cmake
 nanobind_project-{{version}}/pyproject.toml
 nanobind_project-{{version}}/python-src/nanobind_project/__init__.py
 nanobind_project-{{version}}/python-src/nanobind_project/add.py
