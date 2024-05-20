@@ -121,7 +121,7 @@ You can find ready-to-use toolchains with good compatibility at https://github.c
 # Create a directory to save the cross-compilation toolchains into
 mkdir -p toolchains
 # Download and extract the toolchain for AArch64 (~120 MiB)
-url="https://github.com/tttapa/toolchains/releases/download/0.1.0"
+url="https://github.com/tttapa/toolchains/releases/download/0.1.1"
 wget "$url/x-tools-aarch64-rpi3-linux-gnu-gcc14.tar.xz" -O- | tar xJ -C toolchains
 # Verify that the toolchain works
 ./toolchains/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-gcc --version
@@ -138,7 +138,7 @@ You can download these from https://github.com/tttapa/python-dev.
 # The toolchain is read-only by default, make it writable to add Python to it
 chmod u+w "toolchains/x-tools/aarch64-rpi3-linux-gnu"
 # Download and extract the Python binaries for AArch64 (~150 MiB)
-url="https://github.com/tttapa/python-dev/releases/download/0.0.2"
+url="https://github.com/tttapa/python-dev/releases/download/0.0.3"
 wget "$url/python-dev-aarch64-rpi3-linux-gnu.tar.xz" -O- | tar xJ -C toolchains
 ```
 
