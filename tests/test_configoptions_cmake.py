@@ -203,7 +203,84 @@ def test_cmake_options_override():
 
 
 def test_cmake_options_override_wrong_type():
-    pass  # TODO
+    opts = ConfigOption("root")
+    trunk = ConfigOption("pyproject.toml")
+    cmake = ConfigOption("cmake")
+    cmake.insert_multiple(
+        [
+            CMakeOptConfigOption("opt1"),
+        ]
+    )
+    trunk.insert(cmake)
+    opts.insert(trunk)
+
+    values = {
+        "pyproject.toml": {
+            "cmake": {
+                "opt1": {"FOO1": {"value": "Off", "type": "BOOL"}},
+            },
+        },
+        "override": {
+            # This one has type STRING instead of BOOL
+            "opt1": {"FOO1": {"prepend": "foo", "type": "STRING"}},
+        },
+    }
+
+    override = {
+        ConfPath.from_string("override"): ConfPath.from_string("pyproject.toml/cmake")
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    root_val = ValueReference(ConfPath.from_string("/"), values)
+    expected = (
+        r"Incompatible types when overriding or inheriting CMake settings: "
+        r"BOOL \(pyproject.toml/cmake/opt1/FOO1\) and "
+        r"STRING \(override/opt1/FOO1\) \(use \"strict\" = false to ignore\)"
+    )
+    with pytest.raises(ConfigError, match=expected):
+        verify_and_override_config(override, root_ref, root_val)
+
+
+def test_cmake_options_override_wrong_type_lax():
+    opts = ConfigOption("root")
+    trunk = ConfigOption("pyproject.toml")
+    cmake = ConfigOption("cmake")
+    cmake.insert_multiple(
+        [
+            CMakeOptConfigOption("opt1"),
+        ]
+    )
+    trunk.insert(cmake)
+    opts.insert(trunk)
+
+    values = {
+        "pyproject.toml": {
+            "cmake": {
+                "opt1": {"FOO1": {"value": True, "type": "BOOL"}},
+            },
+        },
+        "override": {
+            # This one has type STRING instead of BOOL
+            "opt1": {"FOO1": {"prepend": "foo", "type": "STRING", "strict": False}},
+        },
+    }
+
+    override = {
+        ConfPath.from_string("override"): ConfPath.from_string("pyproject.toml/cmake")
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    root_val = ValueReference(ConfPath.from_string("/"), values)
+    verify_and_override_config(override, root_ref, root_val)
+    inherit_default_and_finalize_config(root_ref, root_val)
+
+    root_val.values.pop("override")
+    pprint(root_val.values)
+    assert root_val.values == {
+        "pyproject.toml": {
+            "cmake": {
+                "opt1": {"FOO1:STRING": "foo;On"},
+            }
+        }
+    }
 
 
 if __name__ == "__main__":
