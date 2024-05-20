@@ -1,4 +1,4 @@
-py*-venv
+/toolchains
 .venv*
 build
 .build
