@@ -37,6 +37,7 @@ from .export import editable as export_editable
 from .export import metadata as export_metadata
 from .export import util as export_util
 from .export.editable.build_hook import write_build_hook
+from .export.native_tags import get_interpreter_name
 from .export.sdist import SdistBuilder
 from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is_pure
 
@@ -396,11 +397,24 @@ class _BuildBackend:
                 assert isinstance(x, (Path, str))
                 return Path(x)
 
+            def python_tag_to_cmake(x: str | None):
+                if x is None:  # If not set, use native interpreter
+                    x = get_interpreter_name()
+                return {
+                    "cp": "Python",
+                    "pp": "PyPy",
+                    "ip": "IronPython",
+                    "jy": "Jython",
+                }.get(x)
+
             cross_opts = {
                 "toolchain_file": cvt_path(cross_cfg.get("toolchain_file")),
                 "python_prefix": cvt_path(cross_cfg.get("prefix")),
                 "python_library": cvt_path(cross_cfg.get("library")),
                 "python_include_dir": cvt_path(cross_cfg.get("include_dir")),
+                "python_interpreter_id": python_tag_to_cmake(
+                    cross_cfg.get("implementation")
+                ),
             }
         else:
             cross_compiling = False
@@ -409,6 +423,7 @@ class _BuildBackend:
                 "python_prefix": None,
                 "python_library": None,
                 "python_include_dir": None,
+                "python_interpreter_id": None,
             }
 
         # Add some CMake configure options

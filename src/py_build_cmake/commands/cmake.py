@@ -41,6 +41,7 @@ class CMakeConfigureSettings:
     python_prefix: Path | None
     python_library: Path | None
     python_include_dir: Path | None
+    python_interpreter_id: str | None
 
 
 @dataclass
@@ -163,7 +164,10 @@ class CMaker:
             yield Option(prefix + "_LIBRARY", lib, "FILEPATH")
         if self.conf_settings.python_include_dir:
             inc = self.conf_settings.python_include_dir.as_posix()
-            yield Option(prefix + "_INCLUDE_DIR=", inc, "PATH")
+            yield Option(prefix + "_INCLUDE_DIR", inc, "PATH")
+        if self.conf_settings.python_interpreter_id:
+            id = self.conf_settings.python_interpreter_id
+            yield Option(prefix + "_INTERPRETER_ID", id, "STRING")
 
     def get_configure_options_python(self) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
