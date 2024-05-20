@@ -1,3 +1,3 @@
 """Example project using the py-build-cmake build backend and nanobind."""
 
-__version__ = "0.2.0a14.dev0"
+__version__ = "0.2.0a14"
