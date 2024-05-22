@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from ...common import ConfigError
+from .config_option import ConfigOption
 from .config_path import ConfPath
 from .default import DefaultValue
-from .string import StringConfigOption
 from .value_reference import ValueReference
 
 
@@ -22,7 +22,7 @@ class RelativeToProject:
     description: str = "project directory"
 
 
-class PathConfigOption(StringConfigOption):
+class PathConfigOption(ConfigOption):
     def __init__(
         self,
         name: str,
@@ -57,6 +57,22 @@ class PathConfigOption(StringConfigOption):
 
     def get_typename(self, md: bool = False):
         return "path" if self.is_folder else "filepath"
+
+    def override(self, old_value, new_value):
+        if new_value.values is None:
+            return old_value.values
+        return new_value.values
+
+    def _verify_string(self, values: ValueReference):
+        if self.sub_options:
+            msg = f"Type of {values.value_path} should be {str}, "
+            msg += f"not {dict}"
+            raise ConfigError(msg)
+        elif not isinstance(values.values, str):
+            msg = f"Type of {values.value_path} should be {str}, "
+            msg += f"not {type(values.values)}"
+            raise ConfigError(msg)
+        return values.values
 
     def check_path(self, values: ValueReference):
         assert isinstance(values.values, str)
@@ -101,5 +117,7 @@ class PathConfigOption(StringConfigOption):
         return path.resolve() if isinstance(path, Path) else path
 
     def verify(self, values: ValueReference):
-        values.values = super().verify(values)
+        values.values = self._verify_string(values)
+        if not values.values:
+            return values.values
         return self.check_path(values)

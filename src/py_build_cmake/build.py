@@ -394,6 +394,8 @@ class _BuildBackend:
             def cvt_path(x):
                 if x is None:
                     return None
+                if isinstance(x, str) and not x:
+                    return None
                 assert isinstance(x, (Path, str))
                 return Path(x)
 
