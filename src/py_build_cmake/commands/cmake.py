@@ -36,6 +36,7 @@ class CMakeConfigureSettings:
     args: list[str]
     preset: str | None
     generator: str | None
+    make_program: Path | None
     cross_compiling: bool
     toolchain_file: Path | None
     python_prefix: Path | None
@@ -200,6 +201,17 @@ class CMaker:
             ]
         return []
 
+    def get_configure_options_make(self) -> list[Option]:
+        """Sets CMAKE_MAKE_PROGRAM."""
+        if self.conf_settings.make_program:
+            opt = Option(
+                "CMAKE_MAKE_PROGRAM",
+                self.conf_settings.make_program.as_posix(),
+                "FILEPATH",
+            )
+            return [opt]
+        return []
+
     def get_configure_options_toolchain(self) -> list[str]:
         """Sets CMAKE_TOOLCHAIN_FILE."""
         return (
@@ -223,6 +235,7 @@ class CMaker:
         """Get the list of options set in the CMake pre-load script (-C)."""
         return (
             self.get_configure_options_package()
+            + self.get_configure_options_make()
             + self.get_configure_options_python()
             + self.get_configure_options_install()
         )

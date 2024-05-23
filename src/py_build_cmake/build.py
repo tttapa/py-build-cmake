@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
+import platform
 import shutil
 import tempfile
 from pathlib import Path
@@ -434,6 +436,17 @@ class _BuildBackend:
         if btype:  # -D CMAKE_BUILD_TYPE={type}
             options["CMAKE_BUILD_TYPE:STRING"] = btype
 
+        # Check if we need to pass the Ninja path to CMake
+        generator: str | None = cmake_cfg.get("generator")
+        make_program: Path | None = None
+        if generator is not None and "ninja" in generator.lower():
+            with contextlib.suppress(ImportError):
+                import ninja  # type: ignore[import-not-found]
+
+                make_program = Path(ninja.BIN_DIR) / "ninja"
+                if platform.system() == "Windows":
+                    make_program = make_program.with_suffix(".exe")
+
         # CMake options
         return CMaker(
             cmake_settings=CMakeSettings(
@@ -452,7 +465,8 @@ class _BuildBackend:
                 options=options,
                 args=cmake_cfg.get("args", []),
                 preset=cmake_cfg.get("preset"),
-                generator=cmake_cfg.get("generator"),
+                generator=generator,
+                make_program=make_program,
                 cross_compiling=cross_compiling,
                 **cross_opts,
             ),
