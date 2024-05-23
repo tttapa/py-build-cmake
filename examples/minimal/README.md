@@ -125,7 +125,7 @@ for more information about specific options. More information about the
 
 ```toml
 [build-system]
-requires = ["py-build-cmake~=0.2.0a14"]
+requires = ["py-build-cmake~=0.2.0a15.dev0"]
 build-backend = "py_build_cmake.build"
 ```
 
