@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import List, cast
 
 from lark import Lark, Token, Transformer, v_args
 
@@ -50,4 +50,4 @@ def parse_cli(s: str) -> CLIOption:
 
 
 def parse_file(s: str) -> list[CLIOption]:
-    return cast(list[CLIOption], file_parser.parse(s))
+    return cast(List[CLIOption], file_parser.parse(s))
