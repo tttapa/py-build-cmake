@@ -46,7 +46,7 @@ class ConfigOption:
         return None
 
     def verify(self, values: ValueReference) -> Any:
-        if values.action != OverrideActionEnum.Assign:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} does not support "
             msg += f"operation {values.action.value}"
             raise ConfigError(msg)

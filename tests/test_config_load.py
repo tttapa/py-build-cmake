@@ -493,7 +493,7 @@ def test_real_config_cli_override():
         linux.cmake.options.FOOBAR=+"xyz"
         linux.cmake.options.FOOBAR-="def"
         linux.cmake.args-=["arg3"]
-        cmake.build_tool_args=["-c"]
+        cmake.build_tool_args=["-c", "-d"]
     """
     overrides = {}
     for i, opt in enumerate(parse_file(override_config)):
@@ -532,7 +532,7 @@ def test_real_config_cli_override():
             "find_python": False,
             "find_python3": True,
             "build_args": [],
-            "build_tool_args": ["-a", "-b", "-c"],
+            "build_tool_args": ["-c", "-d"],
             "install_args": [],
             "install_components": ["linux_install"],
             "minimum_version": "3.15",
@@ -554,7 +554,7 @@ def test_real_config_cli_override():
             "find_python": False,
             "find_python3": True,
             "build_args": [],
-            "build_tool_args": ["-a", "-b", "-c"],
+            "build_tool_args": ["-c", "-d"],
             "install_args": [],
             "install_components": ["win_install"],
             "minimum_version": "3.15",
@@ -576,7 +576,7 @@ def test_real_config_cli_override():
             "find_python": False,
             "find_python3": True,
             "build_args": [],
-            "build_tool_args": ["-a", "-b", "-c"],
+            "build_tool_args": ["-c", "-d"],
             "install_args": [],
             "install_components": [""],
             "minimum_version": "3.15",

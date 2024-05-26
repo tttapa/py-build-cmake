@@ -44,7 +44,7 @@ class EnumConfigOption(ConfigOption):
         return new_value.values
 
     def verify(self, values: ValueReference):
-        if values.action != OverrideActionEnum.Assign:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Enumeration option {values.value_path} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)

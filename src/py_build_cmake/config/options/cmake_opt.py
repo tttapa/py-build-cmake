@@ -226,16 +226,19 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
                 msg += f"{x.action.value}"
                 raise ConfigError(msg)
 
+            v = x.values
+            OAE = OverrideActionEnum
             return {
-                OverrideActionEnum.Assign: lambda: {"value": x.values},
-                OverrideActionEnum.Append: lambda: {"append": x.values},
-                OverrideActionEnum.Prepend: lambda: {"prepend": x.values},
-                OverrideActionEnum.Remove: lambda: {"-": x.values},
-                OverrideActionEnum.AppendPath: lambda: raise_err(),
-                OverrideActionEnum.PrependPath: lambda: raise_err(),
+                OAE.Default: lambda: v,
+                OAE.Assign: lambda: v if isinstance(v, dict) else {"value": v},
+                OAE.Append: lambda: {"append": v},
+                OAE.Prepend: lambda: {"prepend": v},
+                OAE.Remove: lambda: {"-": v},
+                OAE.AppendPath: lambda: raise_err(),
+                OAE.PrependPath: lambda: raise_err(),
             }[x.action]()
 
-        if values.action != OverrideActionEnum.Assign:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)

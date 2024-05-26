@@ -13,7 +13,7 @@ class BoolConfigOption(ConfigOption):
         return new_value.values
 
     def verify(self, values: ValueReference):
-        if values.action != OverrideActionEnum.Assign:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)

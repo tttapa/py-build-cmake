@@ -77,7 +77,7 @@ class ListOfStrConfigOption(ConfigOption):
         return self._override_list(old_value, new_value)
 
     def _verify_dict(self, values):
-        if values.action != OverrideActionEnum.Assign:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Type of {values.value_path} should be {list}, "
             msg += f"not {dict}"
             raise ConfigError(msg)
@@ -110,14 +110,17 @@ class ListOfStrConfigOption(ConfigOption):
         elif not all(isinstance(el, str) for el in values.values):
             msg = f"Type of elements in {values.value_path} should be {str}"
             raise ConfigError(msg)
-        if values.action == OverrideActionEnum.Assign:
-            return values.values
+        v = values.values
+        if values.action == OverrideActionEnum.Default:
+            return v
+        elif values.action == OverrideActionEnum.Assign:
+            return v if isinstance(v, dict) else {"value": v}
         elif values.action == OverrideActionEnum.Append:
-            return {"append": values.values}
+            return {"append": v}
         elif values.action == OverrideActionEnum.Prepend:
-            return {"prepend": values.values}
+            return {"prepend": v}
         elif values.action == OverrideActionEnum.Remove:
-            return {"-": values.values}
+            return {"-": v}
         else:
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"

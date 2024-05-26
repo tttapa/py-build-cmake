@@ -17,14 +17,17 @@ class DictOfStrConfigOption(ConfigOption):
             old = {}
         if new is None:
             return old
-        r = deepcopy(old)
+        r = {} if new_value.action == OverrideActionEnum.Assign else deepcopy(old)
         for k, v in new.items():
             if isinstance(v, str):
                 r[k] = v
             else:
                 assert isinstance(v, OverrideAction)
                 assert isinstance(v.values, str)
-                r[k] = v.action.override_string(r.get(k, ""), v.values)
+                if v.action == OverrideActionEnum.Clear:
+                    r.pop(k, None)
+                else:
+                    r[k] = v.action.override_string(r.get(k, ""), v.values)
         return r
 
     def verify(self, values: ValueReference):
@@ -35,7 +38,12 @@ class DictOfStrConfigOption(ConfigOption):
 
         if values.values is None:
             return None
-        if values.action != OverrideActionEnum.Assign:
+        supported = (
+            OverrideActionEnum.Assign,
+            OverrideActionEnum.Default,
+            OverrideActionEnum.Append,
+        )
+        if values.action not in supported:
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)

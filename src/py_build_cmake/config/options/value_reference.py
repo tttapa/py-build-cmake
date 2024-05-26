@@ -9,6 +9,7 @@ from .config_path import ConfPath
 
 
 class OverrideActionEnum(Enum):
+    Default = "?="
     Assign = "="
     Append = "+="
     AppendPath = "+=(path)"
@@ -19,6 +20,7 @@ class OverrideActionEnum(Enum):
 
     def override_string(self, old: str, new: str) -> str:
         return {
+            OverrideActionEnum.Default: lambda: new,
             OverrideActionEnum.Assign: lambda: new,
             OverrideActionEnum.Append: lambda: old + new,
             OverrideActionEnum.AppendPath: lambda: (
@@ -43,7 +45,7 @@ class ValueReference:
         self, value_path: ConfPath, values: dict | OverrideAction | Any
     ) -> None:
         self.value_path = value_path
-        self.action = OverrideActionEnum.Assign
+        self.action = OverrideActionEnum.Default
         self.values: dict | Any
         if isinstance(values, OverrideAction):
             self.action = values.action
