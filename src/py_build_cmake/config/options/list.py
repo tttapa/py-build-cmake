@@ -6,7 +6,7 @@ from ...common import ConfigError
 from .config_option import ConfigOption
 from .config_path import ConfPath
 from .default import DefaultValue
-from .value_reference import ValueReference
+from .value_reference import OverrideActionEnum, ValueReference
 
 
 class ListOfStrConfigOption(ConfigOption):
@@ -76,23 +76,30 @@ class ListOfStrConfigOption(ConfigOption):
             return self._override_dict(old_value, new_value)
         return self._override_list(old_value, new_value)
 
+    def _verify_dict(self, values):
+        if values.action != OverrideActionEnum.Assign:
+            msg = f"Type of {values.value_path} should be {list}, "
+            msg += f"not {dict}"
+            raise ConfigError(msg)
+        invalid_keys = set(values.values.keys()) - self.list_op_keys
+        if invalid_keys:
+            inv_str = ", ".join(map(str, invalid_keys))
+            val_str = ", ".join(map(str, self.list_op_keys))
+            msg = f"Invalid keys in {values.value_path}: {inv_str} "
+            msg += f"(valid keys are: {val_str})"
+            raise ConfigError(msg)
+        for k, v in values.values.items():
+            pthname = f"{values.value_path}[{k}]"
+            if not isinstance(v, list):
+                msg = f"Type of {pthname} should be {list}, not {type(v)}"
+                raise ConfigError(msg)
+            if not all(isinstance(el, str) for el in v):
+                msg = f"Type of elements in {pthname} should be {str}"
+                raise ConfigError(msg)
+
     def verify(self, values: ValueReference):
         if isinstance(values.values, dict):
-            invalid_keys = set(values.values.keys()) - self.list_op_keys
-            if invalid_keys:
-                inv_str = ", ".join(map(str, invalid_keys))
-                val_str = ", ".join(map(str, self.list_op_keys))
-                msg = f"Invalid keys in {values.value_path}: {inv_str} "
-                msg += f"(valid keys are: {val_str})"
-                raise ConfigError(msg)
-            for k, v in values.values.items():
-                pthname = f"{values.value_path}[{k}]"
-                if not isinstance(v, list):
-                    msg = f"Type of {pthname} should be {list}, not {type(v)}"
-                    raise ConfigError(msg)
-                if not all(isinstance(el, str) for el in v):
-                    msg = f"Type of elements in {pthname} should be {str}"
-                    raise ConfigError(msg)
+            self._verify_dict(values)
         elif not isinstance(values.values, list):
             if self.convert_str_to_singleton and isinstance(values.values, str):
                 values.values = [values.values]
@@ -103,7 +110,18 @@ class ListOfStrConfigOption(ConfigOption):
         elif not all(isinstance(el, str) for el in values.values):
             msg = f"Type of elements in {values.value_path} should be {str}"
             raise ConfigError(msg)
-        return values.values
+        if values.action == OverrideActionEnum.Assign:
+            return values.values
+        elif values.action == OverrideActionEnum.Append:
+            return {"append": values.values}
+        elif values.action == OverrideActionEnum.Prepend:
+            return {"prepend": values.values}
+        elif values.action == OverrideActionEnum.Remove:
+            return {"-": values.values}
+        else:
+            msg = f"Option {values.value_path} of type {self.get_typename()} "
+            msg += f"does not support operation {values.action.value}"
+            raise ConfigError(msg)
 
     def finalize(self, values: ValueReference):
         if isinstance(values.values, str):

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from ...common import ConfigError
 from .config_path import ConfPath
 from .dict import DictOfStrConfigOption
-from .value_reference import ValueReference
+from .value_reference import OverrideAction, OverrideActionEnum, ValueReference
 
 logger = logging.getLogger(__name__)
 
@@ -193,33 +193,52 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
                 )
         return r
 
+    def _verify_cmake_list(self, x, pth: ConfPath):
+        if isinstance(x, list):
+            for v in x:
+                if not isinstance(v, str) and not isinstance(v, bool):
+                    msg = f"Type of values in list {pth} should be str or "
+                    msg += f"bool, not {type(v)}"
+                    raise ConfigError(msg)
+        elif not isinstance(x, str) and not isinstance(x, bool):
+            msg = f"Type of values in {pth} should be str or bool or a "
+            msg += f"list thereof, not {type(x)}"
+            raise ConfigError(msg)
+
+    def _verify_cmake_list_or_dict(self, x, pth: ConfPath):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if not isinstance(k, str):
+                    msg = f"Type of keys in {pth} should be str, "
+                    msg += f"not {type(k)}"
+                    raise ConfigError(msg)
+                self._verify_cmake_list(v, pth.join(k))
+        else:
+            self._verify_cmake_list(x, pth)
+
     def verify(self, values: ValueReference):
         """Checks the data types and keys of the values, and then converts
         them to a dictionary of CMakeOptions."""
 
-        def verify_cmake_list(x, pth: ConfPath):
-            if isinstance(x, list):
-                for v in x:
-                    if not isinstance(v, str) and not isinstance(v, bool):
-                        msg = f"Type of values in list {pth} should be str or "
-                        msg += f"bool, not {type(v)}"
-                        raise ConfigError(msg)
-            elif not isinstance(x, str) and not isinstance(x, bool):
-                msg = f"Type of values in {pth} should be str or bool or a "
-                msg += f"list thereof, not {type(x)}"
+        def convert_override_to_dict(x: OverrideAction, pth: ConfPath):
+            def raise_err():
+                msg = f"Option {pth} does not support operation "
+                msg += f"{x.action.value}"
                 raise ConfigError(msg)
 
-        def verify_cmake_list_or_dict(x, pth: ConfPath):
-            if isinstance(x, dict):
-                for k, v in x.items():
-                    if not isinstance(k, str):
-                        msg = f"Type of keys in {pth} should be str, "
-                        msg += f"not {type(k)}"
-                        raise ConfigError(msg)
-                    verify_cmake_list(v, pth.join(k))
-            else:
-                verify_cmake_list(x, pth)
+            return {
+                OverrideActionEnum.Assign: lambda: {"value": x.values},
+                OverrideActionEnum.Append: lambda: {"append": x.values},
+                OverrideActionEnum.Prepend: lambda: {"prepend": x.values},
+                OverrideActionEnum.Remove: lambda: {"-": x.values},
+                OverrideActionEnum.AppendPath: lambda: raise_err(),
+                OverrideActionEnum.PrependPath: lambda: raise_err(),
+            }[x.action]()
 
+        if values.action != OverrideActionEnum.Assign:
+            msg = f"Option {values.value_path} of type {self.get_typename()} "
+            msg += f"does not support operation {values.action.value}"
+            raise ConfigError(msg)
         if values.values is None:
             return None
         valdict = copy(values.values)
@@ -231,7 +250,10 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             msg = f"Type of keys in {values.value_path} should be {str}"
             raise ConfigError(msg)
         for k, v in valdict.items():
-            verify_cmake_list_or_dict(v, values.value_path.join(k))
+            pth = values.value_path.join(k)
+            if isinstance(v, OverrideAction):
+                valdict[k] = convert_override_to_dict(v, pth)
+            self._verify_cmake_list_or_dict(valdict[k], pth)
 
         def check_dict_keys(d, pth):
             if not isinstance(d, dict):

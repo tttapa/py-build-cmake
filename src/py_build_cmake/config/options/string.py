@@ -10,9 +10,14 @@ class StringConfigOption(ConfigOption):
         return "string"
 
     def override(self, old_value, new_value):
-        if new_value.values is None:
-            return old_value.values
-        return new_value.values
+        new, old = new_value.values, old_value.values
+        if old is None:
+            old = ""
+        if new is None:
+            return old
+        assert isinstance(new, str)
+        assert isinstance(old, str)
+        return new_value.action.override_string(old, new)
 
     def verify(self, values: ValueReference):
         if self.sub_options:

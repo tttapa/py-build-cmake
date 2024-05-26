@@ -7,7 +7,7 @@ from typing import Any, Iterable
 from ...common import ConfigError
 from .config_path import ConfPath
 from .default import DefaultValue, NoDefaultValue
-from .value_reference import ValueReference
+from .value_reference import OverrideActionEnum, ValueReference
 
 
 class ConfigOption:
@@ -46,6 +46,10 @@ class ConfigOption:
         return None
 
     def verify(self, values: ValueReference) -> Any:
+        if values.action != OverrideActionEnum.Assign:
+            msg = f"Option {values.value_path} does not support "
+            msg += f"operation {values.action.value}"
+            raise ConfigError(msg)
         if not isinstance(values.values, dict):
             msg = f"Type of {values.value_path} should be 'dict', "
             msg += f"not {type(values.values)}"
@@ -55,7 +59,8 @@ class ConfigOption:
         for k in sorted(unknown_keys):
             suggested = get_close_matches(k, self.sub_options, 3)
             msg = f"Unknown option '{k}' in {values.value_path}. "
-            msg += f"Did you mean: {', '.join(suggested)}\n"
+            if suggested:
+                msg += f"Did you mean: {', '.join(suggested)}\n"
         if msg:
             raise ConfigError(msg[:-1])
         return values.values

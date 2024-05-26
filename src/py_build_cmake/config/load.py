@@ -11,9 +11,11 @@ from typing import Any, Dict, Optional, cast
 
 import pyproject_metadata
 from distlib.util import normalize_name  # type: ignore[import-untyped]
+from lark import LarkError
 
 from .. import __version__
 from ..common import Config, ConfigError
+from .cli_override import CLIOption, parse_cli
 from .options.config_path import ConfPath
 from .options.config_reference import ConfigReference
 from .options.default import ConfigDefaulter
@@ -26,7 +28,7 @@ from .options.pyproject_options import (
     get_options,
     get_tool_pbc_path,
 )
-from .options.value_reference import ValueReference
+from .options.value_reference import OverrideAction, OverrideActionEnum, ValueReference
 from .options.verify import ConfigVerifier
 from .quirks import config_quirks
 
@@ -44,8 +46,8 @@ def read_full_config(
     verbose: bool,
 ) -> Config:
     config_settings = config_settings or {}
-    overrides = parse_config_settings_overrides(config_settings, verbose)
-    cfg = read_config(pyproject_path, overrides)
+    overrides, cli_overrides = parse_config_settings_overrides(config_settings, verbose)
+    cfg = read_config(pyproject_path, overrides, cli_overrides)
     if verbose:
         print_config_verbose(cfg)
     return cfg
@@ -65,11 +67,26 @@ def parse_config_settings_overrides(
         return listify(config_settings.get(key) or [])
 
     keys = ["local", "cross"]
-    overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
+    file_overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
+    cli_overrides = (
+        get_as_list("-o")
+        + get_as_list("o")
+        + get_as_list("override")
+        + get_as_list("--override")
+    )
     if verbose:
-        print("Configuration settings for local and cross-compilation overrides:")
-        pprint(overrides)
-    return overrides
+        print("Configuration settings for local and cross-compilation file overrides:")
+        pprint(file_overrides)
+        print("Configuration settings command-line overrides:")
+        pprint(cli_overrides)
+    parsed_cli_overrides = []
+    for o in cli_overrides:
+        try:
+            parsed_cli_overrides.append(parse_cli(o))
+        except LarkError as e:
+            msg = f"Failed to parse command line override: {o}"
+            raise ConfigError(msg) from e
+    return file_overrides, parsed_cli_overrides
 
 
 def try_load_toml(path: Path):
@@ -87,7 +104,9 @@ def try_load_toml(path: Path):
 
 
 def read_config(
-    pyproject_path: str | Path, flag_overrides: dict[str, list[str]]
+    pyproject_path: str | Path,
+    flag_overrides: dict[str, list[str]],
+    cli_overrides: list[CLIOption],
 ) -> Config:
     # Load the pyproject.toml file
     pyproject_path = Path(pyproject_path)
@@ -109,7 +128,6 @@ def read_config(
     # File names mapping to the actual dict with the config
     config_files: dict[str, dict[str, Any]] = {
         "pyproject.toml": pyproject,
-        "<command-line>": {},  # FIXME: implement this
     }
 
     # Additional options for config_options
@@ -117,6 +135,7 @@ def read_config(
     # What to override
     extra_flag_paths = {"local": get_tool_pbc_path(), "cross": get_cross_path()}
 
+    # Files specified on the command line
     for flag, targetpath in extra_flag_paths.items():
         for path in map(Path, flag_overrides[flag]):
             if path.is_absolute():
@@ -128,7 +147,24 @@ def read_config(
                 config_files[fullpath.as_posix()] = config
                 overrides[ConfPath((fullpath.as_posix(),))] = targetpath
 
+    # Command-line overrides
+    for i, o in enumerate(cli_overrides):
+        overrides.update(add_cli_override(config_files, o, f"<cli:{i+1}>"))
+
     return process_config(pyproject_path, config_files, overrides)
+
+
+def add_cli_override(
+    config_files: dict[str, dict[str, Any]], opt: CLIOption, label: str
+):
+    overrides = {ConfPath.from_string(label): get_tool_pbc_path()}
+    o: dict = config_files.setdefault(label, {})
+    for k in opt.key[:-1]:
+        o = o.setdefault(k, {})
+    o[opt.key[-1]] = OverrideAction(
+        action=OverrideActionEnum(opt.action), values=opt.value
+    )
+    return overrides
 
 
 def process_config(

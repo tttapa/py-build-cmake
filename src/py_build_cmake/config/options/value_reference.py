@@ -1,14 +1,55 @@
 from __future__ import annotations
 
+import os
+from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 from .config_path import ConfPath
 
 
+class OverrideActionEnum(Enum):
+    Assign = "="
+    Append = "+="
+    AppendPath = "+=(path)"
+    Prepend = "=+"
+    PrependPath = "=+(path)"
+    Remove = "-="
+    Clear = "=!"
+
+    def override_string(self, old: str, new: str) -> str:
+        return {
+            OverrideActionEnum.Assign: lambda: new,
+            OverrideActionEnum.Append: lambda: old + new,
+            OverrideActionEnum.AppendPath: lambda: (
+                old + os.pathsep + new if old and new else old + new
+            ),
+            OverrideActionEnum.Prepend: lambda: new + old,
+            OverrideActionEnum.PrependPath: lambda: (
+                new + os.pathsep + old if old and new else old + new
+            ),
+            OverrideActionEnum.Remove: lambda: old.replace(new, ""),
+        }[self]()
+
+
+@dataclass
+class OverrideAction:
+    action: OverrideActionEnum
+    values: Any
+
+
 class ValueReference:
-    def __init__(self, value_path: ConfPath, values: dict) -> None:
+    def __init__(
+        self, value_path: ConfPath, values: dict | OverrideAction | Any
+    ) -> None:
         self.value_path = value_path
-        self.values: dict | Any = values
+        self.action = OverrideActionEnum.Assign
+        self.values: dict | Any
+        if isinstance(values, OverrideAction):
+            self.action = values.action
+            self.values = values.values
+        else:
+            self.values = values
 
     def is_value_set(self, path: str | ConfPath):
         if isinstance(path, str):
@@ -39,6 +80,20 @@ class ValueReference:
             name, path = path.split_front()
             if not path:
                 values[name] = val
+                return True
+            if name not in values:
+                return False
+            values = values[name]
+
+    def clear_value(self, path: str | ConfPath):
+        if isinstance(path, str):
+            self.values.pop(path, None)
+            return True
+        values = self.values
+        while True:
+            name, path = path.split_front()
+            if not path:
+                values.pop(name, None)
                 return True
             if name not in values:
                 return False

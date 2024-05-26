@@ -18,7 +18,11 @@ from py_build_cmake.config.options.inherit import ConfigInheritor
 from py_build_cmake.config.options.list import ListOfStrConfigOption
 from py_build_cmake.config.options.override import ConfigOverrider
 from py_build_cmake.config.options.string import StringConfigOption
-from py_build_cmake.config.options.value_reference import ValueReference
+from py_build_cmake.config.options.value_reference import (
+    OverrideAction,
+    OverrideActionEnum,
+    ValueReference,
+)
 from py_build_cmake.config.options.verify import ConfigVerifier
 
 
@@ -192,6 +196,60 @@ def test_override2():
     assert overridden_values == {
         "leaf21": "31",
         "leaf22": "32",
+    }
+
+
+def test_override_action():
+    opts = gen_test_opts()
+    values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": "11",
+                "leaf12": "12",
+            },
+            "mid2": {
+                "leaf21": "21",
+                "leaf22": "22",
+            },
+        },
+    }
+    override_values = {
+        "trunk": {
+            "mid1": {
+                "leaf11": OverrideAction(OverrideActionEnum.Clear, None),
+                "leaf12": OverrideAction(OverrideActionEnum.Append, "34"),
+            },
+            "mid2": {
+                "leaf21": OverrideAction(OverrideActionEnum.Remove, "2"),
+                "leaf22": OverrideAction(OverrideActionEnum.Assign, "99"),
+            },
+        },
+    }
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    overridden_values = ConfigOverrider(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).override()
+
+    assert overridden_values == {
+        "trunk": {
+            "mid1": {
+                "leaf12": "1234",
+            },
+            "mid2": {
+                "leaf21": "1",
+                "leaf22": "99",
+            },
+        },
     }
 
 

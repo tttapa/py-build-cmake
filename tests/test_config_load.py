@@ -1,7 +1,14 @@
+import os
 from pathlib import PurePosixPath
 
 import pytest
-from py_build_cmake.config.load import Config, ConfigError, process_config
+from py_build_cmake.config.cli_override import parse_file
+from py_build_cmake.config.load import (
+    Config,
+    ConfigError,
+    add_cli_override,
+    process_config,
+)
 from py_build_cmake.config.options.config_path import ConfPath
 
 
@@ -441,4 +448,142 @@ def test_real_config_local_override_windows():
         "mac": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake is None
+    assert conf.cross is None
+
+
+def test_real_config_cli_override():
+    pyproj_path = PurePosixPath("/project/pyproject.toml")
+    pyproj = {
+        "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
+        "tool": {
+            "some-other-tool": {},
+            "py-build-cmake": {
+                "cmake": {
+                    "build_type": "Release",
+                    "generator": "Ninja",
+                    "source_path": "src",
+                    "env": {"foo": "bar"},
+                    "args": ["arg1", "arg2"],
+                    "build_tool_args": ["-a", "-b"],
+                    "find_python": False,
+                    "find_python3": True,
+                },
+                "linux": {
+                    "cmake": {
+                        "install_components": ["linux_install"],
+                        "env": {"PATH": "/usr/bin"},
+                        "args": ["arg3", "arg4"],
+                    }
+                },
+                "windows": {
+                    "cmake": {
+                        "install_components": ["win_install"],
+                    }
+                },
+            },
+        },
+    }
+    files = {"pyproject.toml": pyproj}
+    override_config = r"""
+        linux.cmake.build_type=MinSizeRel
+        linux.cmake.env.PATH=+(path)$HOME/opt
+        linux.cmake.options.FOOBAR="abc"
+        linux.cmake.options.FOOBAR+="def"
+        linux.cmake.options.FOOBAR+="ghi"
+        linux.cmake.options.FOOBAR=+"xyz"
+        linux.cmake.options.FOOBAR-="def"
+        linux.cmake.args-=["arg3"]
+        cmake.build_tool_args=["-c"]
+    """
+    overrides = {}
+    for i, opt in enumerate(parse_file(override_config)):
+        overrides.update(add_cli_override(files, opt, f"<cli:{i+1}>"))
+
+    conf = process_config(pyproj_path, files, overrides, test=True)
+    assert conf.standard_metadata.name == "foobar"
+    assert str(conf.standard_metadata.version) == "1.2.3"
+    assert conf.standard_metadata.description == "descr"
+    assert conf.module == {
+        "name": "foobar",
+        "directory": PurePosixPath("/project"),
+        "namespace": False,
+    }
+    assert conf.editable == {
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
+    }
+    assert conf.sdist == {
+        "linux": {"include_patterns": [], "exclude_patterns": []},
+        "windows": {"include_patterns": [], "exclude_patterns": []},
+        "mac": {"include_patterns": [], "exclude_patterns": []},
+    }
+    assert conf.cmake == {
+        "linux": {
+            "build_type": "MinSizeRel",
+            "config": ["MinSizeRel"],
+            "generator": "Ninja",
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
+                "/project/.py-build-cmake_cache/{build_config}"
+            ),
+            "options": {"FOOBAR": "xyz;abc;ghi"},
+            "args": ["arg1", "arg2", "arg4"],
+            "find_python": False,
+            "find_python3": True,
+            "build_args": [],
+            "build_tool_args": ["-a", "-b", "-c"],
+            "install_args": [],
+            "install_components": ["linux_install"],
+            "minimum_version": "3.15",
+            "env": {"PATH": "$HOME/opt" + os.pathsep + "/usr/bin", "foo": "bar"},
+            "pure_python": False,
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "windows": {
+            "build_type": "Release",
+            "config": ["Release"],
+            "generator": "Ninja",
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
+                "/project/.py-build-cmake_cache/{build_config}"
+            ),
+            "options": {},
+            "args": ["arg1", "arg2"],
+            "find_python": False,
+            "find_python3": True,
+            "build_args": [],
+            "build_tool_args": ["-a", "-b", "-c"],
+            "install_args": [],
+            "install_components": ["win_install"],
+            "minimum_version": "3.15",
+            "env": {"foo": "bar"},
+            "pure_python": False,
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "mac": {
+            "build_type": "Release",
+            "config": ["Release"],
+            "generator": "Ninja",
+            "source_path": PurePosixPath("/project/src"),
+            "build_path": PurePosixPath(
+                "/project/.py-build-cmake_cache/{build_config}"
+            ),
+            "options": {},
+            "args": ["arg1", "arg2"],
+            "find_python": False,
+            "find_python3": True,
+            "build_args": [],
+            "build_tool_args": ["-a", "-b", "-c"],
+            "install_args": [],
+            "install_components": [""],
+            "minimum_version": "3.15",
+            "env": {"foo": "bar"},
+            "pure_python": False,
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+    }
     assert conf.cross is None

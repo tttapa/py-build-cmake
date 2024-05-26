@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ...common import ConfigError
 from .config_option import ConfigOption
-from .value_reference import ValueReference
+from .value_reference import OverrideActionEnum, ValueReference
 
 
 class IntConfigOption(ConfigOption):
@@ -15,6 +15,10 @@ class IntConfigOption(ConfigOption):
         return new_value.values
 
     def verify(self, values: ValueReference):
+        if values.action != OverrideActionEnum.Assign:
+            msg = f"Option {values.value_path} of type {self.get_typename()} "
+            msg += f"does not support operation {values.action.value}"
+            raise ConfigError(msg)
         if self.sub_options:
             msg = f"Type of {values.value_path} should be {int}, "
             msg += f"not {dict}"

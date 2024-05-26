@@ -4,7 +4,7 @@ from ...common import ConfigError
 from .config_option import ConfigOption
 from .config_path import ConfPath
 from .default import DefaultValue, NoDefaultValue
-from .value_reference import ValueReference
+from .value_reference import OverrideActionEnum, ValueReference
 
 
 class EnumConfigOption(ConfigOption):
@@ -44,6 +44,10 @@ class EnumConfigOption(ConfigOption):
         return new_value.values
 
     def verify(self, values: ValueReference):
+        if values.action != OverrideActionEnum.Assign:
+            msg = f"Enumeration option {values.value_path} "
+            msg += f"does not support operation {values.action.value}"
+            raise ConfigError(msg)
         if self.sub_options:
             msg = f"Type of {values.value_path} should be {str}, "
             msg += f"not {dict}"
