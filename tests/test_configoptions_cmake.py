@@ -113,7 +113,8 @@ def test_cmake_options_invalid_key():
 
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     root_val = ValueReference(ConfPath.from_string("/"), values)
-    expected = r'Cannot combine "value" or "=" with the following keys: \[\'\+\'\]'
+    expected = r"Invalid keys in pyproject.toml/cmake/opt1/FOO1: "
+    expected += r'Cannot combine "value" or "=" with the following keys: \[\'\+\'\]'
     with pytest.raises(ConfigError, match=f"^{expected}$"):
         verify_and_override_config({}, root_ref, root_val)
 
