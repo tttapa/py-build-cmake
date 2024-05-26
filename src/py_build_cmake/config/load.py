@@ -15,7 +15,7 @@ from lark import LarkError
 
 from .. import __version__
 from ..common import Config, ConfigError
-from .cli_override import CLIOption, parse_cli
+from .cli_override import CLIOption, parse_cli, parse_file
 from .options.config_path import ConfPath
 from .options.config_reference import ConfigReference
 from .options.default import ConfigDefaulter
@@ -103,6 +103,20 @@ def try_load_toml(path: Path):
         raise ConfigError(msg) from e
 
 
+def try_load_pbc(path: Path):
+    try:
+        return parse_file(path.read_text("utf-8"))
+    except FileNotFoundError as e:
+        msg = f"Config file {str(path.absolute())!r} not found"
+        raise ConfigError(msg) from e
+    except OSError as e:
+        msg = f"Config file {str(path.absolute())!r} could not be loaded"
+        raise ConfigError(msg) from e
+    except LarkError as e:
+        msg = f"Config file {str(path.absolute())!r} is invalid"
+        raise ConfigError(msg) from e
+
+
 def read_config(
     pyproject_path: str | Path,
     flag_overrides: dict[str, list[str]],
@@ -116,14 +130,8 @@ def read_config(
         msg = "Missing [project] table"
         raise ConfigError(msg)
 
-    # Load local override
-    localconfig_path = pyproject_folder / "py-build-cmake.local.toml"
-    if localconfig_path.exists():
-        flag_overrides.setdefault("local", []).insert(0, str(localconfig_path))
-    # Load override for cross-compilation
-    crossconfig_path = pyproject_folder / "py-build-cmake.cross.toml"
-    if crossconfig_path.exists():
-        flag_overrides.setdefault("cross", []).insert(0, str(crossconfig_path))
+    # Load local overrides
+    check_if_local_configs_exist(flag_overrides, pyproject_folder)
 
     # File names mapping to the actual dict with the config
     config_files: dict[str, dict[str, Any]] = {
@@ -142,10 +150,21 @@ def read_config(
                 fullpath = path
             else:
                 fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
-            config = try_load_toml(fullpath)
-            if config:  # Treat empty file as no override
-                config_files[fullpath.as_posix()] = config
-                overrides[ConfPath((fullpath.as_posix(),))] = targetpath
+            if path.suffix == ".toml":
+                config = try_load_toml(fullpath)
+                if config:  # Treat empty file as no override
+                    config_files[fullpath.as_posix()] = config
+                    overrides[ConfPath((fullpath.as_posix(),))] = targetpath
+            elif path.suffix == ".pbc":
+                options = try_load_pbc(fullpath)
+                for i, o in enumerate(options):
+                    label = f"{fullpath.as_posix()}{i+1}"
+                    override = add_cli_override(config_files, o, label, targetpath)
+                    overrides.update(override)
+            else:
+                msg = f"Config file {str(path.absolute())!r} "
+                msg += "has an unsupported extension (.toml or .pbc)"
+                raise ConfigError(msg)
 
     # Command-line overrides
     for i, o in enumerate(cli_overrides):
@@ -154,10 +173,31 @@ def read_config(
     return process_config(pyproject_path, config_files, overrides)
 
 
+def check_if_local_configs_exist(flag_overrides, pyproject_folder):
+    localconfig_path = pyproject_folder / "py-build-cmake.local.pbc"
+    if localconfig_path.exists():
+        flag_overrides.setdefault("local", []).insert(0, str(localconfig_path))
+    localconfig_path = localconfig_path.with_suffix(".toml")
+    if localconfig_path.exists():
+        flag_overrides.setdefault("local", []).insert(0, str(localconfig_path))
+    # Load override for cross-compilation
+    crossconfig_path = pyproject_folder / "py-build-cmake.cross.pbc"
+    if crossconfig_path.exists():
+        flag_overrides.setdefault("cross", []).insert(0, str(crossconfig_path))
+    crossconfig_path = crossconfig_path.with_suffix(".toml")
+    if crossconfig_path.exists():
+        flag_overrides.setdefault("cross", []).insert(0, str(crossconfig_path))
+
+
 def add_cli_override(
-    config_files: dict[str, dict[str, Any]], opt: CLIOption, label: str
+    config_files: dict[str, dict[str, Any]],
+    opt: CLIOption,
+    label: str,
+    targetpath: ConfPath | None = None,
 ):
-    overrides = {ConfPath.from_string(label): get_tool_pbc_path()}
+    if targetpath is None:
+        targetpath = get_tool_pbc_path()
+    overrides = {ConfPath((label,)): targetpath}
     o: dict = config_files.setdefault(label, {})
     for k in opt.key[:-1]:
         o = o.setdefault(k, {})

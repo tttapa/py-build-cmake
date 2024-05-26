@@ -1,0 +1,5 @@
+[cmake.options]
+OPTION_A = "foo-bar-local-toml"
+OPTION_B = "baz;local"
+OPTION_C = {"append" = "local-toml"}
+OPTION_E = {"append" = "/usr/bin/local-toml"}

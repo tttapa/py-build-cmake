@@ -1,0 +1,6 @@
+cmake.options.OPTION_C+=local-pbc
+cmake.options.OPTION_D=True
+cmake.options.OPTION_E-=/usr/bin/bash
+linux.cmake.options.OPTION_F=/some/linux/specific/path/local
+windows.cmake.options.OPTION_F=/some/windows/specific/path/local
+mac.cmake.options.OPTION_F=/some/macos/specific/path/local
