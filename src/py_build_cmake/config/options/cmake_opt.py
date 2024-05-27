@@ -124,9 +124,7 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             raise ConfigError(msg)
         opt.strict = strict
         # Check if there are any unused keys left
-        if x:
-            msg = f"Error in {pth}: Invalid keys: {list(x)}"
-            raise ConfigError(msg)
+        assert not x
         return opt
 
     @staticmethod
@@ -166,12 +164,21 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             return report(f"{msg}: {a} ({a_path}) and {b} ({b_path})")
         return b
 
-    def _combine_values_into(self, a: CMakeOption, b: CMakeOption):
-        if a.value is None:
-            if b.value is not None:
-                a.value = b.value
+    def _combine_values_into(self, a: CMakeOption, b: CMakeOption):  # noqa: PLR0912
+        if b.value is not None:
+            a.value = b.value
+            a.remove = None
+            a.prepend = None
+            a.append = None
+        elif a.value is None:
             if b.remove is not None:
                 a.remove = b.remove
+                if a.prepend is not None:
+                    remove = set(b.remove)
+                    a.prepend = [v for v in a.prepend if v not in remove]
+                if a.append is not None:
+                    remove = set(b.remove)
+                    a.append = [v for v in a.append if v not in remove]
             if b.prepend is not None:
                 a.prepend = b.prepend + (a.prepend or [])
             if b.append is not None:
@@ -180,8 +187,13 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             if b.remove is not None:
                 remove = set(b.remove)
                 a.value = [v for v in a.value if v not in remove]
-            if b.value is not None:
-                a.value = b.value
+                # TODO: fix this and write comprehensive tests
+                if a.prepend is not None:
+                    remove = set(b.remove)
+                    a.prepend = [v for v in a.prepend if v not in remove]
+                if a.append is not None:
+                    remove = set(b.remove)
+                    a.append = [v for v in a.append if v not in remove]
             if b.append is not None:
                 a.value = a.value + b.append
             if b.prepend is not None:

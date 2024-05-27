@@ -42,10 +42,13 @@ class OverrideAction:
 
 class ValueReference:
     def __init__(
-        self, value_path: ConfPath, values: dict | OverrideAction | Any
+        self,
+        value_path: ConfPath,
+        values: dict | OverrideAction | Any,
+        action: OverrideActionEnum = OverrideActionEnum.Default,
     ) -> None:
         self.value_path = value_path
-        self.action = OverrideActionEnum.Default
+        self.action = action
         self.values: dict | Any
         if isinstance(values, OverrideAction):
             self.action = values.action

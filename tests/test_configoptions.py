@@ -14,6 +14,7 @@ from py_build_cmake.config.options.default import (
     RefDefaultValue,
     RequiredValue,
 )
+from py_build_cmake.config.options.finalize import ConfigFinalizer
 from py_build_cmake.config.options.inherit import ConfigInheritor
 from py_build_cmake.config.options.list import ListOfStrConfigOption
 from py_build_cmake.config.options.override import ConfigOverrider
@@ -98,7 +99,7 @@ def test_override0():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
@@ -107,10 +108,15 @@ def test_override0():
         root=root_ref,
         ref=root_ref,
         values=rval,
-        new_values=ValueReference(ConfPath.from_string("/override"), override_values),
+        new_values=ValueReference(ConfPath.from_string("/"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -142,7 +148,7 @@ def test_override1():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
@@ -153,8 +159,13 @@ def test_override1():
         values=rval.sub_ref(ConfPath.from_string("trunk/mid2")),
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=ValueReference(ConfPath.from_string("trunk/mid2"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "leaf21": "23",
         "leaf22": "22",
     }
@@ -181,7 +192,7 @@ def test_override2():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
@@ -192,8 +203,13 @@ def test_override2():
         values=rval.sub_ref(ConfPath.from_string("trunk/mid2")),
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=ValueReference(ConfPath.from_string("trunk/mid2"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "leaf21": "31",
         "leaf22": "32",
     }
@@ -228,19 +244,30 @@ def test_override_action():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
     ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
+    pprint(override_values)
     overridden_values = ConfigOverrider(
         root=root_ref,
         ref=root_ref,
         values=rval,
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "trunk": {
             "mid1": {
                 "leaf12": "1234",
@@ -279,10 +306,15 @@ def test_override_trunk():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
@@ -290,8 +322,13 @@ def test_override_trunk():
         values=rval.sub_ref("trunk"),
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "mid1": {
             "leaf11": "11",
             "leaf12": "33",
@@ -331,10 +368,15 @@ def test_override_root():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
-    ConfigVerifier(
+    rval.values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
         values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
@@ -342,8 +384,13 @@ def test_override_root():
         values=rval,
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -401,8 +448,13 @@ def test_override_root_verify():
         values=rval,
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "trunk": {
             "mid1": {
                 "leaf11": "11",
@@ -553,14 +605,29 @@ def test_override_append_prepend_assign():
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
     rval = ValueReference(ConfPath.from_string("/"), values)
 
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
         ref=root_ref.sub_ref("trunk"),
         values=rval.sub_ref("trunk"),
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref.sub_ref("trunk"),
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    assert overridden_values == {
+    assert finalized_values == {
         "subopt": {
             "args0a": ["abc", "def", "ghi", "123"],
             "args1a": ["123"],
@@ -603,15 +670,31 @@ def test_override_no_inherit():
     override_values = {"a": {"2": "A2", "3": "A3"}, "b": {"1": "B1"}}
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
         ref=root_ref,
-        values=ValueReference(ConfPath.from_string("/"), values),
+        values=rval,
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    print(overridden_values)
-    assert overridden_values == {
+    pprint(finalized_values)
+    assert finalized_values == {
         "a": {"1": "a1", "2": "a2+A2", "3": "A3"},
         "b": {"1": "B1"},
     }
@@ -642,15 +725,31 @@ def test_override_inherit():
     }
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
         ref=root_ref,
-        values=ValueReference(ConfPath.from_string("/"), values),
+        values=rval,
         new_values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), overridden_values),
+    ).finalize()
 
-    print(overridden_values)
-    assert overridden_values == {
+    pprint(finalized_values)
+    assert finalized_values == {
         "a": {"1": "a1", "2": "a2+A2", "3": "A3"},
         "b": {"1": "B1"},
         "c": {"1": "C1"},
@@ -686,13 +785,24 @@ def test_inherit():
     }
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
     ConfigInheritor(
         root=root_ref,
-        root_values=ValueReference(ConfPath.from_string("/"), values),
+        root_values=rval,
     ).inherit()
-    inherited_values = values
-    pprint(inherited_values)
-    assert inherited_values == {
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).finalize()
+
+    print(finalized_values)
+    assert finalized_values == {
         "a": {"1": "a1", "2": "a2"},
         "b": {"1": "B1"},
         "c": {"1": "a1+C1", "2": "a2"},
@@ -739,13 +849,20 @@ def test_verify():
     }
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
     verified_values = ConfigVerifier(
         root=root_ref,
         ref=root_ref,
-        values=ValueReference(ConfPath.from_string("/"), values),
+        values=rval,
     ).verify()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/"), verified_values),
+    ).finalize()
 
-    assert verified_values == values
+    print(finalized_values)
+    assert finalized_values == values
     assert verified == {
         ConfPath.from_string("a/1").pth,
         ConfPath.from_string("a/2").pth,
@@ -814,13 +931,24 @@ def test_default():
     values = {"f": "bar", "j": "zzz", "r": "baz"}
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
     ConfigDefaulter(
         root=root_ref,
-        root_values=ValueReference(ConfPath.from_string("/"), values),
+        root_values=rval,
     ).update_default()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).finalize()
 
-    print(values)
-    assert values == {
+    print(finalized_values)
+    assert finalized_values == {
         "a": "foo",
         "b": "foo",
         "c": "foo",
@@ -850,9 +978,15 @@ def test_default_missing():
     values = {"a": "foo"}
 
     root_ref = ConfigReference(ConfPath.from_string("/"), root)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
     defaulter = ConfigDefaulter(
         root=root_ref,
-        root_values=ValueReference(ConfPath.from_string("/"), values),
+        root_values=rval,
     )
     with pytest.raises(MissingDefaultError, match="^mis requires a value$"):
         defaulter.update_default()
