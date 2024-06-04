@@ -197,8 +197,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               append_by_default=True),
         BoolConfigOption("find_python",
                          "Specify hints for CMake's FindPython module.",
-                         "find_python = true",
-                         default=DefaultValueValue(False)),
+                         "find_python = false",
+                         default=DefaultValueValue(True)),
         BoolConfigOption("find_python3",
                          "Specify hints for CMake's FindPython3 module.",
                          "find_python3 = false",
@@ -253,7 +253,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "`none`.\n"
                          "If your package only includes Python extension "
                          "modules that use the CPython stable ABI, set this "
-                         "`abi3` (see also `abi3_minimum_cpython_version` "
+                         "to `abi3` (see also `abi3_minimum_cpython_version` "
                          "below).\n"
                          "For details about platform compatibility tags, see "
                          "the PyPA specification: https://packaging.python.org/"

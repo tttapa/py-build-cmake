@@ -57,8 +57,6 @@ class DirPatternsConfigOption(ListOfStrConfigOption):
 
     def verify(self, values: ValueReference):
         v = super().verify(values)
-        if v is None:
-            return v
         assert isinstance(v, ListOption)
         if v.value:
             v.value = self._verify_pattern_list(v.value, values.value_path)

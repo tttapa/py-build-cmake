@@ -352,12 +352,6 @@ def inherit_default_and_finalize_config(
         root=root_ref,
         root_values=root_val,
     ).inherit()
-    ConfigDefaulter(
-        root=root_ref,
-        root_values=root_val,
-        ref=root_ref.sub_ref("pyproject.toml"),
-        value_path=ConfPath.from_string("pyproject.toml"),
-    ).update_default()
     root_val.set_value(
         "pyproject.toml",
         ConfigFinalizer(
@@ -366,6 +360,12 @@ def inherit_default_and_finalize_config(
             values=root_val.sub_ref("pyproject.toml"),
         ).finalize(),
     )
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=root_val,
+        ref=root_ref.sub_ref("pyproject.toml"),
+        value_path=ConfPath.from_string("pyproject.toml"),
+    ).update_default()
 
 
 def set_up_os_specific_cross_inheritance(
@@ -485,12 +485,6 @@ def process_component_config(
         root=root_ref,
         root_values=root_val,
     ).inherit()
-    ConfigDefaulter(
-        root=root_ref,
-        root_values=root_val,
-        ref=root_ref.sub_ref("pyproject.toml"),
-        value_path=ConfPath.from_string("pyproject.toml"),
-    ).update_default()
     root_val.set_value(
         "pyproject.toml",
         ConfigFinalizer(
@@ -499,6 +493,12 @@ def process_component_config(
             values=root_val.sub_ref("pyproject.toml"),
         ).finalize(),
     )
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=root_val,
+        ref=root_ref.sub_ref("pyproject.toml"),
+        value_path=ConfPath.from_string("pyproject.toml"),
+    ).update_default()
     pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
 
     # Store the component configuration

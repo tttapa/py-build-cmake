@@ -130,3 +130,6 @@ class ValueReference:
             )
         name, rem = name.split_front()
         return self.sub_ref(name).sub_ref(rem)
+
+    def __repr__(self) -> str:
+        return f"<ValueReference to: '{self.value_path}'>"

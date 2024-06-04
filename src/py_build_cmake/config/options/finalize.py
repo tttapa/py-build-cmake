@@ -21,9 +21,13 @@ class ConfigFinalizer:
         )
         for name in self.ref.sub_options:
             if name in final_values.values:
-                final_values.values[name] = ConfigFinalizer(
+                final_val = ConfigFinalizer(
                     root=self.root,
                     ref=self.ref.sub_ref(name).resolve_inheritance(self.root),
                     values=final_values.sub_ref(name),
                 ).finalize()
+                if final_val is None:
+                    del final_values.values[name]
+                else:
+                    final_values.values[name] = final_val
         return final_values.values

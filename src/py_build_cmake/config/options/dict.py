@@ -4,7 +4,8 @@ from copy import deepcopy
 
 from ...common import ConfigError
 from .config_option import ConfigOption
-from .value_reference import OverrideAction, OverrideActionEnum, ValueReference
+from .string import StringOption
+from .value_reference import OverrideActionEnum, ValueReference
 
 
 class DictOfStrConfigOption(ConfigOption):
@@ -12,50 +13,55 @@ class DictOfStrConfigOption(ConfigOption):
         return "dict"
 
     def override(self, old_value: ValueReference, new_value: ValueReference):
-        new, old = new_value.values, old_value.values
-        if old is None:
-            old = {}
-        if new is None:
-            return old
-        r = {} if new_value.action == OverrideActionEnum.Assign else deepcopy(old)
-        for k, v in new.items():
-            if isinstance(v, str):
-                r[k] = v
+        if new_value.values is None:
+            return None
+        if old_value.values is None:
+            old_value.values = {}
+        r = deepcopy(old_value.values)
+        for k, v in new_value.values.items():
+            if k not in r:
+                r[k] = deepcopy(v)
             else:
-                assert isinstance(v, OverrideAction)
-                assert isinstance(v.values, str)
-                if v.action == OverrideActionEnum.Clear:
-                    r.pop(k, None)
-                else:
-                    r[k] = v.action.override_string(r.get(k, ""), v.values)
+                r[k] = r[k].override(v)
         return r
 
-    def verify(self, values: ValueReference):
-        def validate_type(el):
-            if isinstance(el, OverrideAction):
-                return isinstance(el.values, str)
-            return isinstance(el, str)
+    def _verify_str(self, values: ValueReference):
+        if not isinstance(values.values, str):
+            msg = f"Type of values in {values.value_path} should be str, "
+            msg += f"not {type(values.values)}"
+            raise ConfigError(msg)
 
+    def verify(self, values: ValueReference):
         if values.values is None:
             return None
-        supported = (
-            OverrideActionEnum.Assign,
-            OverrideActionEnum.Default,
-            OverrideActionEnum.Append,
-        )
-        if values.action not in supported:
+        if values.action not in (OverrideActionEnum.Append, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)
-        valdict = values.values
-        if not isinstance(valdict, dict):
+
+        if not isinstance(values.values, dict):
             msg = f"Type of {values.value_path} should be {dict}, "
-            msg += f"not {type(valdict)}"
+            msg += f"not {type(values.values)}"
             raise ConfigError(msg)
-        elif not all(isinstance(el, str) for el in valdict):
+        elif not all(isinstance(el, str) for el in values.values):
             msg = f"Type of keys in {values.value_path} should be {str}"
             raise ConfigError(msg)
-        elif not all(validate_type(el) for el in valdict.values()):
-            msg = f"Type of values in {values.value_path} should be {str}"
-            raise ConfigError(msg)
+        for k in values.values:
+            self._verify_str(values.sub_ref(k))
+
+        valdict: dict[str, StringOption] = {}
+        for k in values.values:
+            valdict[k] = StringOption.from_values(values.sub_ref(k))
         return valdict
+
+    def finalize(self, values: ValueReference) -> dict[str, str] | None:
+        if values.values is None:
+            return None
+        options: dict[str, str] = {}
+        for k, v in values.values.items():
+            if v is not None:
+                assert isinstance(v, StringOption)
+                str_v = v.finalize()
+                if str_v is not None:
+                    options[k] = str_v
+        return options

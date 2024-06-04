@@ -467,6 +467,7 @@ def test_real_config_cli_override():
                     "build_tool_args": ["-a", "-b"],
                     "find_python": False,
                     "find_python3": True,
+                    "python_abi": "abi3",
                 },
                 "linux": {
                     "cmake": {
@@ -493,6 +494,11 @@ def test_real_config_cli_override():
         linux.cmake.options.FOOBAR=+"xyz"
         linux.cmake.options.FOOBAR-="def"
         linux.cmake.args-=["arg3"]
+        linux.cmake.python_abi=!
+        mac.cmake.python_abi="none"
+        mac.cmake.args=!
+        mac.cmake.env=!
+        mac.cmake.find_python=!
         cmake.build_tool_args=["-c", "-d"]
     """
     overrides = {}
@@ -560,7 +566,7 @@ def test_real_config_cli_override():
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
             "pure_python": False,
-            "python_abi": "auto",
+            "python_abi": "abi3",
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
@@ -572,17 +578,17 @@ def test_real_config_cli_override():
                 "/project/.py-build-cmake_cache/{build_config}"
             ),
             "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
+            "args": [],
+            "find_python": True,
             "find_python3": True,
             "build_args": [],
             "build_tool_args": ["-c", "-d"],
             "install_args": [],
             "install_components": [""],
             "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "env": {},
             "pure_python": False,
-            "python_abi": "auto",
+            "python_abi": "none",
             "abi3_minimum_cpython_version": 32,
         },
     }

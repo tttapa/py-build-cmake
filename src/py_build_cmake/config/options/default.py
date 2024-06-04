@@ -60,7 +60,8 @@ class ConfigDefaulter:
             default = self.ref.config.default.get_default(self)
             if default is not None:
                 default_value = ValueReference(self.value_path, default.value)
-                value = self.ref.config.verify(default_value)
+                default_value.values = self.ref.config.verify(default_value)
+                value = self.ref.config.finalize(default_value)
                 self.root_values.set_value(self.value_path, value)
             else:
                 value_set = False

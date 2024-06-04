@@ -14,6 +14,7 @@ from py_build_cmake.config.options.default import (
     RefDefaultValue,
     RequiredValue,
 )
+from py_build_cmake.config.options.dict import DictOfStrConfigOption
 from py_build_cmake.config.options.finalize import ConfigFinalizer
 from py_build_cmake.config.options.inherit import ConfigInheritor
 from py_build_cmake.config.options.list import ListOfStrConfigOption
@@ -59,26 +60,30 @@ def test_update_defaults():
     values = {}
     rval = ValueReference(ConfPath.from_string("/"), values)
     trunk.config.default = DefaultValueValue({})
+    rval.values = ConfigFinalizer(root=root_ref, ref=root_ref, values=rval).finalize()
     ConfigDefaulter(root=root_ref, root_values=rval).update_default()
-    assert values == {"trunk": {}}
+    assert rval.values == {"trunk": {}}
 
     values = {}
     rval = ValueReference(ConfPath.from_string("/"), values)
     leaf12.config.default = DefaultValueValue("d12")
+    rval.values = ConfigFinalizer(root=root_ref, ref=root_ref, values=rval).finalize()
     ConfigDefaulter(root=root_ref, root_values=rval).update_default()
-    assert values == {"trunk": {}}
+    assert rval.values == {"trunk": {}}
 
     values = {}
     rval = ValueReference(ConfPath.from_string("/"), values)
     mid1.config.default = DefaultValueValue({})
+    rval.values = ConfigFinalizer(root=root_ref, ref=root_ref, values=rval).finalize()
     ConfigDefaulter(root=root_ref, root_values=rval).update_default()
-    assert values == {"trunk": {"mid1": {"leaf12": "d12"}}}
+    assert rval.values == {"trunk": {"mid1": {"leaf12": "d12"}}}
 
     values = {}
     rval = ValueReference(ConfPath.from_string("/"), values)
     trunk.config.default = NoDefaultValue()
+    rval.values = ConfigFinalizer(root=root_ref, ref=root_ref, values=rval).finalize()
     ConfigDefaulter(root=root_ref, root_values=rval).update_default()
-    assert values == {}
+    assert rval.values == {}
 
 
 def test_override0():
@@ -103,6 +108,11 @@ def test_override0():
         root=root_ref,
         ref=root_ref,
         values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
@@ -153,6 +163,11 @@ def test_override1():
         ref=root_ref,
         values=rval,
     ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
+    ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
         ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
@@ -196,6 +211,11 @@ def test_override2():
         root=root_ref,
         ref=root_ref,
         values=rval,
+    ).verify()
+    override_values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref.sub_ref(ConfPath.from_string("trunk/mid2")),
+        values=ValueReference(ConfPath.from_string("/override"), override_values),
     ).verify()
     overridden_values = ConfigOverrider(
         root=root_ref,
@@ -276,6 +296,82 @@ def test_override_action():
                 "leaf21": "1",
                 "leaf22": "99",
             },
+        },
+    }
+
+
+def test_override_override_action_append_prepend_remove():
+    trunk = ConfigOption("trunk")
+    trunk.insert_multiple(
+        [
+            StringConfigOption("str"),
+            ListOfStrConfigOption("list"),
+            DictOfStrConfigOption("dict"),
+        ]
+    )
+    opts = ConfigOption("root")
+    opts.insert(trunk)
+    values = {
+        "trunk": {
+            "str": "abcdef",
+            "list": ["abc", "def"],
+            "dict": {"x": "abcdef"},
+        },
+    }
+    override_values = [
+        {
+            "trunk": {
+                "str": OverrideAction(OverrideActionEnum.Append, "ghi"),
+                "list": OverrideAction(OverrideActionEnum.Append, ["ghi"]),
+                "dict": {"x": OverrideAction(OverrideActionEnum.Append, "ghi")},
+            }
+        },
+        {
+            "trunk": {
+                "str": OverrideAction(OverrideActionEnum.Prepend, "xyz"),
+                "list": OverrideAction(OverrideActionEnum.Prepend, ["xyz"]),
+                "dict": {"x": OverrideAction(OverrideActionEnum.Prepend, "xyz")},
+            }
+        },
+        {
+            "trunk": {
+                "str": OverrideAction(OverrideActionEnum.Remove, "def"),
+                "list": OverrideAction(OverrideActionEnum.Remove, ["def"]),
+                "dict": {"x": OverrideAction(OverrideActionEnum.Remove, "def")},
+            }
+        },
+    ]
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    for ovr in override_values:
+        verified = ConfigVerifier(
+            root=root_ref,
+            ref=root_ref,
+            values=ValueReference(ConfPath.from_string("/override"), ovr),
+        ).verify()
+        rval.values = ConfigOverrider(
+            root=root_ref,
+            ref=root_ref,
+            values=rval,
+            new_values=ValueReference(ConfPath.from_string("/override"), verified),
+        ).override()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).finalize()
+
+    assert finalized_values == {
+        "trunk": {
+            "str": "xyzabcghi",
+            "list": ["xyz", "abc", "ghi"],
+            "dict": {"x": "xyzabcghi"},
         },
     }
 
@@ -644,8 +740,6 @@ def test_override_append_prepend_assign():
 
 class ConfigTestOption(ConfigOption):
     def override(self, old_value, new_value):
-        if new_value.values is None:
-            return old_value.values
         if old_value.values is None:
             return new_value.values
         assert isinstance(old_value.values, str)
@@ -755,6 +849,104 @@ def test_override_inherit():
         "c": {"1": "C1"},
         "d": "D",
         "e": {"3": "E3"},
+    }
+
+
+def test_override_action_inherit():
+    a = ConfigOption("a")
+    a.insert_multiple(
+        [
+            StringConfigOption("str_append_clear"),
+            StringConfigOption("str_clear_append"),
+            StringConfigOption("str_append_remove_1"),
+            StringConfigOption("str_append_remove_2"),
+            StringConfigOption("str_remove_append_1"),
+            StringConfigOption("str_remove_append_2"),
+        ]
+    )
+    b = ConfigOption("b")
+    b.inherits = ConfPath.from_string("/a")
+    opts = ConfigOption("")
+    opts.insert_multiple([a, b])
+
+    values = {
+        "a": {
+            "str_append_clear": "abcdef",
+            "str_clear_append": "abcdef",
+            "str_append_remove_1": "abcdef",
+            "str_append_remove_2": "abcdef",
+            "str_remove_append_1": "abcdef",
+            "str_remove_append_2": "abcdef",
+        },
+        "b": {
+            "str_append_clear": OverrideAction(OverrideActionEnum.Append, "ghi"),
+            "str_clear_append": OverrideAction(OverrideActionEnum.Clear, None),
+            "str_append_remove_1": OverrideAction(OverrideActionEnum.Append, "ghi"),
+            "str_append_remove_2": OverrideAction(OverrideActionEnum.Append, "ghi"),
+            "str_remove_append_1": OverrideAction(OverrideActionEnum.Remove, "de"),
+            "str_remove_append_2": OverrideAction(OverrideActionEnum.Remove, "gh"),
+        },
+    }
+    override_values = [
+        {
+            "b": {
+                "str_append_clear": OverrideAction(OverrideActionEnum.Clear, None),
+                "str_clear_append": OverrideAction(OverrideActionEnum.Append, "ghi"),
+                "str_append_remove_1": OverrideAction(OverrideActionEnum.Remove, "de"),
+                "str_append_remove_2": OverrideAction(OverrideActionEnum.Remove, "gh"),
+                "str_remove_append_1": OverrideAction(OverrideActionEnum.Append, "ghi"),
+                "str_remove_append_2": OverrideAction(OverrideActionEnum.Append, "ghi"),
+            }
+        }
+    ]
+    root_ref = ConfigReference(ConfPath.from_string("/"), opts)
+    rval = ValueReference(ConfPath.from_string("/"), values)
+
+    rval.values = ConfigVerifier(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).verify()
+    for ovr in override_values:
+        verified = ConfigVerifier(
+            root=root_ref,
+            ref=root_ref,
+            values=ValueReference(ConfPath.from_string("/override"), ovr),
+        ).verify()
+        rval.values = ConfigOverrider(
+            root=root_ref,
+            ref=root_ref,
+            values=rval,
+            new_values=ValueReference(ConfPath.from_string("/override"), verified),
+        ).override()
+    ConfigInheritor(
+        root=root_ref,
+        root_values=rval,
+    ).inherit()
+    finalized_values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).finalize()
+
+    pprint(finalized_values)
+    assert finalized_values == {
+        "a": {
+            "str_append_clear": "abcdef",
+            "str_clear_append": "abcdef",
+            "str_append_remove_1": "abcdef",
+            "str_append_remove_2": "abcdef",
+            "str_remove_append_1": "abcdef",
+            "str_remove_append_2": "abcdef",
+        },
+        "b": {
+            # "str_append_clear": <unset>,
+            "str_clear_append": "ghi",
+            "str_append_remove_1": "abcfghi",
+            "str_append_remove_2": "abcdefi",
+            "str_remove_append_1": "abcfghi",
+            "str_remove_append_2": "abcdefghi",
+        },
     }
 
 
@@ -937,18 +1129,18 @@ def test_default():
         ref=root_ref,
         values=rval,
     ).verify()
-    ConfigDefaulter(
-        root=root_ref,
-        root_values=rval,
-    ).update_default()
-    finalized_values = ConfigFinalizer(
+    rval.values = ConfigFinalizer(
         root=root_ref,
         ref=root_ref,
         values=rval,
     ).finalize()
+    ConfigDefaulter(
+        root=root_ref,
+        root_values=rval,
+    ).update_default()
 
-    print(finalized_values)
-    assert finalized_values == {
+    print(rval.values)
+    assert rval.values == {
         "a": "foo",
         "b": "foo",
         "c": "foo",
@@ -984,6 +1176,11 @@ def test_default_missing():
         ref=root_ref,
         values=rval,
     ).verify()
+    rval.values = ConfigFinalizer(
+        root=root_ref,
+        ref=root_ref,
+        values=rval,
+    ).finalize()
     defaulter = ConfigDefaulter(
         root=root_ref,
         root_values=rval,

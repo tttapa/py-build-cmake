@@ -39,18 +39,14 @@ class EnumConfigOption(ConfigOption):
             return "'" + "' | '".join(self.options) + "'"
 
     def override(self, old_value: ValueReference, new_value: ValueReference):
-        if new_value.values is None:
-            return old_value.values
         return new_value.values
 
     def verify(self, values: ValueReference):
+        if values.values is None:
+            return None
         if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Enumeration option {values.value_path} "
             msg += f"does not support operation {values.action.value}"
-            raise ConfigError(msg)
-        if self.sub_options:
-            msg = f"Type of {values.value_path} should be {str}, "
-            msg += f"not {dict}"
             raise ConfigError(msg)
         elif not isinstance(values.values, str):
             msg = f"Type of {values.value_path} should be {str}, "

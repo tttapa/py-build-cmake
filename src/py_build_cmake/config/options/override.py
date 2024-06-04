@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .config_reference import ConfigReference
-from .value_reference import OverrideActionEnum, ValueReference
+from .value_reference import ValueReference
 
 
 class ConfigOverrider:
@@ -31,16 +31,14 @@ class ConfigOverrider:
                 new_val = self.new_values.sub_ref(name)
             except KeyError:
                 continue
-            if new_val.action == OverrideActionEnum.Clear:
-                overridden_values.clear_value(name)
-            else:
-                default = {} if ref.sub_options else None
-                overridden_values.set_value_default(name, default)
-                old_val = overridden_values.sub_ref(name)
-                overridden_values.values[name] = ConfigOverrider(
-                    root=self.root,
-                    ref=ref,
-                    values=old_val,
-                    new_values=new_val,
-                ).override()
+
+            default = {} if ref.sub_options else None
+            overridden_values.set_value_default(name, default)
+            old_val = overridden_values.sub_ref(name)
+            overridden_values.values[name] = ConfigOverrider(
+                root=self.root,
+                ref=ref,
+                values=old_val,
+                new_values=new_val,
+            ).override()
         return overridden_values.values

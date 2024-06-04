@@ -7,15 +7,81 @@ from ...common import ConfigError
 from .config_option import ConfigOption
 from .config_path import ConfPath
 from .default import DefaultValue
+from .string import StringOption
 from .value_reference import OverrideActionEnum, ValueReference
 
 
 @dataclass
 class ListOption:
+    clear: bool = False
     value: list[str] | None = None
     append: list[str] | None = None
     prepend: list[str] | None = None
     remove: list[str] | None = None
+
+    @classmethod
+    def from_values(cls, values: ValueReference, append_by_default: bool):
+        val = values.values
+        if values.action == OverrideActionEnum.Clear:
+            assert val is None
+            return cls(clear=True)
+        if not isinstance(val, list) or not all(isinstance(v, str) for v in val):
+            msg = f"Invalid type {type(val)}"
+            raise AssertionError(msg)
+        if values.action == OverrideActionEnum.Default:
+            return cls(append=val) if append_by_default else cls(value=val)
+        if values.action == OverrideActionEnum.Assign:
+            return cls(value=val)
+        if values.action == OverrideActionEnum.Remove:
+            return cls(remove=val)
+        if values.action == OverrideActionEnum.Append:
+            return cls(append=val)
+        if values.action == OverrideActionEnum.Prepend:
+            return cls(prepend=val)
+        msg = f"Invalid action {values.action}"
+        raise AssertionError(msg)
+
+    def override(self, new: ListOption):
+        # Clearing always propagates
+        if new.clear:
+            return copy(new)
+        old = copy(self)
+        # If we're overriding with a value, the old value is not used
+        if new.value is not None:
+            old.value = new.value
+            old.append = new.append
+            old.prepend = new.prepend
+            old.remove = []
+            return old
+        # Otherwise, we're simply appending to or removing from the old value,
+        # and these changes are propagated down to the old value.
+        if new.remove is not None:
+            old.remove = (old.remove or []) + new.remove
+            if old.value:
+                old.value = [e for e in old.value if e not in new.remove]
+            if old.prepend:
+                old.prepend = [e for e in old.prepend if e not in new.remove]
+            if old.append:
+                old.append = [e for e in old.append if e not in new.remove]
+        if new.append is not None:
+            old.append = (old.append or []) + new.append
+        if new.prepend is not None:
+            old.prepend = new.prepend + (old.prepend or [])
+        return old
+
+    def finalize(self) -> list[str] | None:
+        empty = True
+        final = []
+        if self.value is not None:
+            empty = False
+            final = self.value
+        if self.append is not None:
+            empty = False
+            final = final + self.append
+        if self.prepend is not None:
+            empty = False
+            final = self.prepend + final
+        return None if (empty and self.clear) else final
 
 
 class ListOfStrConfigOption(ConfigOption):
@@ -47,53 +113,14 @@ class ListOfStrConfigOption(ConfigOption):
         return "list+" if self.append_by_default else "list"
 
     def override(self, old_value: ValueReference, new_value: ValueReference):
-        if old_value.values is None:
-            old_value.values = ListOption(value=[])
-        if new_value.values is None:
-            return old_value.values
-        a = copy(old_value.values)
-        b = new_value.values
-        assert isinstance(a, ListOption)
-        assert isinstance(b, ListOption)
-        self._combine_values_into(a, b)
-        return a
+        new, old = new_value.values, copy(old_value.values)
+        if old is None:  # No previous value
+            old = ListOption()
+        assert isinstance(new, ListOption)
+        assert isinstance(old, ListOption)
+        return old.override(new)
 
-    def _combine_values_into(self, a: ListOption, b: ListOption):  # noqa: PLR0912
-        if b.value is not None:
-            a.value = b.value
-            a.remove = None
-            a.prepend = None
-            a.append = None
-        elif a.value is None:
-            if b.remove is not None:
-                a.remove = b.remove
-                if a.prepend is not None:
-                    remove = set(b.remove)
-                    a.prepend = [v for v in a.prepend if v not in remove]
-                if a.append is not None:
-                    remove = set(b.remove)
-                    a.append = [v for v in a.append if v not in remove]
-            if b.prepend is not None:
-                a.prepend = b.prepend + (a.prepend or [])
-            if b.append is not None:
-                a.append = (a.append or []) + b.append
-        else:
-            if b.remove is not None:
-                remove = set(b.remove)
-                a.value = [v for v in a.value if v not in remove]
-                # TODO: fix this and write comprehensive tests
-                if a.prepend is not None:
-                    remove = set(b.remove)
-                    a.prepend = [v for v in a.prepend if v not in remove]
-                if a.append is not None:
-                    remove = set(b.remove)
-                    a.append = [v for v in a.append if v not in remove]
-            if b.append is not None:
-                a.value = a.value + b.append
-            if b.prepend is not None:
-                a.value = b.prepend + a.value
-
-    def _check_dict_keys(self, d: dict, pth):
+    def _check_dict_keys(self, d: dict, pth: ConfPath):
         invalid_keys = set(d) - self.valid_keys
         if invalid_keys:
             msg = f"Invalid keys in {pth}: {list(invalid_keys)}"
@@ -147,45 +174,36 @@ class ListOfStrConfigOption(ConfigOption):
         assert not x
         return opt
 
-    def verify(self, values: ValueReference):  # noqa: PLR0911
-        v = values.values
-        if isinstance(v, dict):
+    def verify(self, values: ValueReference):
+        if isinstance(values.values, dict):
             return self._verify_dict(values)
-        elif not isinstance(v, list):
-            if self.convert_str_to_singleton and isinstance(v, str):
-                v = [v]
+        elif not isinstance(values.values, list):
+            if self.convert_str_to_singleton and isinstance(values.values, str):
+                values.values = values.values = [values.values]
+            elif values.values is None and values.action == OverrideActionEnum.Clear:
+                pass
             else:
                 msg = f"Type of {values.value_path} should be {list}, "
-                msg += f"not {type(v)}"
+                msg += f"not {type(values.values)}"
                 raise ConfigError(msg)
-        elif not all(isinstance(el, str) for el in v):
+        elif not all(isinstance(el, str) for el in values.values):
             msg = f"Type of elements in {values.value_path} should be {str}"
             raise ConfigError(msg)
-        if values.action == OverrideActionEnum.Default:
-            if self.append_by_default:
-                return ListOption(append=v)
-            return ListOption(value=v)
-        elif values.action == OverrideActionEnum.Assign:
-            return ListOption(value=v)
-        elif values.action == OverrideActionEnum.Append:
-            return ListOption(append=v)
-        elif values.action == OverrideActionEnum.Prepend:
-            return ListOption(prepend=v)
-        elif values.action == OverrideActionEnum.Remove:
-            return ListOption(remove=v)
-        else:
+        path_actions = (OverrideActionEnum.AppendPath, OverrideActionEnum.PrependPath)
+        if values.action in path_actions:
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)
+        return ListOption.from_values(values, self.append_by_default)
 
     def finalize(self, values: ValueReference):
-        if isinstance(values.values, str):  # Could be because of default
-            return [values.values]
-        if isinstance(values.values, list):  # Could be because of default
-            return values.values
-        x = values.values
-        y = ListOption(value=[])
-        assert isinstance(x, ListOption)
-        self._combine_values_into(y, x)
-        assert y.value is not None
-        return y.value
+        val = values.values
+        if isinstance(val, list):
+            return val
+        # We allow lists inheriting from strings
+        if self.convert_str_to_singleton and isinstance(val, StringOption):
+            val = val.finalize()
+            return None if val is None else [val]
+        # The following is the main case
+        assert isinstance(val, ListOption)
+        return val.finalize()

@@ -3,23 +3,25 @@ from __future__ import annotations
 import logging
 from copy import copy, deepcopy
 from dataclasses import dataclass
+from typing import List, Union, cast
 
 from ...common import ConfigError
+from .config_option import ConfigOption
 from .config_path import ConfPath
-from .dict import DictOfStrConfigOption
-from .value_reference import OverrideAction, OverrideActionEnum, ValueReference
+from .value_reference import OverrideActionEnum, ValueReference
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class CMakeOption:
+    clear: bool = False
     value: list[str | bool] | None = None
     append: list[str | bool] | None = None
     prepend: list[str | bool] | None = None
     remove: list[str | bool] | None = None
     datatype: str | None = None
-    strict: bool = True
+    strict: bool = False
 
     @classmethod
     def create(cls, x, datatype=None):
@@ -30,69 +32,17 @@ class CMakeOption:
         assert isinstance(x, (bool, str))
         return cls(value=[x], datatype=datatype)
 
-
-# Entries are of the following form
-# {
-#    "VAR_A": "value",
-#    "VAR_B": ["123", "456"],
-#    "VAR_C": false,
-#    "VAR_D": {
-#       "type": "STRING",
-#       "value": ["789", "xyz"],
-#    },
-#    "VAR_E": {
-#       "type": "FILEPATH",
-#       "value": "/usr/bin/bash",
-#    },
-#    "VAR_F": {
-#       "type": "FILEPATH",
-#       "append": ["/usr/bin/bash"],
-#    }
-# }
-
-
-class CMakeOptConfigOption(DictOfStrConfigOption):
-    """
-    Dictionary of CMake options, with optional data type, ability to merge
-    or remove options, etc.
-    """
-
-    valid_keys = frozenset(
-        ("+", "-", "=", "append", "remove", "value", "prepend", "type", "strict")
-    )
-
-    def get_typename(self, md: bool = False) -> str:
-        return "dict (CMake)"
-
-    @staticmethod
-    def _convert_to_option(
-        x: str | bool | list[str | bool] | dict[str, str | bool | list[str | bool]],
-        pth: ConfPath,
-    ):
-        if isinstance(x, bool):
-            return CMakeOption(value=[x], datatype="BOOL")
-        if isinstance(x, str):
-            return CMakeOption(value=[x])
-        if isinstance(x, list):
-            all_bool = all(isinstance(b, bool) for b in x)
-            nonempty = len(x) > 0
-            return CMakeOption(
-                value=x,
-                datatype=("BOOL" if all_bool and nonempty else None),
-            )
-        assert isinstance(x, dict)
-        return CMakeOptConfigOption._convert_dict_to_option(x, pth)
-
-    @staticmethod
-    def _convert_dict_to_option(
-        x: dict[str, str | bool | list[str | bool]], pth: ConfPath
-    ):
-        opt = CMakeOption()
+    @classmethod
+    def _from_dict(cls, x: dict[str, str | bool | list[str | bool]], pth: ConfPath):
+        opt = cls()
         if "=" in x:
+            assert "value" not in x
             x["value"] = x.pop("=")
         if "+" in x:
+            assert "append" not in x
             x["append"] = x.pop("+")
         if "-" in x:
+            assert "remove" not in x
             x["remove"] = x.pop("-")
         all_bool = True
         nonempty = False
@@ -127,6 +77,147 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
         assert not x
         return opt
 
+    @classmethod
+    def from_values(cls, values: ValueReference):
+        val = values.values
+        if values.action == OverrideActionEnum.Clear:
+            assert val is None
+            return cls(clear=True)
+        if isinstance(val, dict):
+            return cls._from_dict(val, values.value_path)
+        datatype = None
+        if isinstance(val, bool):
+            val = [val]
+            datatype = "BOOL"
+        elif isinstance(val, str):
+            val = [val]
+        elif isinstance(val, list):
+            assert all(isinstance(b, (str, bool)) for b in val)
+            all_bool = all(isinstance(b, bool) for b in val)
+            nonempty = len(val) > 0
+            if all_bool and nonempty:
+                datatype = "BOOL"
+        else:
+            msg = f"Invalid type {type(val)}"
+            raise AssertionError(msg)
+        val = cast(List[Union[str, bool]], val)
+        if values.action in (OverrideActionEnum.Default, OverrideActionEnum.Assign):
+            return cls(value=val, datatype=datatype)
+        if values.action == OverrideActionEnum.Remove:
+            return cls(remove=val, datatype=datatype)
+        if values.action == OverrideActionEnum.Append:
+            return cls(append=val, datatype=datatype)
+        if values.action == OverrideActionEnum.Prepend:
+            return cls(prepend=val, datatype=datatype)
+        msg = f"Invalid action {values.action}"
+        raise AssertionError(msg)
+
+    @staticmethod
+    def _combine_types(
+        a: CMakeOption,
+        b: CMakeOption,
+        strict: bool,
+        a_path: ConfPath,
+        b_path: ConfPath,
+    ) -> str | None:
+        def report(msg):
+            if not strict:
+                logger.warning(msg)
+                return b.datatype
+            msg = f'{msg} (use "strict" = false to ignore)'
+            raise ConfigError(msg)
+
+        if b.datatype is None:
+            return a.datatype
+        if a.datatype is None:
+            return b.datatype
+        if a.datatype == b.datatype:
+            return b.datatype
+        msg = "Incompatible types when overriding or inheriting CMake settings"
+        # Cannot override these by other types
+        if a.datatype in ("BOOL", "STRING", "FILEPATH"):
+            return report(f"{msg}: {a.datatype} ({a_path}) and {b.datatype} ({b_path})")
+        # PATH can be made more specific to FILEPATH
+        if a.datatype == "PATH" and b.datatype != "FILEPATH":
+            return report(f"{msg}: {a.datatype} ({a_path}) and {b.datatype} ({b_path})")
+        return b.datatype
+
+    def override(self, new: CMakeOption):
+        # Clearing always propagates
+        if new.clear:
+            return copy(new)
+        old = copy(self)
+        # If we're overriding with a value, the old value is not used
+        if new.value is not None:
+            old.value = new.value
+            old.append = new.append
+            old.prepend = new.prepend
+            old.remove = []
+            return old
+        # Otherwise, we're simply appending to or removing from the old value,
+        # and these changes are propagated down to the old value.
+        if new.remove is not None:
+            old.remove = (old.remove or []) + new.remove
+            if old.value:
+                old.value = [e for e in old.value if e not in new.remove]
+            if old.prepend:
+                old.prepend = [e for e in old.prepend if e not in new.remove]
+            if old.append:
+                old.append = [e for e in old.append if e not in new.remove]
+        if new.append is not None:
+            old.append = (old.append or []) + new.append
+        if new.prepend is not None:
+            old.prepend = new.prepend + (old.prepend or [])
+        return old
+
+    def finalize(self) -> list[str | bool] | None:
+        empty = True
+        final = []
+        if self.value is not None:
+            empty = False
+            final = self.value
+        if self.append is not None:
+            empty = False
+            final = final + self.append
+        if self.prepend is not None:
+            empty = False
+            final = self.prepend + final
+        return None if (empty and self.clear) else final
+
+
+# Entries are of the following form
+# {
+#    "VAR_A": "value",
+#    "VAR_B": ["123", "456"],
+#    "VAR_C": false,
+#    "VAR_D": {
+#       "type": "STRING",
+#       "value": ["789", "xyz"],
+#    },
+#    "VAR_E": {
+#       "type": "FILEPATH",
+#       "value": "/usr/bin/bash",
+#    },
+#    "VAR_F": {
+#       "type": "FILEPATH",
+#       "append": ["/usr/bin/bash"],
+#    }
+# }
+
+
+class CMakeOptConfigOption(ConfigOption):
+    """
+    Dictionary of CMake options, with optional data type, ability to merge
+    or remove options, etc.
+    """
+
+    valid_keys = frozenset(
+        ("+", "-", "=", "append", "remove", "value", "prepend", "type", "strict")
+    )
+
+    def get_typename(self, md: bool = False) -> str:
+        return "dict (CMake)"
+
     @staticmethod
     def _check_type(a, a_path):
         valid_types = (None, "STRING", "BOOL", "PATH", "FILEPATH")
@@ -134,86 +225,16 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
             msg = f"Unknown type '{a}' in {a_path}"
             raise ConfigError(msg)
 
-    def _combine_types(
-        self,
-        a: str | None,
-        b: str | None,
-        strict: bool,
-        a_path: ConfPath,
-        b_path: ConfPath,
-    ):
-        def report(msg):
-            if not strict:
-                logger.warning(msg)
-                return b
-            msg = f'{msg} (use "strict" = false to ignore)'
-            raise ConfigError(msg)
-
-        if b is None:
-            return a
-        if a is None:
-            return b
-        if a == b:
-            return b
-        msg = "Incompatible types when overriding or inheriting CMake settings"
-        # Cannot override these by other types
-        if a in ("BOOL", "STRING", "FILEPATH"):
-            return report(f"{msg}: {a} ({a_path}) and {b} ({b_path})")
-        # PATH can be made more specific to FILEPATH
-        if a == "PATH" and b != "FILEPATH":
-            return report(f"{msg}: {a} ({a_path}) and {b} ({b_path})")
-        return b
-
-    def _combine_values_into(self, a: CMakeOption, b: CMakeOption):  # noqa: PLR0912
-        if b.value is not None:
-            a.value = b.value
-            a.remove = None
-            a.prepend = None
-            a.append = None
-        elif a.value is None:
-            if b.remove is not None:
-                a.remove = b.remove
-                if a.prepend is not None:
-                    remove = set(b.remove)
-                    a.prepend = [v for v in a.prepend if v not in remove]
-                if a.append is not None:
-                    remove = set(b.remove)
-                    a.append = [v for v in a.append if v not in remove]
-            if b.prepend is not None:
-                a.prepend = b.prepend + (a.prepend or [])
-            if b.append is not None:
-                a.append = (a.append or []) + b.append
-        else:
-            if b.remove is not None:
-                remove = set(b.remove)
-                a.value = [v for v in a.value if v not in remove]
-                # TODO: fix this and write comprehensive tests
-                if a.prepend is not None:
-                    remove = set(b.remove)
-                    a.prepend = [v for v in a.prepend if v not in remove]
-                if a.append is not None:
-                    remove = set(b.remove)
-                    a.append = [v for v in a.append if v not in remove]
-            if b.append is not None:
-                a.value = a.value + b.append
-            if b.prepend is not None:
-                a.value = b.prepend + a.value
-
     def _combine(self, a: CMakeOption, b: CMakeOption, a_path, b_path):
-        if b.value is not None:
-            return b
-        a = copy(a)
-        a.datatype = self._combine_types(
-            a.datatype, b.datatype, b.strict, a_path, b_path
-        )
-        self._combine_values_into(a, b)
-        return a
+        r = a.override(b)
+        r.datatype = CMakeOption._combine_types(a, b, b.strict, a_path, b_path)
+        return r
 
     def override(self, old_value: ValueReference, new_value: ValueReference):
+        if new_value.values is None:
+            return None
         if old_value.values is None:
             old_value.values = {}
-        if new_value.values is None:
-            return old_value.values
         r = deepcopy(old_value.values)
         for k, v in new_value.values.items():
             if k not in r:
@@ -227,48 +248,30 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
                 )
         return r
 
-    def _verify_cmake_list(self, x, pth: ConfPath):
-        if isinstance(x, list):
-            for v in x:
+    def _verify_cmake_list(self, values: ValueReference):
+        if isinstance(values.values, list):
+            for v in values.values:
                 if not isinstance(v, str) and not isinstance(v, bool):
-                    msg = f"Type of values in list {pth} should be str or "
-                    msg += f"bool, not {type(v)}"
+                    msg = f"Type of values in list {values.value_path} should "
+                    msg += f"be str or bool, not {type(v)}"
                     raise ConfigError(msg)
-        elif not isinstance(x, str) and not isinstance(x, bool):
-            msg = f"Type of values in {pth} should be str or bool or a "
-            msg += f"list thereof, not {type(x)}"
+        elif not isinstance(values.values, str) and not isinstance(values.values, bool):
+            msg = f"Type of values in {values.value_path} should be str or bool or a "
+            msg += f"list thereof, not {type(values.values)}"
             raise ConfigError(msg)
 
-    def _verify_cmake_list_or_dict(self, x, pth: ConfPath):
-        if isinstance(x, dict):
-            for k, v in x.items():
+    def _verify_cmake_list_or_dict(self, values: ValueReference):
+        if isinstance(values.values, dict):
+            for k in values.values:
                 if not isinstance(k, str):
-                    msg = f"Type of keys in {pth} should be str, "
+                    msg = f"Type of keys in {values.value_path} should be str, "
                     msg += f"not {type(k)}"
                     raise ConfigError(msg)
-                self._verify_cmake_list(v, pth.join(k))
+                self._verify_cmake_list(values.sub_ref(k))
         else:
-            self._verify_cmake_list(x, pth)
+            self._verify_cmake_list(values)
 
-    def _convert_override_to_dict(self, x: OverrideAction, pth: ConfPath):
-        def raise_err():
-            msg = f"Option {pth} does not support operation "
-            msg += f"{x.action.value}"
-            raise ConfigError(msg)
-
-        v = x.values
-        OAE = OverrideActionEnum
-        return {
-            OAE.Default: lambda: v,
-            OAE.Assign: lambda: v if isinstance(v, dict) else {"value": v},
-            OAE.Append: lambda: {"append": v},
-            OAE.Prepend: lambda: {"prepend": v},
-            OAE.Remove: lambda: {"-": v},
-            OAE.AppendPath: lambda: raise_err(),
-            OAE.PrependPath: lambda: raise_err(),
-        }[x.action]()
-
-    def _check_dict_keys(self, d, pth):
+    def _check_dict_keys(self, d, pth: ConfPath):
         if not isinstance(d, dict):
             return
         invalid_keys = set(d) - self.valid_keys
@@ -300,45 +303,44 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
     def verify(self, values: ValueReference):
         """Checks the data types and keys of the values, and then converts
         them to a dictionary of CMakeOptions."""
-        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
+        if values.values is None:
+            return None
+        if values.action not in (OverrideActionEnum.Append, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} of type {self.get_typename()} "
             msg += f"does not support operation {values.action.value}"
             raise ConfigError(msg)
-        if values.values is None:
-            return None
-        valdict = copy(values.values)
-        if not isinstance(valdict, dict):
+        if not isinstance(values.values, dict):
             msg = f"Type of {values.value_path} should be {dict}, "
-            msg += f"not {type(valdict)}"
+            msg += f"not {type(values.values)}"
             raise ConfigError(msg)
-        elif not all(isinstance(k, str) for k in valdict):
+        elif not all(isinstance(k, str) for k in values.values):
             msg = f"Type of keys in {values.value_path} should be {str}"
             raise ConfigError(msg)
-        for k, v in valdict.items():
-            pth = values.value_path.join(k)
-            if isinstance(v, OverrideAction):
-                valdict[k] = self._convert_override_to_dict(v, pth)
-            self._verify_cmake_list_or_dict(valdict[k], pth)
+        for k in values.values:
+            self._verify_cmake_list_or_dict(values.sub_ref(k))
 
-        for k in valdict:
+        valdict: dict[str, CMakeOption] = {}
+        for k in values.values:
             pth = values.value_path.join(k)
-            self._check_dict_keys(valdict[k], pth)
-            valdict[k] = self._convert_to_option(valdict[k], pth)
+            self._check_dict_keys(values.values[k], pth)
+            valdict[k] = CMakeOption.from_values(values.sub_ref(k))
         return valdict
 
-    def finalize(self, values: ValueReference) -> dict[str, str]:
+    def finalize(self, values: ValueReference) -> dict[str, str] | None:
         """Converts the internal dict of CMakeOptions back into a dict of string
         that can be passed as CMake command-line arguments"""
+        if values.values is None:
+            return None
 
         def convert(x):
             assert isinstance(x, CMakeOption)
-            y = CMakeOption(value=[])
-            self._combine_values_into(y, x)
-            assert y.value is not None
+            final = x.finalize()
+            if final is None:
+                return None
             on_off = {True: "On", False: "Off"}
             escape = lambda x: x.replace(";", "\\;")
             to_str = lambda b: (escape(b) if isinstance(b, str) else on_off[b])
-            return ";".join(map(to_str, y.value))
+            return ";".join(map(to_str, final))
 
         def convert_key(k, x):
             assert isinstance(x, CMakeOption)
@@ -346,5 +348,8 @@ class CMakeOptConfigOption(DictOfStrConfigOption):
 
         options: dict[str, str] = {}
         for k, v in values.values.items():
-            options[convert_key(k, v)] = convert(v)
+            if v is not None:
+                str_v = convert(v)
+                if str_v is not None:
+                    options[convert_key(k, v)] = str_v
         return options
