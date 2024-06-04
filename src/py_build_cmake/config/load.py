@@ -292,6 +292,13 @@ def process_config(
     }
     cfg.cmake = cfg.cmake or None
 
+    # Store the Wheel configuration
+    cfg.wheel = {
+        os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "wheel"))))
+        for os in ("linux", "windows", "mac", "cross")
+        if pbc_value_ref.is_value_set(ConfPath((os, "wheel")))
+    }
+
     # Store stubgen configuration
     s = "stubgen"
     if pbc_value_ref.is_value_set(s):
@@ -302,7 +309,7 @@ def process_config(
     if pbc_value_ref.is_value_set(s):
         cfg.cross = copy(cast(Optional[Dict[str, Any]], pbc_value_ref.get_value(s)))
         if cfg.cross is not None:
-            for k in ("cmake", "sdist", "editable"):
+            for k in ("cmake", "wheel", "sdist", "editable"):
                 cfg.cross.pop(k, None)
 
     # Check for incompatible options

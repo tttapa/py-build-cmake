@@ -327,7 +327,8 @@ class _BuildBackend:
         whl = Wheel()
         whl.name = package_info.norm_name
         whl.version = package_info.version
-        pure = is_pure(cmake_cfg)
+        wheel_cfg = _BuildBackend.get_wheel_config(cfg)
+        pure = is_pure(wheel_cfg, cmake_cfg)
         libdir = "purelib" if pure else "platlib"
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
@@ -336,10 +337,10 @@ class _BuildBackend:
             tags = {"pyver": ["py3"]}
         elif cfg.cross:
             tags = get_cross_tags(cfg.cross)
-            tags = convert_wheel_tags(tags, cmake_cfg)
+            tags = convert_wheel_tags(tags, wheel_cfg, cmake_cfg)
         else:
             tags = get_native_tags()
-            tags = convert_wheel_tags(tags, cmake_cfg)
+            tags = convert_wheel_tags(tags, wheel_cfg, cmake_cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         logger.debug("Built Wheel: %s", wheel_path)
         return str(Path(wheel_path).relative_to(paths.wheel_dir))
@@ -352,6 +353,13 @@ class _BuildBackend:
             return cfg.cmake[util.get_os_name()]
         else:
             return cfg.cmake["cross"]
+
+    @staticmethod
+    def get_wheel_config(cfg: Config):
+        if cfg.cross is None:
+            return cfg.wheel[util.get_os_name()]
+        else:
+            return cfg.wheel["cross"]
 
     # --- Building sdists -----------------------------------------------------
 

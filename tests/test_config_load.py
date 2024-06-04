@@ -140,9 +140,6 @@ def test_inherit_cross_cmake():
                 "foo": "bar",
                 "crosscompiling": "true",
             },
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "linux": {
             "build_type": "Release",
@@ -162,9 +159,6 @@ def test_inherit_cross_cmake():
             "install_components": ["linux_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "windows": {
             "build_type": "Release",
@@ -184,9 +178,6 @@ def test_inherit_cross_cmake():
             "install_components": ["all_install", "win_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "mac": {
             "build_type": "Release",
@@ -206,7 +197,26 @@ def test_inherit_cross_cmake():
             "install_components": ["all_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
+        },
+    }
+    assert conf.wheel == {
+        "cross": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "linux": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "windows": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "mac": {
+            "python_tag": "auto",
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
@@ -288,9 +298,6 @@ def test_real_config_no_cross():
             "install_components": ["linux_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "windows": {
             "build_type": "Release",
@@ -310,9 +317,6 @@ def test_real_config_no_cross():
             "install_components": ["win_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "mac": {
             "build_type": "Release",
@@ -332,7 +336,21 @@ def test_real_config_no_cross():
             "install_components": [""],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
+        },
+    }
+    assert conf.wheel == {
+        "linux": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "windows": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "mac": {
+            "python_tag": "auto",
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
@@ -467,6 +485,8 @@ def test_real_config_cli_override():
                     "build_tool_args": ["-a", "-b"],
                     "find_python": False,
                     "find_python3": True,
+                },
+                "wheel": {
                     "python_abi": "abi3",
                 },
                 "linux": {
@@ -494,8 +514,8 @@ def test_real_config_cli_override():
         linux.cmake.options.FOOBAR=+"xyz"
         linux.cmake.options.FOOBAR-="def"
         linux.cmake.args-=["arg3"]
-        linux.cmake.python_abi=!
-        mac.cmake.python_abi="none"
+        linux.wheel.python_abi=!
+        mac.wheel.python_abi="none"
         mac.cmake.args=!
         mac.cmake.env=!
         mac.cmake.find_python=!
@@ -543,9 +563,6 @@ def test_real_config_cli_override():
             "install_components": ["linux_install"],
             "minimum_version": "3.15",
             "env": {"PATH": "$HOME/opt" + os.pathsep + "/usr/bin", "foo": "bar"},
-            "pure_python": False,
-            "python_abi": "auto",
-            "abi3_minimum_cpython_version": 32,
         },
         "windows": {
             "build_type": "Release",
@@ -565,9 +582,6 @@ def test_real_config_cli_override():
             "install_components": ["win_install"],
             "minimum_version": "3.15",
             "env": {"foo": "bar"},
-            "pure_python": False,
-            "python_abi": "abi3",
-            "abi3_minimum_cpython_version": 32,
         },
         "mac": {
             "build_type": "Release",
@@ -587,7 +601,21 @@ def test_real_config_cli_override():
             "install_components": [""],
             "minimum_version": "3.15",
             "env": {},
-            "pure_python": False,
+        },
+    }
+    assert conf.wheel == {
+        "linux": {
+            "python_tag": "auto",
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "windows": {
+            "python_tag": "auto",
+            "python_abi": "abi3",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "mac": {
+            "python_tag": "auto",
             "python_abi": "none",
             "abi3_minimum_cpython_version": 32,
         },

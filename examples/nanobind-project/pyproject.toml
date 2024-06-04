@@ -49,6 +49,7 @@ build_tool_args = []
 install_args = ["--verbose"]
 install_components = ["python_modules"]
 env = {}
+[tool.py-build-cmake.wheel]
 python_abi = 'abi3'
 abi3_minimum_cpython_version = 312
 

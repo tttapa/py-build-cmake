@@ -19,19 +19,19 @@ def get_cross_tags(crosscfg: dict[str, Any]) -> WheelTags:
     return tags
 
 
-def convert_abi_tag(abi_tag: str, cmake_cfg: dict | None) -> str:
+def convert_abi_tag(abi_tag: str, wheel_cfg: dict, cmake_cfg: dict | None) -> str:
     """Set the ABI tag to 'none' or 'abi3', depending on the config options
     specified by the user."""
     if not cmake_cfg:
         return "none"
-    elif cmake_cfg["python_abi"] == "auto":
+    elif wheel_cfg["python_abi"] == "auto":
         return abi_tag
-    elif cmake_cfg["python_abi"] == "none":
+    elif wheel_cfg["python_abi"] == "none":
         return "none"
-    elif cmake_cfg["python_abi"] == "abi3":
+    elif wheel_cfg["python_abi"] == "abi3":
         # Only use abi3 if we're actually building for CPython
         m = re.match(r"^cp(\d+).*$", abi_tag)
-        if m and int(m[1]) >= cmake_cfg["abi3_minimum_cpython_version"]:
+        if m and int(m[1]) >= wheel_cfg["abi3_minimum_cpython_version"]:
             return "abi3"
         return abi_tag
     else:
@@ -39,19 +39,23 @@ def convert_abi_tag(abi_tag: str, cmake_cfg: dict | None) -> str:
         raise AssertionError(msg)
 
 
-def convert_wheel_tags(tags: dict[str, list[str]], cmake_cfg: dict | None) -> WheelTags:
+def convert_wheel_tags(
+    tags: dict[str, list[str]], wheel_cfg: dict, cmake_cfg: dict | None
+) -> WheelTags:
     """Apply convert_abi_tag to each of the abi tags."""
     tags = copy(tags)
-    cvt_abi = lambda tag: convert_abi_tag(tag, cmake_cfg)
+    cvt_abi = lambda tag: convert_abi_tag(tag, wheel_cfg, cmake_cfg)
     tags["abi"] = list(map(cvt_abi, tags["abi"]))
-    if "none" in tags["abi"]:
+    if wheel_cfg["python_tag"] != "auto":
+        tags["pyver"] = wheel_cfg["python_tag"]
+    elif "none" in tags["abi"]:
         tags["pyver"] = ["py3"]
     return tags
 
 
-def is_pure(cmake_cfg: dict | None) -> bool:
+def is_pure(wheel_cfg: dict, cmake_cfg: dict | None) -> bool:
     """Check if the package is a pure-Python package without platform-
     specific binaries."""
-    if not cmake_cfg:
-        return True
-    return cmake_cfg["pure_python"]
+    if "pure_python" in wheel_cfg:
+        return wheel_cfg["pure_python"]
+    return not cmake_cfg

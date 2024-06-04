@@ -99,6 +99,7 @@ class Config:
     editable: dict[str, dict[str, Any]] = field(default_factory=dict)
     sdist: dict[str, dict[str, Any]] = field(default_factory=dict)
     cmake: dict[str, dict[str, Any]] | None = field(default=None)
+    wheel: dict[str, dict[str, Any]] = field(default_factory=dict)
     stubgen: dict[str, Any] | None = field(default=None)
     cross: dict[str, Any] | None = field(default=None)
 

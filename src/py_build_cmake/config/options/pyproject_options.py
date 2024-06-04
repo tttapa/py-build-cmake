@@ -234,13 +234,35 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "env = { \"CMAKE_PREFIX_PATH\" "
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({})),
+    ])  # fmt: skip
+
+    # [tool.py-build-cmake.wheel]
+    wheel = pbc.insert(
+        ConfigOption("wheel",
+                     "Defines how to create the Wheel package.",
+                     default=DefaultValueValue({}),
+        ))  # fmt: skip
+    wheel_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/wheel")
+    wheel.insert_multiple([
         BoolConfigOption("pure_python",
                          "Indicate that this package contains no platform-"
                          "specific binaries, only Python scripts and other "
-                         "platform-agnostic files. It causes the Wheel tags "
-                         "to be set to `py3-none-any`.",
-                         "pure_python = true",
-                         default=DefaultValueValue(False)),
+                         "platform-agnostic files. Setting this value to true "
+                         "causes the Wheel tags to be set to `py3-none-any`. "
+                         "If unset, the value depends on whether the `cmake` "
+                         "option is set.",
+                         "pure_python = true"),
+        StringConfigOption("python_tag",
+                           "Override the default Python tag for the Wheel "
+                           "package.\n"
+                           "If your package contains any Python extension "
+                           "modules, you want to set this to `auto`.\n"
+                           "For details about platform compatibility tags, "
+                           "see the PyPA specification: "
+                           "https://packaging.python.org/en/latest/"
+                           "specifications/platform-compatibility-tags",
+                           "python_tag = 'py2.py3'",
+                           default=DefaultValueValue("auto")),
         EnumConfigOption("python_abi",
                          "Override the default ABI tag for the Wheel package.\n"
                          "For packages with a Python extension module that "
@@ -317,6 +339,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
             ConfigOption("cmake",
                          f"{system}-specific CMake options.",
                          inherit_from=cmake_pth,
+                         create_if_inheritance_target_exists=True),
+            ConfigOption("wheel",
+                         f"{system}-specific Wheel options.",
+                         inherit_from=wheel_pth,
                          create_if_inheritance_target_exists=True),
         ])  # fmt: skip
 
@@ -412,6 +438,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         ConfigOption("cmake",
                      "Override CMake options when cross-compiling.",
                      inherit_from=cmake_pth,
+                     create_if_inheritance_target_exists=True),
+        ConfigOption("wheel",
+                     "Override Wheel options when cross-compiling.",
+                     inherit_from=wheel_pth,
                      create_if_inheritance_target_exists=True),
     ])  # fmt: skip
 

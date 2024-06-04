@@ -41,6 +41,7 @@ build_args = ["-j"]
 install_components = ["python_binaries"]
 find_python = false
 find_python3 = false
+[tool.py-build-cmake.wheel]
 python_abi = "none"
 
 [tool.pytest.ini_options]

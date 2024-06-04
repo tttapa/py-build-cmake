@@ -52,7 +52,14 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list+ | `[]` |
 | `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`.<br/>Use an empty string to specify the default component. | list | `['']` |
 | `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}` (but not `$VAR`).<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
-| `pure_python` | Indicate that this package contains no platform-specific binaries, only Python scripts and other platform-agnostic files. It causes the Wheel tags to be set to `py3-none-any`.<br/>For example: `pure_python = true` | bool | `false` |
+
+## wheel
+Defines how to create the Wheel package. 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| `pure_python` | Indicate that this package contains no platform-specific binaries, only Python scripts and other platform-agnostic files. Setting this value to true causes the Wheel tags to be set to `py3-none-any`. If unset, the value depends on whether the `cmake` option is set.<br/>For example: `pure_python = true` | bool | `none` |
+| `python_tag` | Override the default Python tag for the Wheel package.<br/>If your package contains any Python extension modules, you want to set this to `auto`.<br/>For details about platform compatibility tags, see the PyPA specification: https://packaging.python.org/en/latest/specifications/platform-compatibility-tags<br/>For example: `python_tag = 'py2.py3'` | string | `'auto'` |
 | `python_abi` | Override the default ABI tag for the Wheel package.<br/>For packages with a Python extension module that make use of the full Python C API, this option should be set to `auto`.<br/>If your package does not contain Python extension modules (e.g. because it only includes executables to run as a subprocess, or only shared library files to be loaded using `ctypes`), you can set this to `none`.<br/>If your package only includes Python extension modules that use the CPython stable ABI, set this to `abi3` (see also `abi3_minimum_cpython_version` below).<br/>For details about platform compatibility tags, see the PyPA specification: https://packaging.python.org/en/latest/specifications/platform-compatibility-tags<br/>For example: `python_abi = 'none'` | `'auto'` \| `'none'` \| `'abi3'` | `'auto'` |
 | `abi3_minimum_cpython_version` | If `python_abi` is set to `abi3`, only use the stable CPython API for CPython version that are newer than `abi3_minimum_version`. Useful for nanobind, which supports the stable ABI for CPython 12 and later.<br/>The Python version is encoded as a single integer, consisting of the major and minor version numbers, without a dot.<br/>For example: `abi3_minimum_cpython_version = 312` | int | `32` |
 
@@ -74,6 +81,7 @@ Override options for Linux.
 | `editable` | Linux-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Linux-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Linux-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | Linux-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## windows
 Override options for Windows. 
@@ -83,6 +91,7 @@ Override options for Windows.
 | `editable` | Windows-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Windows-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Windows-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | Windows-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## mac
 Override options for Mac. 
@@ -92,6 +101,7 @@ Override options for Mac.
 | `editable` | Mac-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Mac-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Mac-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | Mac-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## cross
 Causes py-build-cmake to cross-compile the project. See https://tttapa.github.io/py-build-cmake/Cross-compilation.html for more information. 
@@ -110,6 +120,7 @@ Causes py-build-cmake to cross-compile the project. See https://tttapa.github.io
 | `editable` | Override editable options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Override sdist options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Override CMake options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | Override Wheel options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 # Local overrides
 
