@@ -20,6 +20,10 @@ class StringOption:
     remove: list[str] | None = None
 
     @classmethod
+    def create(cls, value: str):
+        return cls(value=value)
+
+    @classmethod
     def from_values(cls, values: ValueReference):  # noqa: PLR0911
         val = values.values
         if values.action == OverrideActionEnum.Clear:

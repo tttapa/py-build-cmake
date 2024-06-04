@@ -23,6 +23,7 @@ from ..common.util import (
 )
 from .options.cmake_opt import CMakeOption
 from .options.config_path import ConfPath
+from .options.string import StringOption
 from .options.value_reference import ValueReference
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ def cross_compile_win(
     assert not config.is_value_set("cross")
     cross_cfg = {
         "os": "windows",
-        "arch": platform_to_platform_tag(plat_name),
+        "arch": StringOption.create(platform_to_platform_tag(plat_name)),
         "cmake": {
             "options": {
                 "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
@@ -167,12 +168,16 @@ def cross_compile_mac(config: ValueReference, archs):
     if plat_tag:
         cross_arch = get_platform_dashes().split("-")
         cross_arch[-1] = plat_tag
-        cross_cfg["arch"] = platform_to_platform_tag("_".join(cross_arch))
+        cross_cfg["arch"] = StringOption.create(
+            platform_to_platform_tag("_".join(cross_arch))
+        )
     if sys.implementation.name == "cpython":
         version = "".join(map(str, sys.version_info[:2]))
         abi = getattr(sys, "abiflags", "")
         env = cross_cfg["cmake"]["env"] = {}
-        env["SETUPTOOLS_EXT_SUFFIX"] = f".cpython-{version}{abi}-darwin.so"
+        env["SETUPTOOLS_EXT_SUFFIX"] = StringOption.create(
+            f".cpython-{version}{abi}-darwin.so"
+        )
     config.set_value("cross", cross_cfg)
 
 
