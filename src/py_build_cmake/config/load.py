@@ -406,6 +406,8 @@ def print_config_verbose(cfg: Config):
     pprint(cfg.sdist)
     print("cmake:")
     pprint(cfg.cmake)
+    print("wheel:")
+    pprint(cfg.wheel)
     print("cross:")
     pprint(cfg.cross)
     print("stubgen:")
