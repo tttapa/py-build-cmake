@@ -5,9 +5,9 @@ nanobind_project-{{version}}.dist-info/WHEEL
 nanobind_project-{{version}}.dist-info/entry_points.txt
 nanobind_project/__init__.py
 nanobind_project/_add_module{{ext_suffix}}
-nanobind_project/_add_module/__init__.pyi
+nanobind_project/_add_module.pyi
 nanobind_project/_add_module_d{{ext_suffix}}
-nanobind_project/_add_module_d/__init__.pyi
+nanobind_project/_add_module_d.pyi
 nanobind_project/add.py
 nanobind_project/add_module.py
 nanobind_project/py.typed

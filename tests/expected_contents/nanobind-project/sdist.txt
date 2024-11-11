@@ -2,7 +2,6 @@ nanobind_project-{{version}}/CMakeLists.txt
 nanobind_project-{{version}}/LICENSE
 nanobind_project-{{version}}/PKG-INFO
 nanobind_project-{{version}}/README.md
-nanobind_project-{{version}}/cmake/NanobindStubgen.cmake
 nanobind_project-{{version}}/cmake/QueryPythonForNanobind.cmake
 nanobind_project-{{version}}/cmake/nanobindGuessPythonExtSuffix.cmake
 nanobind_project-{{version}}/pyproject.toml
