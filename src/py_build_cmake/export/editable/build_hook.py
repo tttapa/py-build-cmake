@@ -46,18 +46,21 @@ def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMa
                 for k, v in self.env.items():
                     templ = Template(v)
                     env[k] = templ.substitute(env)
+                env["PY_BUILD_CMAKE_BUILD_HOOK"] = self.name
                 return env
             def build(self):
-                env = self.prepare_environment()
-                for cmd in self.cmd:
-                    try:
-                        subprocess.run(cmd, cwd=self.cwd, check=True, env=env)
-                    except subprocess.CalledProcessError as e:
-                        raise ImportError(
-                            f"Failed to build dependencies for module {{self.name!r}}",
-                            name=self.name,
-                            path=self.cwd,
-                        ) from e
+                # Prevent reentrant execution of the build hook
+                if "PY_BUILD_CMAKE_BUILD_HOOK" not in os.environ:
+                    env = self.prepare_environment()
+                    for cmd in self.cmd:
+                        try:
+                            subprocess.run(cmd, cwd=self.cwd, check=True, env=env)
+                        except subprocess.CalledProcessError as e:
+                            raise ImportError(
+                                f"Failed to build dependencies for module {{self.name!r}}",
+                                name=self.name,
+                                path=self.cwd,
+                            ) from e
                 sys.meta_path.remove(self)
 
         def install(name: str, cwd, env, cmd):
