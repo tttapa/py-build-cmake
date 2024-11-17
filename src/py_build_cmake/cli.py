@@ -8,7 +8,7 @@ from . import __version__
 
 
 def cmake_command(directory, build_path, verbose, dry, native, cross, local):
-    def get_cmaker():
+    def get_cmaker(index: int):
         from .build import _BuildBackend as backend
         from .commands.cmd_runner import CommandRunner
 
@@ -20,11 +20,12 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         # Read configuration and package metadata
         cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
         pkg_info = backend.get_pkg_info(cfg, module)
-        cmake_cfg = backend.get_cmake_config(cfg)
+        cmake_cfg = backend.get_cmake_config(cfg)[index]
 
         # Set up all paths
-        build_cfg_name = backend.get_build_config_name(cfg.cross)
-        build_dir = Path(cmake_cfg["build_path"]) / build_cfg_name
+        build_cfg_name = backend.get_build_config_name(cfg.cross, index)
+        path = cmake_cfg["build_path"]
+        build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 
         # CMake builder
         return backend.get_cmaker(
@@ -115,9 +116,18 @@ def cli(ctx: click.Context, **kwargs):
     "This causes py-build-cmake to let CMake pick the build directory during "
     "configuration, rather than explicitly overriding it.",
 )
+@click.option(
+    "--index",
+    nargs=1,
+    type=int,
+    required=False,
+    metavar="INDEX",
+    help="Numeric index of the CMake configurations to use. This corresponds "
+    "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
+)
 @click.argument("args", nargs=-1, required=False)
-def configure(obj, preset, use_build_presets, args):
-    cmaker = obj()
+def configure(obj, preset, use_build_presets, args, index=0):
+    cmaker = obj(index)
     if cmaker is None:
         return
     cmaker.conf_settings.args += args or []
@@ -136,9 +146,18 @@ def configure(obj, preset, use_build_presets, args):
 @click.option(
     "--config", nargs=1, multiple=True, type=str, required=False, metavar="CONFIG"
 )
+@click.option(
+    "--index",
+    nargs=1,
+    type=int,
+    required=False,
+    metavar="INDEX",
+    help="Numeric index of the CMake configurations to use. This corresponds "
+    "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
+)
 @click.argument("args", nargs=-1, required=False)
-def build(obj, preset, config, args):
-    cmaker = obj()
+def build(obj, preset, config, args, index=0):
+    cmaker = obj(index)
     if cmaker is None:
         return
     cmaker.build_settings.args += args or []
@@ -160,9 +179,18 @@ def build(obj, preset, config, args):
 @click.option(
     "--component", nargs=1, multiple=True, type=str, required=False, metavar="COMP"
 )
+@click.option(
+    "--index",
+    nargs=1,
+    type=int,
+    required=False,
+    metavar="INDEX",
+    help="Numeric index of the CMake configurations to use. This corresponds "
+    "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
+)
 @click.argument("args", nargs=-1, required=False)
-def install(obj, config, component, args):
-    cmaker = obj()
+def install(obj, config, component, args, index=0):
+    cmaker = obj(index)
     if cmaker is None:
         return
     cmaker.install_settings.args += args or []

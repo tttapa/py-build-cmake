@@ -120,9 +120,7 @@ class _BuildComponentBackend:
         cmake_cfg = std_backend.get_cmake_config(cfg)
 
         # Set up all paths
-        paths = std_backend.get_default_paths(
-            wheel_dir, tmp_build_dir, src_dir, cfg, cmake_cfg
-        )
+        paths = std_backend.get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg)
 
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"

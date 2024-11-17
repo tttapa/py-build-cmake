@@ -5,7 +5,7 @@ from pathlib import Path, PurePosixPath
 from ...common import CMAKE_MINIMUM_REQUIRED
 from .bool import BoolConfigOption
 from .cmake_opt import CMakeOptConfigOption
-from .config_option import ConfigOption, UncheckedConfigOption
+from .config_option import ConfigOption, MultiConfigOption, UncheckedConfigOption
 from .config_path import ConfPath
 from .default import DefaultValueValue, NoDefaultValue, RefDefaultValue, RequiredValue
 from .dict import DictOfStrConfigOption
@@ -120,7 +120,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
 
     # [tool.py-build-cmake.cmake]
     cmake = pbc.insert(
-        ConfigOption("cmake",
+        MultiConfigOption("cmake",
                      "Defines how to build the project to package. If omitted, "
                      "py-build-cmake will produce a pure Python package.",
         ))  # fmt: skip
@@ -336,7 +336,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          f"{system}-specific sdist options.",
                          inherit_from=sdist_pth,
                          create_if_inheritance_target_exists=True),
-            ConfigOption("cmake",
+            MultiConfigOption("cmake",
                          f"{system}-specific CMake options.",
                          inherit_from=cmake_pth,
                          create_if_inheritance_target_exists=True),
@@ -435,7 +435,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Override sdist options when cross-compiling.",
                      inherit_from=sdist_pth,
                      create_if_inheritance_target_exists=True),
-        ConfigOption("cmake",
+        MultiConfigOption("cmake",
                      "Override CMake options when cross-compiling.",
                      inherit_from=cmake_pth,
                      create_if_inheritance_target_exists=True),
@@ -463,19 +463,20 @@ def get_component_options(project_path: Path, *, test: bool = False):
                      default=DefaultValueValue({}),
                      create_if_inheritance_target_exists=True,
         ))  # fmt: skip
-
-    # [tool.py-build-cmake.component]
-    component = pbc.insert(
-        ConfigOption("component",
-                     "Options for a separately packaged component.",
-                     default=DefaultValueValue({}),
-        ))  # fmt: skip
-    component.insert_multiple([
+    pbc.insert(
         PathConfigOption("main_project",
                          "Directory containing the main pyproject.toml file.",
                          default=DefaultValueValue(".."),
                          base_path=RelativeToProject(project_path),
-                         must_exist=not test),
+                         must_exist=not test,
+    ))  # fmt: skip
+    # [tool.py-build-cmake.component]
+    component = pbc.insert(
+        MultiConfigOption("component",
+                          "Options for a separately packaged component.",
+                          default=DefaultValueValue({}),
+    ))  # fmt: skip
+    component.insert_multiple([
         ListOfStrConfigOption('build_presets',
                               "CMake presets to use for building. Passed as "
                               "`--preset <?>` during the build phase, once "

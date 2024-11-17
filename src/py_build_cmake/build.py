@@ -203,9 +203,7 @@ class _BuildBackend:
         cmake_cfg = self.get_cmake_config(cfg)
 
         # Set up all paths
-        paths = self.get_default_paths(
-            wheel_dir, tmp_build_dir, src_dir, cfg, cmake_cfg
-        )
+        paths = self.get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg)
 
         # Copy the module's Python source files to the temporary folder
         if not editable:
@@ -224,12 +222,16 @@ class _BuildBackend:
         export_metadata.write_entry_points(cfg, distinfo_dir)
 
         # Configure, build and install the CMake project
-        if cmake_cfg:
+        for idx, cmkcfg in cmake_cfg.items():
+            build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross, idx)
+            path = cmkcfg["build_path"]
+            path = str(path).replace("{build_config}", build_cfg_name)
+            build_dir = Path(path)
             cmaker = self.get_cmaker(
                 paths.source_dir,
-                paths.build_dir,
+                build_dir,
                 paths.staging_dir,
-                cmake_cfg,
+                cmkcfg,
                 cfg.cross,
                 pkg_info,
                 runner=self.runner,
@@ -239,7 +241,7 @@ class _BuildBackend:
             cmaker.install()
 
             if editable:
-                write_build_hook(cfg, paths.pkg_staging_dir, module, cmaker)
+                write_build_hook(cfg, paths.pkg_staging_dir, module, cmaker, idx)
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
@@ -257,13 +259,9 @@ class _BuildBackend:
         )
 
     @staticmethod
-    def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg, cmake_cfg):
-        build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross)
-        if cmake_cfg:
-            path = cmake_cfg["build_path"]
-            build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
-        else:
-            build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
+    def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg):
+        build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross, 0)
+        build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
         return BuildPaths(
             source_dir=src_dir,
             build_dir=build_dir,
@@ -348,11 +346,13 @@ class _BuildBackend:
     @staticmethod
     def get_cmake_config(cfg: Config):
         if not cfg.cmake:
-            return None
+            return {}
         if cfg.cross is None:
-            return cfg.cmake[util.get_os_name()]
+            cmake_cfg = cfg.cmake[util.get_os_name()]
         else:
-            return cfg.cmake["cross"]
+            cmake_cfg = cfg.cmake["cross"]
+        sort_cfg = sorted(cmake_cfg.items(), key=lambda item: int(item[0]))
+        return {int(key): value for key, value in sort_cfg}
 
     @staticmethod
     def get_wheel_config(cfg: Config):
@@ -595,12 +595,15 @@ class _BuildBackend:
     # --- Misc helper functions -----------------------------------------------
 
     @staticmethod
-    def get_build_config_name(cross_cfg):
+    def get_build_config_name(cross_cfg, index: int):
         """Get a string representing the Python version, ABI and architecture,
         used to name the build folder so builds for different versions don't
         interfere."""
         tags = get_cross_tags(cross_cfg) if cross_cfg else get_native_tags()
-        return "-".join(x[0] for x in tags.values())
+        name = "-".join(x[0] for x in tags.values())
+        if index != 0:
+            name += f"-{index}"
+        return name
 
 
 _BACKEND = _BuildBackend()

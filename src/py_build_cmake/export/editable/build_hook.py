@@ -11,7 +11,9 @@ from ...common.util import get_os_name
 logger = logging.getLogger(__name__)
 
 
-def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMaker):
+def write_build_hook(
+    cfg: Config, staging_dir: Path, module: Module, cmaker: CMaker, idx: int
+):
     """Write a hook that re-compiles extension modules."""
     edit_cfg = cfg.editable["cross" if cfg.cross else get_os_name()]
     if not edit_cfg.get("build_hook"):
@@ -20,7 +22,10 @@ def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMa
         logger.warning("Skipping build_hook: only supported for symlink mode")
         return
     name = module.name
-    pkg_hook = staging_dir / (name + "_build_hook")
+    fname = name + "_build_hook"
+    if idx != 0:
+        fname += f"_{idx}"
+    pkg_hook = staging_dir / fname
     pkg_hook.mkdir(parents=True, exist_ok=True)
     cwd = cmaker.get_working_dir()
     env = cmaker.conf_settings.environment or {}
@@ -75,6 +80,6 @@ def write_build_hook(cfg: Config, staging_dir: Path, module: Module, cmaker: CMa
         """
     (pkg_hook / "__init__.py").write_text(textwrap.dedent(content), encoding="utf-8")
     # Write a path file to find the development files
-    content = f"import {name}_build_hook\n"
+    content = f"import {fname}\n"
     with (staging_dir / f"{name}.pth").open("a") as f:
         f.write(content)

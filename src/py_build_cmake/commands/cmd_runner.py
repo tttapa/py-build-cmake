@@ -38,6 +38,10 @@ class CommandRunner:
         """Check if there's a new enough version of the given command available
         in PATH."""
         name = name or program
+        if self.verbose:
+            print(
+                f"Looking for {name} ({program}) version {minimum_version or '0.0'} or later ..."
+            )
         try:
             # Try running the command
             cmd = [program, "--version"] if check_version else [program, "-h"]

@@ -21,6 +21,7 @@ from ..common.util import (
     python_sysconfig_platform_to_cmake_platform_win,
     python_sysconfig_platform_to_cmake_processor_win,
 )
+from ..config.options.config_option import MultiConfigOption
 from .options.cmake_opt import CMakeOption
 from .options.config_path import ConfPath
 from .options.string import StringOption
@@ -65,16 +66,16 @@ def cross_compile_win(
         cmake_plat,
     )
     assert not config.is_value_set("cross")
+    all = MultiConfigOption.default_index
+    options = {
+        "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
+        "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
+        "CMAKE_GENERATOR_PLATFORM": CMakeOption.create(cmake_plat, "STRING"),
+    }
     cross_cfg = {
         "os": "windows",
         "arch": StringOption.create(platform_to_platform_tag(plat_name)),
-        "cmake": {
-            "options": {
-                "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
-                "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
-                "CMAKE_GENERATOR_PLATFORM": CMakeOption.create(cmake_plat, "STRING"),
-            }
-        },
+        "cmake": {all: {"options": options}},
     }
     python_lib = get_python_lib(library_dirs)
     if python_lib is not None:
@@ -155,14 +156,14 @@ def cross_compile_mac(config: ValueReference, archs):
         platform.machine(),
     )
     assert not config.is_value_set("cross")
+    all = MultiConfigOption.default_index
+    options = {
+        "CMAKE_SYSTEM_NAME": CMakeOption.create("Darwin", "STRING"),
+        "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(archs, "STRING"),
+    }
     cross_cfg: dict[str, Any] = {
         "os": "mac",
-        "cmake": {
-            "options": {
-                "CMAKE_SYSTEM_NAME": CMakeOption.create("Darwin", "STRING"),
-                "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(archs, "STRING"),
-            }
-        },
+        "cmake": {all: {"options": options}},
     }
     plat_tag = archflags_to_platform_tag(archs)
     if plat_tag:
@@ -174,10 +175,11 @@ def cross_compile_mac(config: ValueReference, archs):
     if sys.implementation.name == "cpython":
         version = "".join(map(str, sys.version_info[:2]))
         abi = getattr(sys, "abiflags", "")
-        env = cross_cfg["cmake"]["env"] = {}
-        env["SETUPTOOLS_EXT_SUFFIX"] = StringOption.create(
-            f".cpython-{version}{abi}-darwin.so"
-        )
+        cross_cfg["cmake"][all]["env"] = {
+            "SETUPTOOLS_EXT_SUFFIX": StringOption.create(
+                f".cpython-{version}{abi}-darwin.so"
+            )
+        }
     config.set_value("cross", cross_cfg)
 
 
@@ -210,9 +212,12 @@ def config_quirks_mac(config: ValueReference):
             ", ".join(archs),
             platform.machine(),
         )
-        config.set_value_default(ConfPath.from_string("cmake/options"), {})
+        all = MultiConfigOption.default_index
+        cmake_pth = ConfPath(("cmake", all))
+        config.set_value_default(cmake_pth, {})
+        config.set_value_default(cmake_pth.join("options"), {})
         config.set_value_default(
-            ConfPath.from_string("cmake/options/CMAKE_OSX_ARCHITECTURES"),
+            cmake_pth.join("options").join("CMAKE_OSX_ARCHITECTURES"),
             CMakeOption.create(archs, "STRING"),
         )
 

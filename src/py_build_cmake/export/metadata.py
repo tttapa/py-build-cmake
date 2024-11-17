@@ -5,7 +5,7 @@ import shutil
 from copy import copy
 from pathlib import Path
 
-from ..common import Config
+from ..common import ComponentConfig, Config
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def _write_entry_points(entrypoints: dict[str, dict[str, str]], fp):
         fp.write("\n")
 
 
-def write_entry_points(cfg: Config, distinfo_dir: Path):
+def write_entry_points(cfg: Config | ComponentConfig, distinfo_dir: Path):
     entrypoints = copy(cfg.standard_metadata.entrypoints)
     if cfg.standard_metadata.scripts:
         entrypoints["console_scripts"] = cfg.standard_metadata.scripts
@@ -36,7 +36,7 @@ def write_entry_points(cfg: Config, distinfo_dir: Path):
         _write_entry_points(entrypoints, f)
 
 
-def write_license_files(cfg: Config, distinfo_dir: Path):
+def write_license_files(cfg: Config | ComponentConfig, distinfo_dir: Path):
     """Write the LICENSE file from pyproject.toml to the distinfo
     directory."""
     license = cfg.standard_metadata.license
@@ -49,7 +49,7 @@ def write_license_files(cfg: Config, distinfo_dir: Path):
             f.write(license.text)
 
 
-def write_metadata(cfg: Config, distinfo_dir: Path):
+def write_metadata(cfg: Config | ComponentConfig, distinfo_dir: Path):
     metadata_path = distinfo_dir / "METADATA"
     with metadata_path.open("w", encoding="utf-8") as f:
         f.write(str(cfg.standard_metadata.as_rfc822()))
