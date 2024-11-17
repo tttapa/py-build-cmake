@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 
+from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
+
 from .. import __version__
 from ..common import PackageInfo
 from ..common.util import python_sysconfig_platform_to_cmake_platform_win
@@ -133,9 +135,10 @@ class CMaker:
         return ";".join(pfxs)
 
     def get_native_python_abi_tuple(self):
-        abiflag = lambda c: c in sys.abiflags
-        onoff = lambda x: "ON" if x else "OFF"
-        return ";".join(map(onoff, map(abiflag, "dmu")))
+        cmake_version = self.cmake_settings.minimum_required
+        has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
+        dmu = "dmut" if has_t_flag else "dmu"
+        return ";".join("ON" if c in sys.abiflags else "OFF" for c in dmu)
 
     def get_native_python_implementation(self) -> str | None:
         return {
