@@ -331,14 +331,19 @@ class _BuildBackend:
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
         whl.dirname = paths.wheel_dir
+        guess_plat = cfg.wheel.get("platform_tag", "") == "guess"
         if pure:
             tags = {"pyver": ["py3"]}
         elif cfg.cross:
+            if guess_plat:
+                msg = "Option `wheel.platform_tag=guess` is not supported when "
+                msg += "cross-compiling. Ignoring."
+                logger.warning(msg)
             tags = get_cross_tags(cfg.cross)
-            tags = convert_wheel_tags(tags, wheel_cfg, cmake_cfg)
+            tags = convert_wheel_tags(tags, wheel_cfg)
         else:
-            tags = get_native_tags()
-            tags = convert_wheel_tags(tags, wheel_cfg, cmake_cfg)
+            tags = get_native_tags(guess_plat)
+            tags = convert_wheel_tags(tags, wheel_cfg)
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         logger.debug("Built Wheel: %s", wheel_path)
         return str(Path(wheel_path).relative_to(paths.wheel_dir))

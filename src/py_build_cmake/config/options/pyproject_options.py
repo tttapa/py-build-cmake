@@ -248,21 +248,24 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "Indicate that this package contains no platform-"
                          "specific binaries, only Python scripts and other "
                          "platform-agnostic files. Setting this value to true "
-                         "causes the Wheel tags to be set to `py3-none-any`. "
+                         "causes the Wheel tags to be set to `py3-none-any`, "
+                         "and selects the `purelib` folder instead of "
+                         "`platlib`.\n"
                          "If unset, the value depends on whether the `cmake` "
                          "option is set.",
                          "pure_python = true"),
-        StringConfigOption("python_tag",
-                           "Override the default Python tag for the Wheel "
-                           "package.\n"
-                           "If your package contains any Python extension "
-                           "modules, you want to set this to `auto`.\n"
-                           "For details about platform compatibility tags, "
-                           "see the PyPA specification: "
-                           "https://packaging.python.org/en/latest/"
-                           "specifications/platform-compatibility-tags",
-                           "python_tag = 'py2.py3'",
-                           default=DefaultValueValue("auto")),
+        ListOfStrConfigOption("python_tag",
+                              "Override the default Python tag for the Wheel "
+                              "package.\n"
+                              "If your package contains any Python extension "
+                              "modules, you want to set this to `auto`.\n"
+                              "For details about platform compatibility tags, "
+                              "see the PyPA specification: "
+                              "https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags",
+                              "python_tag = ['py2', 'py3']",
+                              convert_str_to_singleton=True,
+                              default=DefaultValueValue("auto")),
         EnumConfigOption("python_abi",
                          "Override the default ABI tag for the Wheel package.\n"
                          "For packages with a Python extension module that "
@@ -293,8 +296,48 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                         "without a dot.",
                         "abi3_minimum_cpython_version = 312",
                         default=DefaultValueValue(32)),
+        ListOfStrConfigOption("abi_tag",
+                              "Override the default ABI tag for the Wheel "
+                              "package.\n"
+                              "It is not recommended to set this value in "
+                              "your pyproject.toml file directly. Instead, it "
+                              "is intended to be specified from the command "
+                              "line, or in a local override. "
+                              "See also: cross.abi.\n"
+                              "For details about platform compatibility tags, "
+                              "see the PyPA specification: "
+                              "https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags",
+                              "abi_tag = 'pypy310_pp73'",
+                              convert_str_to_singleton=True,
+                              default=NoDefaultValue()),
+        ListOfStrConfigOption("platform_tag",
+                              "Override the default platform tag for the Wheel "
+                              "package.\n"
+                              "The special value `guess` tries to select a "
+                              "sensible value based on the environment and the "
+                              "current Python interpreter (not supported when "
+                              "cross-compiling).\n"
+                              "It is not recommended to set this value in "
+                              "your pyproject.toml file directly. Instead, it "
+                              "is intended to be specified from the command "
+                              "line, or in a local override. "
+                              "See also:cross.arch.\n"
+                              "There are no checks in place to ensure that the "
+                              "platform tag applies to all files in the Wheel. "
+                              "If possible, you should use a tool such as "
+                              "auditwheel (https://github.com/pypa/auditwheel) or "
+                              "delocate (https://github.com/matthew-brett/delocate) "
+                              "to select the tag and to verify/fix the resulting "
+                              "package.\n"
+                              "For details about platform compatibility tags, "
+                              "see the PyPA specification: "
+                              "https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags",
+                              "platform_tag = 'manylinux_2_35_x86_64'",
+                              convert_str_to_singleton=True,
+                              default=NoDefaultValue()),
     ])  # fmt: skip
-
     # [tool.py-build-cmake.stubgen]
     stubgen = pbc.insert(
         ConfigOption("stubgen",
@@ -379,8 +422,9 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "abi = 'cp310'",
                            default=NoDefaultValue("same as current interpreter")),
         StringConfigOption("arch",
-                           "Operating system and architecture (no dots or "
-                           "dashes, only underscores, all lowercase).\n"
+                           "Platform tag, consisting of the operating system "
+                           "and architecture (no dots or dashes, only "
+                           "underscores, all lowercase).\n"
                            "For details about platform compatibility tags, see "
                            "the PyPA specification: https://packaging.python.org/"
                            "en/latest/specifications/platform-compatibility-tags",

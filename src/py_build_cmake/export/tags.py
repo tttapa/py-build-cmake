@@ -19,12 +19,10 @@ def get_cross_tags(crosscfg: dict[str, Any]) -> WheelTags:
     return tags
 
 
-def convert_abi_tag(abi_tag: str, wheel_cfg: dict, cmake_cfg: dict | None) -> str:
+def convert_abi_tag(abi_tag: str, wheel_cfg: dict) -> str:
     """Set the ABI tag to 'none' or 'abi3', depending on the config options
     specified by the user."""
-    if not cmake_cfg:
-        return "none"
-    elif wheel_cfg["python_abi"] == "auto":
+    if wheel_cfg["python_abi"] == "auto":
         return abi_tag
     elif wheel_cfg["python_abi"] == "none":
         return "none"
@@ -39,17 +37,21 @@ def convert_abi_tag(abi_tag: str, wheel_cfg: dict, cmake_cfg: dict | None) -> st
         raise AssertionError(msg)
 
 
-def convert_wheel_tags(
-    tags: dict[str, list[str]], wheel_cfg: dict, cmake_cfg: dict | None
-) -> WheelTags:
-    """Apply convert_abi_tag to each of the abi tags."""
+def convert_wheel_tags(tags: dict[str, list[str]], wheel_cfg: dict) -> WheelTags:
+    """Apply convert_abi_tag to each of the abi tags and override any tags
+    that were specified in the config file."""
     tags = copy(tags)
-    cvt_abi = lambda tag: convert_abi_tag(tag, wheel_cfg, cmake_cfg)
+    cvt_abi = lambda tag: convert_abi_tag(tag, wheel_cfg)
     tags["abi"] = list(map(cvt_abi, tags["abi"]))
-    if wheel_cfg["python_tag"] != "auto":
-        tags["pyver"] = wheel_cfg["python_tag"]
-    elif "none" in tags["abi"]:
-        tags["pyver"] = ["py3"]
+    if wheel_cfg["python_tag"] != ["auto"]:
+        pyver = tags["pyver"][0]
+        pyver_cfg = wheel_cfg["python_tag"]
+        tags["pyver"] = [pyver if v == "auto" else v for v in pyver_cfg]
+        tags["pyver"] = list(dict.fromkeys(tags["pyver"]))  # unique tags
+    if "abi_tag" in wheel_cfg:
+        tags["abi"] = wheel_cfg["abi_tag"]
+    if "platform_tag" in wheel_cfg:
+        tags["arch"] = wheel_cfg["platform_tag"]
     return tags
 
 

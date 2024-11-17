@@ -15,6 +15,7 @@ from typing import Dict, List
 from distlib.util import (  # type: ignore[import-untyped]
     get_platform as get_platform_dashes,
 )
+from packaging import tags
 
 from ..common.util import platform_to_platform_tag
 
@@ -90,13 +91,22 @@ def get_abi_tag() -> str:
         return get_generic_abi()
 
 
+def guess_platform_tag() -> str:
+    try:
+        return next(tags.sys_tags()).platform
+    except StopIteration:
+        return get_platform_tag()
+    # TODO: take into account MACOSX_DEPLOYMENT_TARGET
+    #       https://github.com/tttapa/py-build-cmake/issues/31
+
+
 WheelTags = Dict[str, List[str]]
 
 
-def get_native_tags() -> WheelTags:
+def get_native_tags(guess=False) -> WheelTags:
     """Get the PEP 425 tags for the current platform."""
     return {
         "pyver": [get_python_tag()],
         "abi": [get_abi_tag()],
-        "arch": [get_platform_tag()],
+        "arch": [guess_platform_tag() if guess else get_platform_tag()],
     }

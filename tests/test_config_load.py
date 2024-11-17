@@ -209,22 +209,22 @@ def test_inherit_cross_cmake():
     }
     assert conf.wheel == {
         "cross": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "linux": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "windows": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
@@ -354,17 +354,17 @@ def test_real_config_no_cross():
     }
     assert conf.wheel == {
         "linux": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "windows": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
@@ -625,17 +625,17 @@ def test_real_config_cli_override():
     }
     assert conf.wheel == {
         "linux": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
         },
         "windows": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "abi3",
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
-            "python_tag": "auto",
+            "python_tag": ["auto"],
             "python_abi": "none",
             "abi3_minimum_cpython_version": 32,
         },
