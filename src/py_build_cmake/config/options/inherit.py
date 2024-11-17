@@ -99,9 +99,11 @@ class ConfigInheritor:
 
     def inherit(self):
         self._inherit_self()
-        for name in self.ref.sub_options:
-            ref = self.ref.sub_ref(name)
-            val_path = self.value_path.join(name)
+        if self.root_values.is_value_set(self.value_path):
+            values = self.root_values.sub_ref(self.value_path)
+        else:
+            values = ValueReference(self.value_path, None)
+        for ref, val_path in self.ref.iter_sub_options(values):
             ConfigInheritor(
                 root=self.root,
                 root_values=self.root_values,

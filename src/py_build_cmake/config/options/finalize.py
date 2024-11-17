@@ -19,15 +19,15 @@ class ConfigFinalizer:
             self.values.value_path,
             self.ref.config.finalize(copy(self.values)),
         )
-        for name in self.ref.sub_options:
-            if name in final_values.values:
-                final_val = ConfigFinalizer(
-                    root=self.root,
-                    ref=self.ref.sub_ref(name).resolve_inheritance(self.root),
-                    values=final_values.sub_ref(name),
-                ).finalize()
-                if final_val is None:
-                    del final_values.values[name]
-                else:
-                    final_values.values[name] = final_val
+        for ref, val_ref in self.ref.iter_set_sub_options(final_values):
+            final_val = ConfigFinalizer(
+                root=self.root,
+                ref=ref.resolve_inheritance(self.root),
+                values=val_ref,
+            ).finalize()
+            rel = val_ref.value_path.relative_to(final_values.value_path)
+            if final_val is None:
+                final_values.clear_value(rel)
+            else:
+                final_values.set_value(rel, final_val)
         return final_values.values

@@ -28,5 +28,12 @@ class ConfPath:
     def split_front(self) -> tuple[str, ConfPath]:
         return self.pth[0], ConfPath(self.pth[1:])
 
+    def relative_to(self, base: ConfPath):
+        """No special logic, simply drops the common prefix, raises an
+        assertion error if self does not start with base."""
+        n = len(base.pth)
+        assert base.pth == self.pth[:n]
+        return ConfPath(self.pth[n:])
+
     def __bool__(self):
         return bool(self.pth)

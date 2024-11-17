@@ -66,14 +66,13 @@ class ConfigDefaulter:
             else:
                 value_set = False
         if value_set:
-            for name in self.ref.sub_options:
-                ref = self.ref.sub_ref(name).resolve_inheritance(self.root)
-                val_path = self.value_path.join(name)
+            value_ref = self.root_values.sub_ref(self.value_path)
+            for ref, value_path in self.ref.iter_sub_options(value_ref):
                 ConfigDefaulter(
                     root=self.root,
                     root_values=self.root_values,
-                    ref=ref,
-                    value_path=val_path,
+                    ref=ref.resolve_inheritance(self.root),
+                    value_path=value_path,
                 ).update_default()
 
 

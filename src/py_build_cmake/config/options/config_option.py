@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from copy import copy
+from copy import copy, deepcopy
 from difflib import get_close_matches
 from typing import Any, Iterable
 
@@ -19,15 +19,18 @@ class ConfigOption:
         default: DefaultValue | None = None,
         inherit_from: ConfPath | str | None = None,
         create_if_inheritance_target_exists: bool = False,
+        sub_options: dict[str, ConfigOption] | None = None,
     ) -> None:
         if default is None:
             default = NoDefaultValue()
         if isinstance(inherit_from, str):
             inherit_from = ConfPath.from_string(inherit_from)
+        if sub_options is None:
+            sub_options = {}
         self.name = name
         self.description = description
         self.example = example
-        self.sub_options: dict[str, ConfigOption] = {}
+        self.sub_options: dict[str, ConfigOption] = sub_options
         self.inherits = inherit_from
         self.default: DefaultValue = default
         self.create_if_inheritance_target_exists = create_if_inheritance_target_exists
@@ -44,6 +47,23 @@ class ConfigOption:
 
     def get_typename(self, md: bool = False) -> str | None:
         return None
+
+    def iter_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[str, ConfPath]]:
+        """Return the names of the sub-options of this config option, along with
+        the corresponding value path relative to the given value pth."""
+        for name in self.sub_options:
+            yield name, values.value_path.join(name)
+
+    def iter_set_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[str, ValueReference]]:
+        """Return the names of the sub-options of this config option, along with
+        the corresponding value reference relative to the given value if set."""
+        for name in self.sub_options:
+            if values.is_value_set(name):
+                yield name, values.sub_ref(name)
 
     def verify(self, values: ValueReference) -> Any:
         if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
@@ -70,6 +90,139 @@ class ConfigOption:
 
     def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
         return copy(old_value.values)
+
+
+class MultiConfigOption(ConfigOption):
+    def __init__(
+        self,
+        name: str,
+        description: str = "",
+        example: str = "",
+        default: DefaultValue | None = None,
+        inherit_from: ConfPath | str | None = None,
+        create_if_inheritance_target_exists: bool = False,
+    ) -> None:
+        super().__init__(
+            name=name,
+            description=description,
+            example=example,
+            default=default,
+            inherit_from=inherit_from,
+            create_if_inheritance_target_exists=create_if_inheritance_target_exists,
+        )
+
+    default_index = "*"
+
+    def iter_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[str, ConfPath]]:
+        """Return the names of the sub-options of this config option, along with
+        the corresponding value path relative to the given value pth."""
+        if values.values is None:
+            return ()
+        for k in values.values:
+            val = values.sub_ref(k)
+            for name in self.sub_options:
+                yield name, val.value_path.join(name)
+
+    def iter_set_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[str, ValueReference]]:
+        """Return the names of the sub-options of this config option, along with
+        the corresponding value reference relative to the given value if set."""
+        if values.values is None:
+            return ()
+        for k in values.values:
+            val = values.sub_ref(k)
+            for name in self.sub_options:
+                if val.is_value_set(name):
+                    yield name, val.sub_ref(name)
+
+    def _verify(self, values: ValueReference):
+        unknown_keys = set(values.values) - set(self.sub_options)
+        msg = ""
+        for k in sorted(unknown_keys):
+            suggested = get_close_matches(k, self.sub_options, 3)
+            msg = f"Unknown option '{k}' in {values.value_path}. "
+            if suggested:
+                msg += f"Did you mean: {', '.join(suggested)}\n"
+        if msg:
+            raise ConfigError(msg[:-1])
+
+    def _values_to_index_dict(self, values: ValueReference) -> dict[str, dict]:
+        vals: dict[str, dict] = {}
+        for k in values.values:
+            try:
+                int(k)
+            except ValueError:
+                v0: dict = vals.setdefault(self.default_index, {})
+                v0[k] = values.values[k]
+                continue
+            vals[k] = values.values[k]
+        return vals
+
+    def verify(self, values: ValueReference) -> Any:
+        if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
+            msg = f"Option {values.value_path} does not support "
+            msg += f"operation {values.action.value}"
+            raise ConfigError(msg)
+        if not isinstance(values.values, dict):
+            msg = f"Type of {values.value_path} should be 'dict', "
+            msg += f"not {type(values.values)}"
+            raise ConfigError(msg)
+        if not all(isinstance(v, str) for v in values.values):
+            msg = f"Type of keys in {values.value_path} should be 'str'"
+            raise ConfigError(msg)
+        vals = self._values_to_index_dict(values)
+        for k, v in vals.items():
+            self._verify(ValueReference(values.value_path.join(k), v))
+        return vals
+
+    def finalize(self, values: ValueReference) -> Any:
+        from .config_reference import ConfigReference
+        from .override import ConfigOverrider
+
+        if values.is_value_set(self.default_index):
+            # Our own option as a "single" ConfigOption
+            opt = ConfigOption(
+                name=self.name,
+                description=self.description,
+                example=self.example,
+                default=self.default,
+                inherit_from=self.inherits,
+                create_if_inheritance_target_exists=self.create_if_inheritance_target_exists,
+                sub_options=self.sub_options,
+            )
+            # Override the non-default items by the default item.
+            ref = ConfigReference(ConfPath((self.name,)), opt)
+            for k in values.values:
+                if k == self.default_index:
+                    continue
+                super_value = deepcopy(values.sub_ref(self.default_index))
+                new_values = values.sub_ref(k)
+                for name in self.sub_options:
+                    if new_values.is_value_set(name):
+                        new_value = ConfigOverrider(
+                            root=None,
+                            ref=ref.sub_ref(name),
+                            values=super_value.sub_ref(name),
+                            new_values=new_values.sub_ref(name),
+                        ).override()
+                        super_value.set_value(name, new_value)
+                values.set_value(k, super_value.values)
+            if len(values.values) == 1:
+                values.values["0"] = values.values.pop(self.default_index)
+            else:
+                values.clear_value(self.default_index)
+
+        return values.values
+
+    def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
+        # TODO: change implementation such that shallow copy is sufficient
+        r = deepcopy(old_value.values)
+        for k in new_value.values:
+            r.setdefault(k, {})
+        return r
 
 
 class UncheckedConfigOption(ConfigOption):

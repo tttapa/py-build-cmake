@@ -120,83 +120,91 @@ def test_inherit_cross_cmake():
     }
     assert conf.cmake == {
         "cross": {
-            "build_type": "RelWithDebInfo",
-            "config": ["RelWithDebInfo"],
-            "generator": "Unix Makefiles",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2", "arg3", "arg4"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["all_install"],
-            "minimum_version": "3.15",
-            "env": {
-                "foo": "bar",
-                "crosscompiling": "true",
+            "0": {
+                "build_type": "RelWithDebInfo",
+                "config": ["RelWithDebInfo"],
+                "generator": "Unix Makefiles",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2", "arg3", "arg4"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["all_install"],
+                "minimum_version": "3.15",
+                "env": {
+                    "foo": "bar",
+                    "crosscompiling": "true",
+                },
             },
         },
         "linux": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2", "linux_arg"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["linux_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2", "linux_arg"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["linux_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            },
         },
         "windows": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["win_arg", "arg2", "arg1"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["all_install", "win_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["win_arg", "arg2", "arg1"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["all_install", "win_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            }
         },
         "mac": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["all_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["all_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            }
         },
     }
     assert conf.wheel == {
@@ -281,61 +289,67 @@ def test_real_config_no_cross():
     }
     assert conf.cmake == {
         "linux": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["linux_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["linux_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            }
         },
         "windows": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": ["win_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": ["win_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            }
         },
         "mac": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": [],
-            "install_args": [],
-            "install_components": [""],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_args": [],
+                "install_components": [""],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            },
         },
     }
     assert conf.wheel == {
@@ -546,61 +560,67 @@ def test_real_config_cli_override():
     }
     assert conf.cmake == {
         "linux": {
-            "build_type": "MinSizeRel",
-            "config": ["MinSizeRel"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {"FOOBAR": "xyz;abc;ghi"},
-            "args": ["arg1", "arg2", "arg4"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": ["-c", "-d"],
-            "install_args": [],
-            "install_components": ["linux_install"],
-            "minimum_version": "3.15",
-            "env": {"PATH": "$HOME/opt" + os.pathsep + "/usr/bin", "foo": "bar"},
+            "0": {
+                "build_type": "MinSizeRel",
+                "config": ["MinSizeRel"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {"FOOBAR": "xyz;abc;ghi"},
+                "args": ["arg1", "arg2", "arg4"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": ["-c", "-d"],
+                "install_args": [],
+                "install_components": ["linux_install"],
+                "minimum_version": "3.15",
+                "env": {"PATH": "$HOME/opt" + os.pathsep + "/usr/bin", "foo": "bar"},
+            }
         },
         "windows": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": ["arg1", "arg2"],
-            "find_python": False,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": ["-c", "-d"],
-            "install_args": [],
-            "install_components": ["win_install"],
-            "minimum_version": "3.15",
-            "env": {"foo": "bar"},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": ["-c", "-d"],
+                "install_args": [],
+                "install_components": ["win_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": "bar"},
+            }
         },
         "mac": {
-            "build_type": "Release",
-            "config": ["Release"],
-            "generator": "Ninja",
-            "source_path": PurePosixPath("/project/src"),
-            "build_path": PurePosixPath(
-                "/project/.py-build-cmake_cache/{build_config}"
-            ),
-            "options": {},
-            "args": [],
-            "find_python": True,
-            "find_python3": True,
-            "build_args": [],
-            "build_tool_args": ["-c", "-d"],
-            "install_args": [],
-            "install_components": [""],
-            "minimum_version": "3.15",
-            "env": {},
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": [],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": ["-c", "-d"],
+                "install_args": [],
+                "install_components": [""],
+                "minimum_version": "3.15",
+                "env": {},
+            },
         },
     }
     assert conf.wheel == {

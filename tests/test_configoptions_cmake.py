@@ -7,7 +7,7 @@ from py_build_cmake.config.load import (
     verify_and_override_config,
 )
 from py_build_cmake.config.options.cmake_opt import CMakeOptConfigOption
-from py_build_cmake.config.options.config_option import ConfigOption
+from py_build_cmake.config.options.config_option import ConfigOption, MultiConfigOption
 from py_build_cmake.config.options.config_path import ConfPath
 from py_build_cmake.config.options.config_reference import ConfigReference
 from py_build_cmake.config.options.value_reference import ValueReference
@@ -143,7 +143,7 @@ def test_cmake_options_invalid_typename():
 def test_cmake_options_override():
     opts = ConfigOption("root")
     trunk = ConfigOption("pyproject.toml")
-    cmake = ConfigOption("cmake")
+    cmake = MultiConfigOption("cmake")
     cmake.insert_multiple(
         [
             CMakeOptConfigOption("opt1"),
@@ -193,11 +193,13 @@ def test_cmake_options_override():
     assert root_val.values == {
         "pyproject.toml": {
             "cmake": {
-                "opt1": {"FOO1": "bar", "BAR1": "foo"},
-                "opt2": {"FOO2": "o"},
-                "opt3": {"FOO3:BOOL": "c;x"},
-                "opt4": {"FOO4": "y;d"},
-                "opt5": {"FOO5:STRING": "e;g"},
+                "0": {
+                    "opt1": {"FOO1": "bar", "BAR1": "foo"},
+                    "opt2": {"FOO2": "o"},
+                    "opt3": {"FOO3:BOOL": "c;x"},
+                    "opt4": {"FOO4": "y;d"},
+                    "opt5": {"FOO5:STRING": "e;g"},
+                }
             }
         }
     }
@@ -206,7 +208,7 @@ def test_cmake_options_override():
 def test_cmake_options_override_wrong_type():
     opts = ConfigOption("root")
     trunk = ConfigOption("pyproject.toml")
-    cmake = ConfigOption("cmake")
+    cmake = MultiConfigOption("cmake")
     cmake.insert_multiple(
         [
             CMakeOptConfigOption("opt1"),
@@ -234,8 +236,8 @@ def test_cmake_options_override_wrong_type():
     root_val = ValueReference(ConfPath.from_string("/"), values)
     expected = (
         r"Incompatible types when overriding or inheriting CMake settings: "
-        r"BOOL \(pyproject.toml/cmake/opt1/FOO1\) and "
-        r"STRING \(override/opt1/FOO1\) \(use \"strict\" = false to ignore\)"
+        r"BOOL \(pyproject.toml/cmake/\*/opt1/FOO1\) and "
+        r"STRING \(override/\*/opt1/FOO1\) \(use \"strict\" = false to ignore\)"
     )
     with pytest.raises(ConfigError, match=expected):
         verify_and_override_config(override, root_ref, root_val)
@@ -244,7 +246,7 @@ def test_cmake_options_override_wrong_type():
 def test_cmake_options_override_wrong_type_lax():
     opts = ConfigOption("root")
     trunk = ConfigOption("pyproject.toml")
-    cmake = ConfigOption("cmake")
+    cmake = MultiConfigOption("cmake")
     cmake.insert_multiple(
         [
             CMakeOptConfigOption("opt1"),
@@ -278,7 +280,9 @@ def test_cmake_options_override_wrong_type_lax():
     assert root_val.values == {
         "pyproject.toml": {
             "cmake": {
-                "opt1": {"FOO1:STRING": "foo;On"},
+                "0": {
+                    "opt1": {"FOO1:STRING": "foo;On"},
+                }
             }
         }
     }

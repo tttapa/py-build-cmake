@@ -107,7 +107,7 @@ extend-ignore = [
 "src/py_build_cmake/help.py" = ["T20"]
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 files = "src/**/*.py"
 packages = "src/py_build_cmake"
 show_error_codes = true

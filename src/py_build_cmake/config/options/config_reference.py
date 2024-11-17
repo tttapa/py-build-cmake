@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     from .config_option import ConfigOption
 from .config_path import ConfPath
+from .value_reference import ValueReference
 
 
 class ConfigReference:
@@ -15,6 +16,22 @@ class ConfigReference:
     @property
     def sub_options(self):
         return self.config.sub_options
+
+    def iter_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[ConfigReference, ConfPath]]:
+        """Return the sub-options of this config option, along with
+        the corresponding value paths relative to the given value."""
+        return ((self.sub_ref(k), v) for k, v in self.config.iter_sub_options(values))
+
+    def iter_set_sub_options(
+        self, values: ValueReference
+    ) -> Iterable[tuple[ConfigReference, ValueReference]]:
+        """Return the sub-options of this config option, along with the
+        corresponding value reference relative to the given value if set."""
+        return (
+            (self.sub_ref(k), v) for k, v in self.config.iter_set_sub_options(values)
+        )
 
     def sub_ref(self, name: str | ConfPath) -> ConfigReference:
         if isinstance(name, ConfPath) and len(name.pth) == 1:
@@ -46,3 +63,6 @@ class ConfigReference:
         if self.config.inherits is None:
             return self
         return self.resolve_inheritance_single(root).resolve_inheritance(root)
+
+    def __repr__(self) -> str:
+        return f"<ConfigReference to: '{self.config_path}'>"

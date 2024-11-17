@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+
+from .config_path import ConfPath
 from .config_reference import ConfigReference
 from .value_reference import ValueReference
 
@@ -7,7 +10,7 @@ from .value_reference import ValueReference
 class ConfigOverrider:
     def __init__(
         self,
-        root: ConfigReference,
+        root: ConfigReference | None,
         ref: ConfigReference,
         values: ValueReference,
         new_values: ValueReference,
@@ -24,21 +27,32 @@ class ConfigOverrider:
             self.ref.config.override(self.values, self.new_values),
         )
         # If we have sub-options, override those
-        for name in self.ref.sub_options:
-            # Skip the sup-option if its value is not set in the override
-            ref = self.ref.sub_ref(name).resolve_inheritance(self.root)
-            try:
-                new_val = self.new_values.sub_ref(name)
-            except KeyError:
-                continue
-
-            default = {} if ref.sub_options else None
-            overridden_values.set_value_default(name, default)
-            old_val = overridden_values.sub_ref(name)
-            overridden_values.values[name] = ConfigOverrider(
-                root=self.root,
-                ref=ref,
-                values=old_val,
-                new_values=new_val,
-            ).override()
+        for ref, new_val in self.ref.iter_set_sub_options(self.new_values):
+            if self.root is not None:
+                ref = ref.resolve_inheritance(self.root)  # noqa: PLW2901
+            rel = new_val.value_path.relative_to(self.new_values.value_path)
+            # Create default parent options if necessary (for MultiConfigOption)
+            self._create_default_parents(overridden_values, ref, rel)
+            # Replace the old value by the override
+            old_val = overridden_values.sub_ref(rel)
+            overridden_values.set_value(
+                rel,
+                ConfigOverrider(
+                    root=self.root,
+                    ref=ref,
+                    values=old_val,
+                    new_values=new_val,
+                ).override(),
+            )
         return overridden_values.values
+
+    def _create_default_parents(
+        self, overridden_values: ValueReference, ref: ConfigReference, rel: ConfPath
+    ):
+        fst, rem = rel.split_front()
+        relp = ConfPath((fst,))
+        for p in rem.pth:
+            overridden_values.set_value_default(relp, {})
+            relp = relp.join(p)
+        default: Any = {} if ref.sub_options else None
+        overridden_values.set_value_default(relp, default)

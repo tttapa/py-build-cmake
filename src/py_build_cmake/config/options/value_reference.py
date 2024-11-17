@@ -128,6 +128,8 @@ class ValueReference:
                 value_path=self.value_path.join(name),
                 values=self.values[name],
             )
+        if not name:
+            return self
         name, rem = name.split_front()
         return self.sub_ref(name).sub_ref(rem)
 

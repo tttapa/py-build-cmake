@@ -31,13 +31,12 @@ class ConfigVerifier:
             self.values.action,
         )
         # Verify our sub-options
-        for name in self.ref.sub_options:
-            if name in self.values.values:
-                sub_val = verified_values.sub_ref(name)
-                verified = ConfigVerifier(
-                    root=self.root,
-                    ref=self.ref.sub_ref(name).resolve_inheritance(self.root),
-                    values=sub_val,
-                ).verify()
-                verified_values.values[name] = verified
+        for ref, sub_val in self.ref.iter_set_sub_options(verified_values):
+            verified = ConfigVerifier(
+                root=self.root,
+                ref=ref.resolve_inheritance(self.root),
+                values=sub_val,
+            ).verify()
+            rel = sub_val.value_path.relative_to(verified_values.value_path)
+            verified_values.set_value(rel, verified)
         return verified_values.values
