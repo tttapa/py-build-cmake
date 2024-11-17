@@ -36,9 +36,14 @@ install(TARGETS _add_module
         DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
 
 # Generate stubs for the Python module
+set(WITH_PY_STUBS_DEFAULT On)
+if (CMAKE_CROSSCOMPILING)
+    set(WITH_PY_STUBS_DEFAULT Off)
+endif()
 option(WITH_PY_STUBS
-    "Generate Python stub files (.pyi) for the Python module." On)
-if (WITH_PY_STUBS AND NOT CMAKE_CROSSCOMPILING)
+    "Generate Python stub files (.pyi) for the Python module."
+    ${WITH_PY_STUBS_DEFAULT})
+if (WITH_PY_STUBS)
     nanobind_add_stub(
         $<TARGET_FILE_BASE_NAME:_add_module>_stub
         INSTALL_TIME

@@ -15,7 +15,7 @@ dependencies = []
 requires = [
     "py-build-cmake~=0.2.0a15.dev0",
     "pybind11~=2.13.6",
-    "pybind11-stubgen~=0.16.2",
+    "pybind11-stubgen~=2.5.1",
 ]
 build-backend = "py_build_cmake.build"
 
@@ -36,7 +36,7 @@ minimum_version = "3.18"
 build_type = "Release"
 source_path = "." # Containing CMakeLists.txt
 build_args = ["-j"]
-install_components = ["python_modules"]
+install_components = ["python_modules", "python_stubs"]
 
 [tool.py-build-cmake.stubgen]
 packages = ["namespace_project.add_module"]
