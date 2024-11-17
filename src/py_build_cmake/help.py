@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import html
 import itertools
+import os
 import re
 import shutil
+import sys
 import textwrap
 
 from .config.options.config_option import ConfigOption
@@ -35,6 +37,8 @@ def help_print_md(pbc_opts: ConfigOption):
     Prints the top-level options in `pbc_opts` as MarkDown tables.
     """
     for k, v in pbc_opts.sub_options.items():
+        if not v.sub_options:
+            continue
         print("##", k)
         print(_get_full_description(v), "\n")
         print("| Option | Description | Type | Default |")
@@ -79,13 +83,42 @@ def _md_escape(descr: str):
     return descr.replace("\n", "<br/>")
 
 
+def _should_use_colors():
+    # Check if output is a terminal
+    if not sys.stdout.isatty():
+        return False
+    # Check the NO_COLOR environment variable
+    if "NO_COLOR" in os.environ:
+        return False
+    # Check the TERM environment variable
+    term = os.environ.get("TERM", "")
+    if term == "dumb":
+        return False
+    # Check CLICOLOR and CLICOLOR_FORCE
+    clicolor = os.environ.get("CLICOLOR", "1")
+    clicolor_force = os.environ.get("CLICOLOR_FORCE", "0")
+    if clicolor == "0":
+        return False
+    if clicolor_force == "1":
+        return True
+    # Default to enabling colors
+    return True
+
+
+def _style(text: str, style: str):
+    if _should_use_colors():
+        return f"\x1b[{style}m{text}\x1b[0m"
+    else:
+        return text
+
+
 def recursive_help_print(opt: ConfigOption, level=0):
     """Recursively prints the help messages for the options in `opt`."""
     for k, v in opt.sub_options.items():
         if k == "project":
             continue
         indent = 4 * level * " "
-        header = "\n" + k
+        header = "\n" + _style(k, "1;4")
         if v.sub_options:
             header += ":"
             print(textwrap.indent(header, indent))
@@ -96,14 +129,14 @@ def recursive_help_print(opt: ConfigOption, level=0):
             headerfields = []
             typename = v.get_typename()
             if typename is not None:
-                headerfields += [typename]
+                headerfields += [_style(typename, "34")]
             if isinstance(v, PathConfigOption):
                 headerfields += [_describe_path_option(v)]
             is_required = isinstance(v.default, RequiredValue)
             if is_required:
-                headerfields += ["required"]
+                headerfields += [_style("required", "31")]
             if v.inherits:
-                headerfields += ["inherits from /" + str(v.inherits)]
+                headerfields += [_style("inherits from /" + str(v.inherits), "3")]
             if headerfields:
                 header += " (" + ", ".join(headerfields) + ")"
             print(textwrap.indent(header + ":", indent))

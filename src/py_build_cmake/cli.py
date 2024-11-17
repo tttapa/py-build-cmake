@@ -221,8 +221,8 @@ def format(md, component):
     else:
         from .help import help_print
     help_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake")
-    pr_md = print if md else lambda *args, **kwargs: None
-    pr_tx = lambda *args, **kwargs: None if md else print
+    pr_md = print if md else (lambda *args, **kwargs: None)
+    pr_tx = (lambda *args, **kwargs: None) if md else print
     if component:
         pr_tx(
             "List of py-build-cmake pyproject.toml options for the "
@@ -243,6 +243,14 @@ def format(md, component):
             "See [examples/minimal-debug-component](https://github.com/tttapa/"
             "py-build-cmake/tree/main/examples/minimal-debug-component) "
             "for more information.\n"
+        )
+        pr_md(
+            "The most important option is `main_project`, which is a relative "
+            "path that points to the directory containing the`pyproject.toml` "
+            "of the main package (where all CMake options are defined). "
+            "Next, the options in the `component` section define which CMake "
+            "projects and components should be installed in this component "
+            "package.\n"
         )
         opts = get_component_options(Path("/"))
         root_ref = ConfigReference(ConfPath.from_string("/"), opts)
