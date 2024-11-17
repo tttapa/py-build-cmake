@@ -6,7 +6,11 @@ from pathlib import Path
 
 from .build import _BuildBackend as std_backend
 from .commands.cmd_runner import CommandRunner
-from .common import ComponentConfig, PackageInfo, format_and_rethrow_exception
+from .common import (
+    ConfigError,
+    PackageInfo,
+    format_and_rethrow_exception,
+)
 from .config import load as config_load
 from .export import metadata as export_metadata
 
@@ -35,7 +39,7 @@ class _BuildComponentBackend:
                 comp_source_dir, config_settings, self.verbose
             )
             cfg = std_backend.read_config(
-                Path(comp_cfg.component["main_project"]),
+                comp_cfg.main_project,
                 config_settings,
                 self.verbose,
             )
@@ -112,7 +116,7 @@ class _BuildComponentBackend:
         )
 
         # Load the config from the main pyproject.toml file
-        src_dir = Path(comp_cfg.component["main_project"]).resolve()
+        src_dir = comp_cfg.main_project.resolve()
         cfg, module = std_backend.read_all_metadata(
             src_dir, config_settings, self.verbose
         )
@@ -132,19 +136,26 @@ class _BuildComponentBackend:
         export_metadata.write_license_files(comp_cfg, distinfo_dir)
         export_metadata.write_entry_points(comp_cfg, distinfo_dir)
 
-        # Configure, build and install the CMake project
-        if cmake_cfg:
+        # Build and install the CMake project(s)
+        sort_comp = sorted(comp_cfg.component.items(), key=lambda item: int(item[0]))
+        components = {int(key): value for key, value in sort_comp}
+        for k, component in components.items():
+            if k not in cmake_cfg:
+                msg = f"Index {k} in [tool.py-build-cmake.component] does not "
+                msg += "refer to an exiting CMake configuration in the main "
+                msg += "project."
+                raise ConfigError(msg)
             cmaker = self.get_cmaker(
                 paths.source_dir,
                 paths.build_dir,
                 paths.staging_dir,
-                cmake_cfg,
+                cmake_cfg[k],
                 cfg.cross,
                 pkg_info,
-                comp_cfg,
+                component,
                 runner=self.runner,
             )
-            if not comp_cfg.component["install_only"]:
+            if not component["install_only"]:
                 cmaker.build()
             cmaker.install()
 
@@ -161,7 +172,7 @@ class _BuildComponentBackend:
         cmake_cfg: dict,
         cross_cfg: dict | None,
         package_info: PackageInfo,
-        comp_cfg: ComponentConfig,
+        component: dict,
         **kwargs,
     ):
         cmaker = std_backend.get_cmaker(
@@ -173,17 +184,16 @@ class _BuildComponentBackend:
             package_info=package_info,
             **kwargs,
         )
-        comp = comp_cfg.component
-        if "build_presets" in comp:
-            cmaker.build_settings.presets = comp["build_presets"]
-        if "build_args" in comp:
-            cmaker.build_settings.args = comp["build_args"]
-        if "build_tool_args" in comp:
-            cmaker.build_settings.tool_args = comp["build_tool_args"]
-        if "install_args" in comp:
-            cmaker.install_settings.args = comp["install_args"]
-        if "install_components" in comp:
-            cmaker.install_settings.components = comp["install_components"]
+        if "build_presets" in component:
+            cmaker.build_settings.presets = component["build_presets"]
+        if "build_args" in component:
+            cmaker.build_settings.args = component["build_args"]
+        if "build_tool_args" in component:
+            cmaker.build_settings.tool_args = component["build_tool_args"]
+        if "install_args" in component:
+            cmaker.install_settings.args = component["install_args"]
+        if "install_components" in component:
+            cmaker.install_settings.components = component["install_components"]
         return cmaker
 
 

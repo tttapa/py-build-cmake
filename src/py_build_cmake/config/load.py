@@ -4,7 +4,6 @@ import contextlib
 import logging
 import os
 from copy import copy
-from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from pprint import pprint
 from typing import Any, Dict, Optional, cast
@@ -14,7 +13,7 @@ from distlib.util import normalize_name  # type: ignore[import-untyped]
 from lark import LarkError
 
 from .. import __version__
-from ..common import Config, ConfigError
+from ..common import ComponentConfig, Config, ConfigError
 from .cli_override import CLIOption, parse_cli, parse_file
 from .options.config_path import ConfPath
 from .options.config_reference import ConfigReference
@@ -415,13 +414,6 @@ def print_config_verbose(cfg: Config):
     print("================================\n")
 
 
-@dataclass
-class ComponentConfig:
-    standard_metadata: pyproject_metadata.StandardMetadata
-    package_name: str = field(default="")
-    component: dict[str, Any] = field(default_factory=dict)
-
-
 def read_full_component_config(
     pyproject_path: Path, config_settings: dict[str, list[Any]] | None, verbose: bool
 ) -> ComponentConfig:
@@ -471,10 +463,6 @@ def process_component_config(
     except pyproject_metadata.ConfigurationError as e:
         raise ConfigError(str(e)) from e
 
-    # Create our own config data structure
-    cfg = ComponentConfig(meta)
-    cfg.package_name = meta.name
-
     # py-build-cmake option tree
     opts = get_component_options(pyproject_path.parent)
     root_ref = ConfigReference(ConfPath.from_string("/"), opts)
@@ -511,6 +499,10 @@ def process_component_config(
     pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
 
     # Store the component configuration
+    main_project = pbc_value_ref.get_value("main_project")
+    assert isinstance(main_project, Path)
+    cfg = ComponentConfig(meta, main_project)
+    cfg.package_name = meta.name
     cfg.component = pbc_value_ref.get_value("component")
 
     return cfg

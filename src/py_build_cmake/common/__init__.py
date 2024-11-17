@@ -133,6 +133,7 @@ class ComponentConfig:
     build backend."""
 
     standard_metadata: pyproject_metadata.StandardMetadata
+    main_project: Path
     package_name: str = field(default="")
     component: dict[str, Any] = field(default_factory=dict)
 
