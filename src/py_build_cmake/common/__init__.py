@@ -176,16 +176,26 @@ class Command:
     kwargs: dict[str, Any]
 
 
-def format_and_rethrow_exception(e: BaseException):
+def format_and_rethrow_exception(e: BaseException, component=False):
     """Raises a FormattedErrorMessage from the given exception"""
     if isinstance(e, FormattedErrorMessage):
         raise e
     if isinstance(e, ConfigError):
-        logger.error("Error in user configuration", exc_info=e)
-        msg = "\n\n\t\u274C Error in user configuration:\n\n" f"\t\t{e}\n" "\n"
+        logger.error("Error in user configuration", exc_info=False)
+        comp_arg = " --component" if component else ""
+        msg = (
+            "\n"
+            "\n"
+            "\t\u274C Error in user configuration:\n"
+            "\n"
+            f"\t\t{e}\n"
+            "\n"
+            f"\t   Please run `py-build-cmake config format{comp_arg}` or see "
+            "https://tttapa.github.io/py-build-cmake/Config.html for help.\n"
+        )
         raise FormattedErrorMessage(msg) from e
     if isinstance(e, CalledProcessError):
-        logger.error("Subprocess failed", exc_info=e)
+        logger.error("Subprocess failed", exc_info=False)
         if e.cmd[:2] == ["cmake", "--build"]:
             msg = "CMake build failed"
         elif e.cmd[:2] == ["cmake", "--install"]:
@@ -199,7 +209,7 @@ def format_and_rethrow_exception(e: BaseException):
         msg = (
             f"\n\n\t\u274C {msg}:\n\n"
             f"\t\t{e}\n"
-            "\n\t(scroll up for subprocess output)"
+            "\n\t(scroll up for subprocess output, above Python backtrace)"
         )
         raise FormattedErrorMessage(msg) from e
     elif isinstance(e, AssertionError):
@@ -208,10 +218,10 @@ def format_and_rethrow_exception(e: BaseException):
             "\n"
             "\n"
             "\t\u274C Internal error:\n"
-            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
+            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
         )
         raise FormattedErrorMessage(msg) from e
     elif isinstance(e, KeyError):
@@ -220,10 +230,10 @@ def format_and_rethrow_exception(e: BaseException):
             "\n"
             "\n"
             "\t\u274C Internal KeyError:\n"
-            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
+            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
         )
         raise FormattedErrorMessage(msg) from e
     elif isinstance(e, Exception):
@@ -235,5 +245,6 @@ def format_and_rethrow_exception(e: BaseException):
             "\n"
             f"\t\t{e}\n"
             "\n"
+            "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
         )
         raise FormattedErrorMessage(msg) from e

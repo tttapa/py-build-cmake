@@ -47,7 +47,7 @@ class _BuildComponentBackend:
                 config_settings, cfg, self.runner
             )
         except Exception as e:
-            format_and_rethrow_exception(e)
+            format_and_rethrow_exception(e, component=True)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -73,7 +73,7 @@ class _BuildComponentBackend:
                     wheel_directory, tmp_build_dir, config_settings
                 )
         except Exception as e:
-            format_and_rethrow_exception(e)
+            format_and_rethrow_exception(e, component=True)
 
     def build_editable(
         self, wheel_directory, config_settings=None, metadata_directory=None
