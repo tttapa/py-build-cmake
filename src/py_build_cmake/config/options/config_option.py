@@ -202,12 +202,15 @@ class MultiConfigOption(ConfigOption):
                 new_values = values.sub_ref(k)
                 for name in self.sub_options:
                     if new_values.is_value_set(name):
-                        new_value = ConfigOverrider(
-                            root=None,
-                            ref=ref.sub_ref(name),
-                            values=super_value.sub_ref(name),
-                            new_values=new_values.sub_ref(name),
-                        ).override()
+                        if super_value.is_value_set(name):
+                            new_value = ConfigOverrider(
+                                root=None,
+                                ref=ref.sub_ref(name),
+                                values=super_value.sub_ref(name),
+                                new_values=new_values.sub_ref(name),
+                            ).override()
+                        else:
+                            new_value = new_values.sub_ref(name).values
                         super_value.set_value(name, new_value)
                 values.set_value(k, super_value.values)
             if len(values.values) == 1:
