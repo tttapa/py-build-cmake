@@ -157,7 +157,7 @@ def read_config(
             elif path.suffix == ".pbc":
                 options = try_load_pbc(fullpath)
                 for i, o in enumerate(options):
-                    label = f"{fullpath.as_posix()}{i+1}"
+                    label = f"{fullpath.as_posix()}[{i+1}]"
                     override = add_cli_override(config_files, o, label, targetpath)
                     overrides.update(override)
             else:
