@@ -145,11 +145,16 @@ class _BuildComponentBackend:
                 msg += "refer to an exiting CMake configuration in the main "
                 msg += "project."
                 raise ConfigError(msg)
+            cmkcfg = cmake_cfg[k]
+            build_cfg_name = std_backend.get_build_config_name(cfg.cross, k)
+            path = cmkcfg["build_path"]
+            path = str(path).replace("{build_config}", build_cfg_name)
+            build_dir = Path(path)
             cmaker = self.get_cmaker(
                 paths.source_dir,
-                paths.build_dir,
+                build_dir,
                 paths.staging_dir,
-                cmake_cfg[k],
+                cmkcfg,
                 cfg.cross,
                 pkg_info,
                 component,

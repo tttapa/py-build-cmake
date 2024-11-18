@@ -349,7 +349,7 @@ class _BuildBackend:
         return str(Path(wheel_path).relative_to(paths.wheel_dir))
 
     @staticmethod
-    def get_cmake_config(cfg: Config):
+    def get_cmake_config(cfg: Config) -> dict[int, Any]:
         if not cfg.cmake:
             return {}
         if cfg.cross is None:
