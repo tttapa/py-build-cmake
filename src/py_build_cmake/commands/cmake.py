@@ -5,6 +5,7 @@ import os
 import sys
 import sysconfig
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
 from string import Template
 
@@ -329,15 +330,10 @@ class CMaker:
         return cmd
 
     def get_build_commands(self):
-        if self.build_settings.presets and self.build_settings.configs:
-            msg = "Mixing both CMake build presets and plain configs is not recommended"
-            logger.warning(msg)
-        for preset in self.build_settings.presets:
-            yield self.get_build_command(None, preset)
-        for config in self.build_settings.configs:
-            yield self.get_build_command(config, None)
-        if not self.build_settings.presets and not self.build_settings.configs:
-            yield self.get_build_command(None, None)
+        presets = self.build_settings.presets or [None]
+        configs = self.build_settings.configs or [None]
+        for preset, config in product(presets, configs):
+            yield self.get_build_command(config, preset)
 
     def build(self):
         env = self.prepare_environment()
