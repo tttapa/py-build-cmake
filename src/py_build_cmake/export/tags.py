@@ -51,7 +51,10 @@ def convert_wheel_tags(tags: dict[str, list[str]], wheel_cfg: dict) -> WheelTags
     if "abi_tag" in wheel_cfg:
         tags["abi"] = wheel_cfg["abi_tag"]
     if "platform_tag" in wheel_cfg:
-        tags["arch"] = wheel_cfg["platform_tag"]
+        plat = wheel_cfg["platform_tag"]  # Platform tags specified by the user
+        guess = tags["arch"]  # Tags guessed based on the current interpreter
+        # If the user-specified tags contain "guess", replace it by the guesses
+        tags["arch"] = [x for t in plat for x in (guess if t == "guess" else [t])]
     return tags
 
 

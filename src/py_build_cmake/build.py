@@ -331,7 +331,8 @@ class _BuildBackend:
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
         whl.dirname = paths.wheel_dir
-        guess_plat = cfg.wheel.get("platform_tag", "") == "guess"
+        plat = wheel_cfg.get("platform_tag", "")
+        guess_plat = "guess" in plat
         if pure:
             tags = {"pyver": ["py3"]}
         elif cfg.cross:
