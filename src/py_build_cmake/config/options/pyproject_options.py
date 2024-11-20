@@ -21,6 +21,10 @@ def get_tool_pbc_path():
     return ConfPath.from_string("pyproject.toml/tool/py-build-cmake")
 
 
+def get_component_path():
+    return ConfPath.from_string("pyproject.toml/tool/py-build-cmake/component")
+
+
 def get_cross_path():
     return ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cross")
 
@@ -41,6 +45,11 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      default=DefaultValueValue({}),
                      create_if_inheritance_target_exists=True,
         ))  # fmt: skip
+    # TODO: we should warn if these are present in the main config
+    pbc.insert_multiple([
+        UncheckedConfigOption("main_project"),
+        UncheckedConfigOption("component"),
+    ])  # fmt: skip
 
     # [tool.py-build-cmake.module]
     module = pbc.insert(
@@ -507,6 +516,21 @@ def get_component_options(project_path: Path, *, test: bool = False):
                      default=DefaultValueValue({}),
                      create_if_inheritance_target_exists=True,
         ))  # fmt: skip
+    # TODO: we should warn if these are present in a component config
+    pbc.insert_multiple([
+        UncheckedConfigOption("module"),
+        UncheckedConfigOption("editable"),
+        UncheckedConfigOption("sdist"),
+        UncheckedConfigOption("cmake"),
+        UncheckedConfigOption("wheel"),
+        UncheckedConfigOption("stubgen"),
+        UncheckedConfigOption("linux"),
+        UncheckedConfigOption("windows"),
+        UncheckedConfigOption("mac"),
+        UncheckedConfigOption("cross"),
+    ])  # fmt: skip
+
+    # [tool.py-build-cmake.main_project]
     pbc.insert(
         PathConfigOption("main_project",
                          "Directory containing the main pyproject.toml file.",

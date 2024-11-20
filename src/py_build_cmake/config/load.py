@@ -23,6 +23,7 @@ from .options.inherit import ConfigInheritor
 from .options.override import ConfigOverrider
 from .options.pyproject_options import (
     get_component_options,
+    get_component_path,
     get_cross_path,
     get_options,
     get_tool_pbc_path,
@@ -53,7 +54,7 @@ def read_full_config(
 
 
 def parse_config_settings_overrides(
-    config_settings: dict[str, str | list[str]], verbose: bool
+    config_settings: dict[str, str | list[str]], verbose: bool, component: bool = False
 ):
     if verbose:
         print("Configuration settings:")
@@ -65,14 +66,14 @@ def parse_config_settings_overrides(
     def get_as_list(key: str):
         return listify(config_settings.get(key) or [])
 
-    keys = ["local", "cross"]
-    file_overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
+    keys = ["component"] if component else ["local", "cross"]
     cli_overrides = (
         get_as_list("-o")
         + get_as_list("o")
         + get_as_list("override")
         + get_as_list("--override")
     )
+    file_overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
     if verbose:
         print("Configuration settings for local and cross-compilation file overrides:")
         pprint(file_overrides)
@@ -116,6 +117,29 @@ def try_load_pbc(path: Path):
         raise ConfigError(msg) from e
 
 
+def load_extra_config_files(flag_overrides, targetpath, config_files, overrides):
+    for path in map(Path, flag_overrides):
+        if path.is_absolute():
+            fullpath = path
+        else:
+            fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
+        if path.suffix == ".toml":
+            config = try_load_toml(fullpath)
+            if config:  # Treat empty file as no override
+                config_files[fullpath.as_posix()] = config
+                overrides[ConfPath((fullpath.as_posix(),))] = targetpath
+        elif path.suffix == ".pbc":
+            options = try_load_pbc(fullpath)
+            for i, o in enumerate(options):
+                label = f"{fullpath.as_posix()}[{i+1}]"
+                override = add_cli_override(config_files, o, label, targetpath)
+                overrides.update(override)
+        else:
+            msg = f"Config file {str(path.absolute())!r} "
+            msg += "has an unsupported extension (should be .toml or .pbc)"
+            raise ConfigError(msg)
+
+
 def read_config(
     pyproject_path: str | Path,
     flag_overrides: dict[str, list[str]],
@@ -144,26 +168,9 @@ def read_config(
 
     # Files specified on the command line
     for flag, targetpath in extra_flag_paths.items():
-        for path in map(Path, flag_overrides[flag]):
-            if path.is_absolute():
-                fullpath = path
-            else:
-                fullpath = (Path(os.environ.get("PWD", ".")) / path).resolve()
-            if path.suffix == ".toml":
-                config = try_load_toml(fullpath)
-                if config:  # Treat empty file as no override
-                    config_files[fullpath.as_posix()] = config
-                    overrides[ConfPath((fullpath.as_posix(),))] = targetpath
-            elif path.suffix == ".pbc":
-                options = try_load_pbc(fullpath)
-                for i, o in enumerate(options):
-                    label = f"{fullpath.as_posix()}[{i+1}]"
-                    override = add_cli_override(config_files, o, label, targetpath)
-                    overrides.update(override)
-            else:
-                msg = f"Config file {str(path.absolute())!r} "
-                msg += "has an unsupported extension (.toml or .pbc)"
-                raise ConfigError(msg)
+        load_extra_config_files(
+            flag_overrides[flag], targetpath, config_files, overrides
+        )
 
     # Command-line overrides
     for i, o in enumerate(cli_overrides):
@@ -415,10 +422,15 @@ def print_config_verbose(cfg: Config):
 
 
 def read_full_component_config(
-    pyproject_path: Path, config_settings: dict[str, list[Any]] | None, verbose: bool
+    pyproject_path: Path,
+    config_settings: dict[str, str | list[str]] | None,
+    verbose: bool,
 ) -> ComponentConfig:
     config_settings = config_settings or {}
-    cfg = read_component_config(pyproject_path)
+    overrides, cli_overrides = parse_config_settings_overrides(
+        config_settings, verbose, component=True
+    )
+    cfg = read_component_config(pyproject_path, overrides, cli_overrides)
     if cfg.standard_metadata.dynamic:
         msg = "Dynamic metadata not supported for components."
         raise ConfigError(msg)
@@ -427,23 +439,48 @@ def read_full_component_config(
     return cfg
 
 
-def read_component_config(pyproject_path: Path) -> ComponentConfig:
+def read_component_config(
+    pyproject_path: Path,
+    flag_overrides: dict[str, list[str]],
+    cli_overrides: list[CLIOption],
+) -> ComponentConfig:
     # Load the pyproject.toml file
-    pyproject = try_load_toml(pyproject_path)
+    pyproject_folder = pyproject_path.parent
+    pyproject: dict[str, Any] = try_load_toml(pyproject_path)
     if "project" not in pyproject:
         msg = "Missing [project] table"
         raise ConfigError(msg)
+
+    # Load local overrides
+    check_if_local_configs_exist(flag_overrides, pyproject_folder)
 
     # File names mapping to the actual dict with the config
     config_files: dict[str, dict[str, Any]] = {
         "pyproject.toml": pyproject,
     }
-    return process_component_config(pyproject_path, pyproject, config_files)
+
+    # Additional options for config_options
+    overrides: dict[ConfPath, ConfPath] = {}
+    # What to override
+    extra_flag_paths = {"component": get_component_path()}
+
+    # Files specified on the command line
+    for flag, targetpath in extra_flag_paths.items():
+        load_extra_config_files(
+            flag_overrides[flag], targetpath, config_files, overrides
+        )
+
+    # Command-line overrides
+    for i, o in enumerate(cli_overrides):
+        overrides.update(add_cli_override(config_files, o, f"<cli:{i+1}>"))
+
+    return process_component_config(pyproject_path, pyproject, overrides, config_files)
 
 
 def process_component_config(
     pyproject_path: Path,
     pyproject: dict[str, Any],
+    overrides: dict[ConfPath, ConfPath],
     config_files: dict[str, dict[str, Any]],
 ):
     # Check the package/module name and normalize it
@@ -469,33 +506,10 @@ def process_component_config(
     root_val = ValueReference(ConfPath.from_string("/"), config_files)
 
     # Verify the configuration and apply the overrides
-    root_val.set_value(
-        "pyproject.toml",
-        ConfigVerifier(
-            root=root_ref,
-            ref=root_ref.sub_ref("pyproject.toml"),
-            values=root_val.sub_ref("pyproject.toml"),
-        ).verify(),
-    )
+    verify_and_override_config(overrides, root_ref, root_val)
+
     # Carry out inheritance between options
-    ConfigInheritor(
-        root=root_ref,
-        root_values=root_val,
-    ).inherit()
-    root_val.set_value(
-        "pyproject.toml",
-        ConfigFinalizer(
-            root=root_ref,
-            ref=root_ref.sub_ref("pyproject.toml"),
-            values=root_val.sub_ref("pyproject.toml"),
-        ).finalize(),
-    )
-    ConfigDefaulter(
-        root=root_ref,
-        root_values=root_val,
-        ref=root_ref.sub_ref("pyproject.toml"),
-        value_path=ConfPath.from_string("pyproject.toml"),
-    ).update_default()
+    inherit_default_and_finalize_config(root_ref, root_val)
     pbc_value_ref = root_val.sub_ref(get_tool_pbc_path())
 
     # Store the component configuration
@@ -514,6 +528,8 @@ def print_component_config_verbose(cfg: ComponentConfig):
     print("================================")
     print("package_name:")
     print(repr(cfg.package_name))
+    print("main_project:")
+    print(repr(cfg.main_project.as_posix()))
     print("component:")
     pprint(cfg.component)
     print("================================\n")

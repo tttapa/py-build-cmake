@@ -38,11 +38,8 @@ class _BuildComponentBackend:
             comp_cfg = self.read_all_metadata(
                 comp_source_dir, config_settings, self.verbose
             )
-            cfg = std_backend.read_config(
-                comp_cfg.main_project,
-                config_settings,
-                self.verbose,
-            )
+            src_dir = comp_cfg.main_project.resolve()
+            cfg = std_backend.read_config(src_dir, config_settings, self.verbose)
             return std_backend.get_requires_build_project(
                 config_settings, cfg, self.runner
             )

@@ -8,7 +8,7 @@ import shutil
 import sys
 import textwrap
 
-from .config.options.config_option import ConfigOption
+from .config.options.config_option import ConfigOption, UncheckedConfigOption
 from .config.options.default import RequiredValue
 from .config.options.path import PathConfigOption
 
@@ -115,7 +115,7 @@ def _style(text: str, style: str):
 def recursive_help_print(opt: ConfigOption, level=0):
     """Recursively prints the help messages for the options in `opt`."""
     for k, v in opt.sub_options.items():
-        if k == "project":
+        if isinstance(v, UncheckedConfigOption):
             continue
         indent = 4 * level * " "
         header = "\n" + _style(k, "1;4")
