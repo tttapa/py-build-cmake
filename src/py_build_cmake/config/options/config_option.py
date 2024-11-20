@@ -9,6 +9,8 @@ from .config_path import ConfPath
 from .default import DefaultValue, NoDefaultValue
 from .value_reference import OverrideActionEnum, ValueReference
 
+_MAGIC_CLEAR_VALUE = None
+
 
 class ConfigOption:
     def __init__(
@@ -66,6 +68,8 @@ class ConfigOption:
                 yield name, values.sub_ref(name)
 
     def verify(self, values: ValueReference) -> Any:
+        if values.action == OverrideActionEnum.Clear:
+            return _MAGIC_CLEAR_VALUE
         if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} does not support "
             msg += f"operation {values.action.value}"
@@ -86,9 +90,15 @@ class ConfigOption:
         return values.values
 
     def finalize(self, values: ValueReference) -> Any:
+        if self.sub_options:
+            for k in list(values.values):
+                if values.values[k] == _MAGIC_CLEAR_VALUE:
+                    del values.values[k]
         return values.values
 
     def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
+        if new_value.values == _MAGIC_CLEAR_VALUE:
+            return _MAGIC_CLEAR_VALUE
         return copy(old_value.values)
 
 
@@ -139,6 +149,8 @@ class MultiConfigOption(ConfigOption):
                     yield name, val.sub_ref(name)
 
     def _verify(self, values: ValueReference):
+        if values.values is None:
+            return
         unknown_keys = set(values.values) - set(self.sub_options)
         msg = ""
         for k in sorted(unknown_keys):
@@ -149,19 +161,33 @@ class MultiConfigOption(ConfigOption):
         if msg:
             raise ConfigError(msg[:-1])
 
-    def _values_to_index_dict(self, values: ValueReference) -> dict[str, dict]:
-        vals: dict[str, dict] = {}
+    def _values_to_index_dict(self, values: ValueReference):
+        vals: dict[str, dict | None] = {}
         for k in values.values:
             try:
                 int(k)
             except ValueError:
-                v0: dict = vals.setdefault(self.default_index, {})
-                v0[k] = values.values[k]
+                v0 = vals.setdefault(self.default_index, {})
+                assert v0 is not None
+                v0[k] = values.values[k]  # Copy any action as well
                 continue
-            vals[k] = values.values[k]
+            vr = values.sub_ref(k)
+            if vr.action == OverrideActionEnum.Clear:
+                vals[k] = _MAGIC_CLEAR_VALUE
+            elif vr.action not in (
+                OverrideActionEnum.Assign,
+                OverrideActionEnum.Default,
+            ):
+                msg = f"Option {vr.value_path} does not support "
+                msg += f"operation {vr.action.value}"
+                raise ConfigError(msg)
+            else:
+                vals[k] = vr.values  # Do not copy action
         return vals
 
     def verify(self, values: ValueReference) -> Any:
+        if values.action == OverrideActionEnum.Clear:
+            return _MAGIC_CLEAR_VALUE
         if values.action not in (OverrideActionEnum.Assign, OverrideActionEnum.Default):
             msg = f"Option {values.value_path} does not support "
             msg += f"operation {values.action.value}"
@@ -195,8 +221,11 @@ class MultiConfigOption(ConfigOption):
             )
             # Override the non-default items by the default item.
             ref = ConfigReference(ConfPath((self.name,)), opt)
-            for k in values.values:
+            for k in list(values.values):
                 if k == self.default_index:
+                    continue
+                if values.values[k] == _MAGIC_CLEAR_VALUE:
+                    del values.values[k]
                     continue
                 super_value = deepcopy(values.sub_ref(self.default_index))
                 new_values = values.sub_ref(k)
@@ -221,10 +250,15 @@ class MultiConfigOption(ConfigOption):
         return values.values
 
     def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
+        if new_value.values == _MAGIC_CLEAR_VALUE:
+            return _MAGIC_CLEAR_VALUE
         # TODO: change implementation such that shallow copy is sufficient
-        r = deepcopy(old_value.values)
-        for k in new_value.values:
-            r.setdefault(k, {})
+        r = deepcopy(old_value.values) or {}
+        for k, v in new_value.values.items():
+            if v == _MAGIC_CLEAR_VALUE:
+                r[k] = _MAGIC_CLEAR_VALUE
+            else:
+                r.setdefault(k, {})
         return r
 
 

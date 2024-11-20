@@ -32,7 +32,8 @@ class ConfigOverrider:
                 ref = ref.resolve_inheritance(self.root)  # noqa: PLW2901
             rel = new_val.value_path.relative_to(self.new_values.value_path)
             # Create default parent options if necessary (for MultiConfigOption)
-            self._create_default_parents(overridden_values, ref, rel)
+            if not self._create_default_parents(overridden_values, ref, rel):
+                continue
             # Replace the old value by the override
             old_val = overridden_values.sub_ref(rel)
             overridden_values.set_value(
@@ -52,7 +53,8 @@ class ConfigOverrider:
         fst, rem = rel.split_front()
         relp = ConfPath((fst,))
         for p in rem.pth:
-            overridden_values.set_value_default(relp, {})
+            if not overridden_values.set_value_default(relp, {}):
+                return False
             relp = relp.join(p)
         default: Any = {} if ref.sub_options else None
-        overridden_values.set_value_default(relp, default)
+        return overridden_values.set_value_default(relp, default)

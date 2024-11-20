@@ -57,31 +57,41 @@ class ValueReference:
             self.values = values
 
     def is_value_set(self, path: str | ConfPath):
-        if isinstance(path, str):
-            return path in self.values
         values = self.values
+        if values is None:
+            return False
+        if isinstance(path, str):
+            return path in values
         while path:
             name, path = path.split_front()
-            if name not in values:
+            if values is None or name not in values:
                 return False
             values = values[name]
         return True
 
     def get_value(self, path: str | ConfPath):
-        if isinstance(path, str):
-            return self.values[path]
         values = self.values
+        if isinstance(path, str):
+            if values is None:
+                raise KeyError(path)
+            return values[path]
         while path:
             name, path = path.split_front()
+            if values is None:
+                raise KeyError(name)
             values = values[name]
         return values
 
     def set_value(self, path: str | ConfPath, val: Any):
-        if isinstance(path, str):
-            self.values[path] = val
-            return True
         values = self.values
+        if isinstance(path, str):
+            if values is None:
+                return False
+            values[path] = val
+            return True
         while True:
+            if values is None:
+                return False
             name, path = path.split_front()
             if not path:
                 values[name] = val
@@ -91,25 +101,33 @@ class ValueReference:
             values = values[name]
 
     def clear_value(self, path: str | ConfPath):
-        if isinstance(path, str):
-            self.values.pop(path, None)
-            return True
         values = self.values
+        if isinstance(path, str):
+            if values is None:
+                return
+            values.pop(path, None)
+            return
         while True:
             name, path = path.split_front()
+            if values is None:
+                return
             if not path:
                 values.pop(name, None)
-                return True
+                return
             if name not in values:
-                return False
+                return
             values = values[name]
 
     def set_value_default(self, path: str | ConfPath, val: Any):
+        if self.values is None:
+            return None
         if isinstance(path, str):
             self.values.setdefault(path, val)
             return True
         values = self.values
         while True:
+            if values is None:
+                return False
             name, path = path.split_front()
             if not path:
                 values.setdefault(name, val)
