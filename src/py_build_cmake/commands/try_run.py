@@ -13,7 +13,7 @@ def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
     assert cfg.cmake
     # Do we need to perform a native build?
     native = not cfg.cross
-    native_cfg = cfg.cmake[get_os_name()] if native else {}
+    native_cfg = cfg.cmake.get(get_os_name(), {}) if native else {}
     # Do we need to perform a cross build?
     cross = cfg.cross
     cross_cfg = cfg.cmake.get("cross", {})
@@ -25,6 +25,7 @@ def check_cmake_program(cfg: Config, deps: list[str], runner: CommandRunner):
     # Find the strictest version requirement
     min_cmake_ver = max(
         NormalizedVersion(CMAKE_MINIMUM_REQUIRED),
+        NormalizedVersion(CMAKE_MINIMUM_REQUIRED),  # deliberate, for empty case
         *(
             NormalizedVersion(v.get("minimum_version", "0.0"))
             for c in cfgs

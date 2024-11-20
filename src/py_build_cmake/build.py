@@ -353,9 +353,11 @@ class _BuildBackend:
         if not cfg.cmake:
             return {}
         if cfg.cross is None:
-            cmake_cfg = cfg.cmake[util.get_os_name()]
+            cmake_cfg = cfg.cmake.get(util.get_os_name())
         else:
-            cmake_cfg = cfg.cmake["cross"]
+            cmake_cfg = cfg.cmake.get("cross")
+        if not cmake_cfg:
+            return {}
         sort_cfg = sorted(cmake_cfg.items(), key=lambda item: int(item[0]))
         return {int(key): value for key, value in sort_cfg}
 
