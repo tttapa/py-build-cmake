@@ -295,7 +295,7 @@ class CMaker:
         cmd += ["-S", str(self.cmake_settings.source_path)]
         if self.conf_settings.preset:
             cmd += ["--preset", self.conf_settings.preset]
-        if not self.build_settings.presets:
+        if not self.conf_settings.preset or not self.build_settings.presets:
             cmd += ["-B", str(self.cmake_settings.build_path)]
         if self.conf_settings.generator:
             cmd += ["-G", self.conf_settings.generator]
