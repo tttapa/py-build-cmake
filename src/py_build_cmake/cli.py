@@ -118,6 +118,7 @@ def cli(ctx: click.Context, **kwargs):
 )
 @click.option(
     "--index",
+    default=0,
     nargs=1,
     type=int,
     required=False,
@@ -126,7 +127,7 @@ def cli(ctx: click.Context, **kwargs):
     "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
 )
 @click.argument("args", nargs=-1, required=False)
-def configure(obj, preset, use_build_presets, args, index=0):
+def configure(obj, preset, use_build_presets, args, index):
     cmaker = obj(index)
     if cmaker is None:
         return
@@ -148,6 +149,7 @@ def configure(obj, preset, use_build_presets, args, index=0):
 )
 @click.option(
     "--index",
+    default=0,
     nargs=1,
     type=int,
     required=False,
@@ -156,7 +158,7 @@ def configure(obj, preset, use_build_presets, args, index=0):
     "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
 )
 @click.argument("args", nargs=-1, required=False)
-def build(obj, preset, config, args, index=0):
+def build(obj, preset, config, args, index):
     cmaker = obj(index)
     if cmaker is None:
         return
@@ -181,6 +183,7 @@ def build(obj, preset, config, args, index=0):
 )
 @click.option(
     "--index",
+    default=0,
     nargs=1,
     type=int,
     required=False,
@@ -189,7 +192,7 @@ def build(obj, preset, config, args, index=0):
     "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
 )
 @click.argument("args", nargs=-1, required=False)
-def install(obj, config, component, args, index=0):
+def install(obj, config, component, args, index):
     cmaker = obj(index)
     if cmaker is None:
         return
