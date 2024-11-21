@@ -331,7 +331,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "your pyproject.toml file directly. Instead, it "
                               "is intended to be specified from the command "
                               "line, or in a local override. "
-                              "See also:cross.arch.\n"
+                              "See also: cross.arch.\n"
                               "There are no checks in place to ensure that the "
                               "platform tag applies to all files in the Wheel. "
                               "If possible, you should use a tool such as "
