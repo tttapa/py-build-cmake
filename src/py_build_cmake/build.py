@@ -331,6 +331,8 @@ class _BuildBackend:
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
         whl.dirname = paths.wheel_dir
+        if wheel_cfg.get("build_tag"):
+            whl.buildver = wheel_cfg["build_tag"]
         plat = wheel_cfg.get("platform_tag", "")
         guess_plat = "guess" in plat
         if pure:

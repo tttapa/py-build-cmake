@@ -346,6 +346,22 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "platform_tag = 'manylinux_2_35_x86_64'",
                               convert_str_to_singleton=True,
                               default=NoDefaultValue()),
+        StringConfigOption("build_tag",
+                           "Add an optional build number to the Wheel "
+                           "package. "
+                           "Must start with a number and cannot contain "
+                           "`-` characters.\n"
+                           "It is not recommended to set this value in "
+                            "your pyproject.toml file directly. Instead, it "
+                            "is intended to be specified from the command "
+                            "line, or in a local override.\n"
+                           "For details about Wheel build tags, "
+                           "see the PyPA specification: "
+                           "https://packaging.python.org/en/latest/"
+                           "specifications/binary-distribution-format/"
+                           "#file-name-convention",
+                           "build_tag = '1'",
+                           default=NoDefaultValue()),
     ])  # fmt: skip
     # [tool.py-build-cmake.stubgen]
     stubgen = pbc.insert(
