@@ -104,7 +104,7 @@ Let's go over these requirements step by step:
 We'll first clone `py-build-cmake` and its example projects:
 
 ```sh
-git clone https://github.com/tttapa/py-build-cmake --branch=0.3.0a1
+git clone https://github.com/tttapa/py-build-cmake --branch=0.3.0a2
 cd py-build-cmake
 ```
 
@@ -209,7 +209,7 @@ If everything worked as expected, you should see output similar to the following
 [100%] Built target _add_module
 -- Installing: /tmp/xxxxx/staging/pybind11_project/_add_module.cpython-311-aarch64-linux-gnu.so
 [...]
-Successfully built pybind11_project-0.3.0a1-cp311-cp311-manylinux_2_27_aarch64.whl
+Successfully built pybind11_project-0.3.0a2-cp311-cp311-manylinux_2_27_aarch64.whl
 ```
 You can see that CMake is using the cross-compiler we downloaded, and that it
 managed to locate the version of Python we requested (CPython 3.11 for AArch64).
@@ -217,7 +217,7 @@ It is important to verify the module extension suffix
 (`.cpython-311-aarch64-linux-gnu.so` in this case) and the Wheel tags
 (`cp311-cp311-manylinux_2_27_aarch64`).
 
-You can now copy the Wheel package in `examples/pybind11-project/dist/pybind11_project-0.3.0a1-cp311-cp311-manylinux_2_27_aarch64.whl`
+You can now copy the Wheel package in `examples/pybind11-project/dist/pybind11_project-0.3.0a2-cp311-cp311-manylinux_2_27_aarch64.whl`
 to e.g. a Raspberry Pi and install it using `pip install`.
 
 ### Automated Bash scripts
