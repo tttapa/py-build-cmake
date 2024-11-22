@@ -9,8 +9,8 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
 
 triples=(x86_64-bionic-linux-gnu armv6-rpi-linux-gnueabihf armv7-neon-linux-gnueabihf aarch64-rpi3-linux-gnu)
 gcc_version="14"
-toolchain_version="0.1.1"
-python_dev_version="0.0.3"
+toolchain_version="1.0.0"
+python_dev_version="0.0.6"
 toolchain_folder="$PWD/toolchains"
 
 set -ex
@@ -18,9 +18,15 @@ set -ex
 mkdir -p "$toolchain_folder/x-tools"
 for triple in ${triples[@]}; do
     chmod u+w "$toolchain_folder/x-tools"
-    wget "https://github.com/tttapa/toolchains/releases/download/$toolchain_version/x-tools-$triple-gcc$gcc_version.tar.xz" -O- | tar xJ -C "$toolchain_folder"
+    if [ ! -d "$toolchain_folder/x-tools/$triple" ]; then
+        url=https://github.com/tttapa/toolchains/releases/download/$toolchain_version
+        wget "$url/x-tools-$triple-gcc$gcc_version.tar.xz" -O- | tar xJ -C "$toolchain_folder"
+    fi
     chmod u+w "$toolchain_folder/x-tools/$triple"
-    wget "https://github.com/tttapa/python-dev/releases/download/$python_dev_version/python-dev-$triple.tar.xz" -O- | tar xJ -C "$toolchain_folder"
+    if [ ! -d "$toolchain_folder/x-tools/$triple/python" ]; then
+        url=https://github.com/tttapa/python-dev/releases/download
+        wget "$url/$python_dev_version/python-dev-$triple.tar.xz" -O- | tar xJ -C "$toolchain_folder"
+    fi
 done
 
 # To delete the toolchains again, use

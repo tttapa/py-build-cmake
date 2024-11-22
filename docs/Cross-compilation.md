@@ -72,9 +72,9 @@ https://packaging.python.org/en/latest/specifications/platform-compatibility-tag
 
 Note that `py-build-cmake` does not check the Python version when
 cross-compiling, so make sure that your CMakeLists.txt scripts find the correct
-Python installation (on that matches the version, implementation, ABI, operating
-system and architecture specified in the `py-build-cmake.cross.toml` file),
-e.g. by setting the appropriate hints and artifacts variables:
+Python installation (one that matches the version, implementation, ABI,
+operating system and architecture specified in the `py-build-cmake.cross.toml`
+file), e.g. by setting the appropriate hints and artifacts variables:
 
 - <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>
 - <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>
@@ -120,8 +120,8 @@ You can find ready-to-use toolchains with good compatibility at https://github.c
 ```sh
 # Create a directory to save the cross-compilation toolchains into
 mkdir -p toolchains
-# Download and extract the toolchain for AArch64 (~120 MiB)
-url="https://github.com/tttapa/toolchains/releases/download/0.1.1"
+# Download and extract the toolchain for AArch64 (~121 MiB)
+url="https://github.com/tttapa/toolchains/releases/download/1.0.0"
 wget "$url/x-tools-aarch64-rpi3-linux-gnu-gcc14.tar.xz" -O- | tar xJ -C toolchains
 # Verify that the toolchain works
 ./toolchains/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-gcc --version
@@ -137,8 +137,8 @@ You can download these from https://github.com/tttapa/python-dev.
 ```sh
 # The toolchain is read-only by default, make it writable to add Python to it
 chmod u+w "toolchains/x-tools/aarch64-rpi3-linux-gnu"
-# Download and extract the Python binaries for AArch64 (~150 MiB)
-url="https://github.com/tttapa/python-dev/releases/download/0.0.3"
+# Download and extract the Python binaries for AArch64 (~124 MiB)
+url="https://github.com/tttapa/python-dev/releases/download/0.0.6"
 wget "$url/python-dev-aarch64-rpi3-linux-gnu.tar.xz" -O- | tar xJ -C toolchains
 ```
 
@@ -191,16 +191,16 @@ python3 -m build -w examples/pybind11-project \
 ```
 If everything worked as expected, you should see output similar to the following.
 ```sh
--- The C compiler identification is GNU 14.1.0
--- The CXX compiler identification is GNU 14.1.0
+-- The C compiler identification is GNU 14.2.0
+-- The CXX compiler identification is GNU 14.2.0
 -- Check for working C compiler: py-build-cmake/toolchains/x-tools/aarch64-rpi3-linux-gnu/bin/aarch64-rpi3-linux-gnu-gcc - skipped
 [...]
--- Found Python3: py-build-cmake/toolchains/x-tools/aarch64-rpi3-linux-gnu/python3.11/usr/local/include/python3.11 (found version "3.11.3") found components: Development.Module
+-- Found Python3: py-build-cmake/toolchains/x-tools/aarch64-rpi3-linux-gnu/python3.11/usr/local/include/python3.11 (found version "3.11.10") found components: Development.Module
 -- Detecting pybind11 CMake location
 -- pybind11 CMake location: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/share/cmake/pybind11
 -- Performing Test HAS_FLTO
 -- Performing Test HAS_FLTO - Success
--- Found pybind11: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/include (found version "2.12.0")
+-- Found pybind11: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/include (found version "2.13.6")
 -- Configuring done (1.4s)
 -- Generating done (0.0s)
 -- Build files have been written to: py-build-cmake/examples/pybind11-project/.py-build-cmake_cache/cp311-cp311-manylinux_2_27_aarch64
@@ -232,6 +232,47 @@ these example packages for this wide range of configurations.
 ./scripts/download-cross-toolchains-linux.sh
 ./examples/pybind11-project/cross-compile-linux.sh
 ./examples/nanobind-project/cross-compile-linux.sh
+```
+You can find the resulting Wheel packages in the
+`examples/pybind11-project/dist` directory:
+```sh
+examples/pybind11-project/dist
+├── pybind11_project-0.3.0a2-cp37-cp37m-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp37-cp37m-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp37-cp37m-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp37-cp37m-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp38-cp38-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp38-cp38-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp38-cp38-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp38-cp38-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp39-cp39-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp39-cp39-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp39-cp39-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp39-cp39-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp310-cp310-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp310-cp310-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp310-cp310-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp310-cp310-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp311-cp311-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp311-cp311-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp311-cp311-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp311-cp311-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp312-cp312-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp312-cp312-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp312-cp312-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp312-cp312-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-cp313-cp313-linux_armv6l.whl
+├── pybind11_project-0.3.0a2-cp313-cp313-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-cp313-cp313-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.3.0a2-cp313-cp313-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-pp37-pypy37_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-pp37-pypy37_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-pp38-pypy38_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-pp38-pypy38_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-pp39-pypy39_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.3.0a2-pp39-pypy39_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.3.0a2-pp310-pypy310_pp73-manylinux_2_27_aarch64.whl
+└── pybind11_project-0.3.0a2-pp310-pypy310_pp73-manylinux_2_27_x86_64.whl
 ```
 
 ### A closer look at the CMake toolchain files
@@ -351,7 +392,7 @@ environment variables are set.
 
 ### Windows
 
-Cross-compilation on Windows is enabled if the following conditions are satisfied:
+Cross-compilation on Windows is enabled if the following conditions are met:
 
 0. The configuration does not yet contain a `[tool.py-build-cmake.cross]` entry,
 1. and the `DIST_EXTRA_CONFIG` environment variable is set,
@@ -378,7 +419,7 @@ configuration in `pyproject.toml`.
 
 ### macOS
 
-Cross-compilation on macOS is enabled if the following conditions are satisfied:
+Cross-compilation on macOS is enabled if the following conditions are met:
 
 0. The configuration does not yet contain a `[tool.py-build-cmake.cross]` entry,
 1. and the `ARCHFLAGS` environment variable is set,
@@ -410,4 +451,4 @@ Since `cibuildwheel` does not support cross-compilation on Linux,
 `py-build-cmake` does not enable automatic cross-compilation for this platform.
 By default, `cibuildwheel` will try to build your package in an emulated ARM64
 container. This can be very slow, so it is recommended to use explicit
-cross-compilation as described above.
+cross-compilation as described [above](#complete-cross-compilation-workflow).
