@@ -28,7 +28,7 @@ add = "nanobind_project.add:main"
 
 [build-system]
 requires = [
-    "py-build-cmake~=0.3.0a2",
+    "py-build-cmake~=0.3.0a3.dev0",
     "nanobind~=2.2.0",
     "typing_extensions~=4.12.2; python_version < '3.11'",
 ]
