@@ -24,7 +24,7 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
 
         # Set up all paths
         build_cfg_name = backend.get_build_config_name(cfg.cross, index)
-        path = cmake_cfg["build_path"]
+        path = build_path or cmake_cfg["build_path"]
         build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 
         # CMake builder
