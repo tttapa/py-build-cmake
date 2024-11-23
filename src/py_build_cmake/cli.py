@@ -7,7 +7,7 @@ import click
 from . import __version__
 
 
-def cmake_command(directory, build_path, verbose, dry, native, cross, local):
+def cmake_command(directory, build_path, verbose, dry, cross, local):
     def get_cmaker(index: int):
         from .build import _BuildBackend as backend
         from .commands.cmd_runner import CommandRunner
@@ -20,7 +20,16 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
         # Read configuration and package metadata
         cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
         pkg_info = backend.get_pkg_info(cfg, module)
-        cmake_cfg = backend.get_cmake_config(cfg)[index]
+        cmake_cfgs = backend.get_cmake_config(cfg)
+        if not cmake_cfgs:
+            msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing)."
+            raise ValueError(msg)
+        try:
+            cmake_cfg = cmake_cfgs[index]
+        except KeyError as e:
+            msg = "Invalid CMake configuration index (--index). "
+            msg += "Possible values are: " + " ".join(map(str, cmake_cfgs))
+            raise ValueError(msg) from e
 
         # Set up all paths
         build_cfg_name = backend.get_build_config_name(cfg.cross, index)
@@ -68,12 +77,6 @@ def cmake_command(directory, build_path, verbose, dry, native, cross, local):
     "--dry",
     is_flag=True,
     help="Print the commands without actually invoking CMake.",
-)
-@click.option(
-    "--native",
-    is_flag=True,
-    help="When the configuration requests cross-compiling, "
-    "configure for a native build instead. Has no effect otherwise.",
 )
 @click.option(
     "--local",
