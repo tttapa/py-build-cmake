@@ -496,7 +496,7 @@ class _BuildBackend:
             ),
             install_settings=CMakeInstallSettings(
                 args=cmake_cfg["install_args"],
-                configs=cmake_cfg.get("config", []),
+                configs=cmake_cfg.get("install_config", []),
                 components=cmake_cfg.get("install_components", []),
                 prefix=install_dir,
             ),

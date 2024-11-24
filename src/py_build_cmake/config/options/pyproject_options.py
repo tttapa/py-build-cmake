@@ -148,12 +148,11 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "`-DCMAKE_BUILD_TYPE=<?>`.",
                            "build_type = \"RelWithDebInfo\""),
         ListOfStrConfigOption("config",
-                              "Configuration type passed to the build and "
-                              "install steps, as `--config <?>`. You can "
-                              "specify either a single string, or a list of "
-                              "strings. If a multi-config generator is used, "
-                              "all configurations in this list will be "
-                              "included in the package.",
+                              "Configuration type passed to the build step, "
+                              "as `--config <?>`. You can specify either a "
+                              "single string, or a list of strings. If a "
+                              "multi-config generator is used, all "
+                              "configurations in this list will be built.",
                               "config = [\"Debug\", \"Release\"]",
                               default=RefDefaultValue(
                                   ConfPath.from_string("build_type"),
@@ -224,6 +223,19 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "[\"--verbose\", \"-d\", \"explain\"]",
                               default=DefaultValueValue([]),
                               append_by_default=True),
+        ListOfStrConfigOption("install_config",
+                              "Configuration types passed to the "
+                              "install step, as `--config <?>`. You can "
+                              "specify either a single string, or a list of "
+                              "strings. If a multi-config generator is used, "
+                              "all configurations in this list will be "
+                              "included in the package.",
+                              "install_config = [\"Debug\", \"Release\"]",
+                              default=RefDefaultValue(
+                                  ConfPath.from_string("config"),
+                                  relative=True,
+                              ),
+                              convert_str_to_singleton=True),
         ListOfStrConfigOption("install_args",
                               "Extra arguments passed to the install step.",
                               "install_args = [\"--strip\"]",

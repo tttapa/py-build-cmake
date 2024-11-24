@@ -356,10 +356,8 @@ class CMaker:
             yield cmd
 
     def get_install_commands(self):
-        for config in self.install_settings.configs:
+        for config in self.install_settings.configs or [None]:
             yield from self.get_install_command(config)
-        if not self.install_settings.configs:
-            yield from self.get_install_command(None)
 
     def install(self):
         env = self.prepare_environment()
