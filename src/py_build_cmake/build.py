@@ -9,8 +9,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from distlib.wheel import Wheel  # type: ignore[import-untyped]
-
 from .commands.cmake import (
     CMakeBuildSettings,
     CMakeConfigureSettings,
@@ -42,6 +40,7 @@ from .export.editable.build_hook import write_build_hook
 from .export.native_tags import get_interpreter_name
 from .export.sdist import SdistBuilder
 from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is_pure
+from .export.wheel import WheelBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -322,7 +321,7 @@ class _BuildBackend:
         paths: BuildPaths, cfg: Config, cmake_cfg, package_info: PackageInfo
     ):
         """Create a wheel package from the build directory."""
-        whl = Wheel()
+        whl = WheelBuilder()
         whl.name = package_info.norm_name
         whl.version = package_info.version
         wheel_cfg = _BuildBackend.get_wheel_config(cfg)
