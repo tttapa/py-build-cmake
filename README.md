@@ -113,6 +113,10 @@ If you are interested in packaging C/C++/Fortran programs using py-build-cmake,
 have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).  
 See the [`examples`](https://github.com/tttapa/py-build-cmake/tree/main/examples) folder for a full list of examples.
 
+A full example that uses the Conan package manager for C++ dependencies, and
+that uses GitHub Actions to deploy the Wheel packages built by py-build-cmake
+to PyPI can be found in [tttapa/py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example).
+
 ## Projects using py-build-cmake
 
 If you need more examples, you can look at the following projects using
