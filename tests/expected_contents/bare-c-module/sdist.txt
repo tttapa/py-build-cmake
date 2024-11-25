@@ -1,0 +1,6 @@
+bare_c_module-{{version}}/CMakeLists.txt
+bare_c_module-{{version}}/LICENSE
+bare_c_module-{{version}}/PKG-INFO
+bare_c_module-{{version}}/README.md
+bare_c_module-{{version}}/pyproject.toml
+bare_c_module-{{version}}/add_module.c

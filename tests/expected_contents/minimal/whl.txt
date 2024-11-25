@@ -1,0 +1,14 @@
+minimal-{{version}}.dist-info/LICENSE
+minimal-{{version}}.dist-info/METADATA
+minimal-{{version}}.dist-info/RECORD
+minimal-{{version}}.dist-info/WHEEL
+minimal-{{version}}.dist-info/entry_points.txt
+minimal/__init__.py
+minimal/_add_module{{ext_suffix}}
+minimal/_add_module.pyi
+minimal/add_module.py
+minimal/py.typed
+{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+minimal/__init__.pyi
+minimal/add_module.pyi
+{% endif %}

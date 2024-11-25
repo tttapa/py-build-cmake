@@ -1,5 +1,7 @@
-from .add_module import add
 import sys
+
+from .add_module import add
+
 
 def main():
     """Script that adds all command line arguments as integers."""

@@ -1,0 +1,10 @@
+namespace_project_b-{{version}}.dist-info/LICENSE
+namespace_project_b-{{version}}.dist-info/METADATA
+namespace_project_b-{{version}}.dist-info/RECORD
+namespace_project_b-{{version}}.dist-info/WHEEL
+namespace_project_b-{{version}}.dist-info/entry_points.txt
+namespace_project/sub_module.py
+namespace_project/py.typed
+{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+namespace_project/sub_module.pyi
+{% endif %}

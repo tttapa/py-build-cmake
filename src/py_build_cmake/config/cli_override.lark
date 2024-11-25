@@ -1,0 +1,71 @@
+lines: _EOL* line* [_SOL]
+
+?line: [_SOL] option _EOL+
+
+?option: prepend
+       | prepend_path
+       | append
+       | append_path
+       | remove
+       | clear
+       | assign
+
+!?append:       keys OP_APPEND       value      -> full
+!?append_path:  keys OP_APPEND_PATH  value      -> full
+!?remove:       keys OP_REMOVE       value      -> full
+!?prepend:      keys OP_PREPEND      value      -> full
+!?prepend_path: keys OP_PREPEND_PATH value      -> full
+!?clear:        keys OP_CLEAR                   -> full
+!?assign:       keys OP_ASSIGN       value      -> full
+
+OP_APPEND.2:       "+="
+OP_APPEND_PATH.3:  "+=(path)"
+OP_PREPEND.2:      "=+"
+OP_PREPEND_PATH.3: "=+(path)"
+OP_REMOVE.2:       "-="
+OP_CLEAR.2:        "=!"
+OP_ASSIGN.1:       "="
+
+keys: key ("." key)* [_WS]
+
+?value     : object
+           | array
+           | NUMBER
+           | TRUE
+           | FALSE
+           | string
+
+?sub_value : object
+           | array
+           | NUMBER
+           | TRUE
+           | FALSE
+           | string_no_ws
+
+object   : "{" [pair ("," pair)*] "}"
+array    : "[" ( [_WS] sub_value [_WS] ("," [_WS] sub_value [_WS])* ["," [_WS]] )? "]"
+NUMBER.2 : /-?[0-9]+/
+TRUE.2   : "true" | "True"
+FALSE.2  : "false" | "False"
+pair     : [_WS] dict_key [_WS] "=" [_WS] sub_value [_WS]
+
+key          : ESCAPED_STRING               -> escaped_string
+             | UNQUOTED_KEY                 -> unquoted_string
+string       : ESCAPED_STRING               -> escaped_string
+             | UNQUOTED_STRING              -> unquoted_string
+string_no_ws : ESCAPED_STRING               -> escaped_string
+             | UNQUOTED_STRING_NO_WS        -> unquoted_string
+dict_key     : ESCAPED_STRING               -> escaped_string
+             | UNQUOTED_DICT_KEY            -> unquoted_string
+
+_WS: /[ \t\f\r\n]+/
+_SOL: /[ \t]+/
+_EOL: /[ \t\f\r]*\n/
+UNQUOTED_KEY:          /[a-zA-Z0-9_-]*[a-zA-Z0-9_]/
+UNQUOTED_STRING:       /[^"\[\]{}\r\n#]+/
+UNQUOTED_STRING_NO_WS: /[^"\[\]{},\r\n# \t\f]+/
+UNQUOTED_DICT_KEY:     /[^"\[\]{},\r\n# \t\f=]+/
+
+%import common.ESCAPED_STRING
+%import common.SH_COMMENT
+%ignore [_WS] SH_COMMENT

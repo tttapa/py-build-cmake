@@ -1,0 +1,20 @@
+pybind11_project-{{version}}.dist-info/LICENSE
+pybind11_project-{{version}}.dist-info/METADATA
+pybind11_project-{{version}}.dist-info/RECORD
+pybind11_project-{{version}}.dist-info/WHEEL
+pybind11_project-{{version}}.dist-info/entry_points.txt
+pybind11_project/__init__.py
+pybind11_project/_add_module{{ext_suffix}}
+pybind11_project/_add_module.pyi
+pybind11_project/_add_module_d{{ext_suffix}}
+pybind11_project/_add_module_d.pyi
+pybind11_project/add.py
+pybind11_project/add_module.py
+pybind11_project/py.typed
+pybind11_project/sub_package/__init__.py
+{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+pybind11_project/__init__.pyi
+pybind11_project/add.pyi
+pybind11_project/add_module.pyi
+pybind11_project/sub_package/__init__.pyi
+{% endif %}

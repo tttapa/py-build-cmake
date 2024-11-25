@@ -1,0 +1,20 @@
+nanobind_project-{{version}}.dist-info/LICENSE
+nanobind_project-{{version}}.dist-info/METADATA
+nanobind_project-{{version}}.dist-info/RECORD
+nanobind_project-{{version}}.dist-info/WHEEL
+nanobind_project-{{version}}.dist-info/entry_points.txt
+nanobind_project/__init__.py
+nanobind_project/_add_module{{ext_suffix}}
+nanobind_project/_add_module.pyi
+nanobind_project/_add_module_d{{ext_suffix}}
+nanobind_project/_add_module_d.pyi
+nanobind_project/add.py
+nanobind_project/add_module.py
+nanobind_project/py.typed
+nanobind_project/sub_package/__init__.py
+{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+nanobind_project/__init__.pyi
+nanobind_project/add.pyi
+nanobind_project/add_module.pyi
+nanobind_project/sub_package/__init__.pyi
+{% endif %}

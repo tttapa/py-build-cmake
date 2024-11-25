@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.18...3.22)
-project(nanobind-project VERSION 0.1.8)
+cmake_minimum_required(VERSION 3.26)
+project(nanobind-project VERSION 0.3.0)
 set(PY_VERSION_SUFFIX "")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
@@ -16,7 +16,7 @@ include(cmake/QueryPythonForNanobind.cmake)
 find_nanobind_python_first()
 
 # Compile the example Python module
-nanobind_add_module(_add_module "src/add_module.cpp")
+nanobind_add_module(_add_module STABLE_ABI "src/add_module.cpp")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
@@ -34,20 +34,22 @@ install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
         DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
-# Install the debug file for the Python module (Windows only)
-if (WIN32)
-    install(FILES $<TARGET_PDB_FILE:_add_module>
-            EXCLUDE_FROM_ALL
-            COMPONENT python_modules
-            DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME}
-            OPTIONAL)
-endif()
 
 # Generate stubs for the Python module
+set(WITH_PY_STUBS_DEFAULT On)
+if (CMAKE_CROSSCOMPILING)
+    set(WITH_PY_STUBS_DEFAULT Off)
+endif()
 option(WITH_PY_STUBS
-    "Generate Python stub files (.pyi) for the Python module." On)
-if (WITH_PY_STUBS AND NOT CMAKE_CROSSCOMPILING)
-    include(cmake/NanobindStubgen.cmake)
-    nanobind_stubgen(_add_module)
-    nanobind_stubgen_install(_add_module ${PY_BUILD_CMAKE_MODULE_NAME})
+    "Generate Python stub files (.pyi) for the Python module."
+    ${WITH_PY_STUBS_DEFAULT})
+if (WITH_PY_STUBS)
+    nanobind_add_stub(
+        $<TARGET_FILE_BASE_NAME:_add_module>_stub
+        INSTALL_TIME
+        COMPONENT python_modules
+        MODULE ${PY_BUILD_CMAKE_MODULE_NAME}.$<TARGET_FILE_BASE_NAME:_add_module>
+        OUTPUT ${PY_BUILD_CMAKE_MODULE_NAME}/$<TARGET_FILE_BASE_NAME:_add_module>.pyi
+        PYTHON_PATH "."
+    )
 endif()

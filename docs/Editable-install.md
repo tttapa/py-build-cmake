@@ -23,16 +23,27 @@ Alternatively, you can add it to your local configuration,
 
 ```toml
 [editable]
-mode = "symlink"
+mode = "hook"
 ```
 
-> **Note**: only Python files are made “editable”. You'll still have to run
->           `pip install -e .` again to rebuild your C extension modules if you
->           modify any C/C++/Fortran source files.
+> **Note**: by default, only Python files are made “editable”. You'll still have
+>           to run `pip install -e .` again to rebuild your C extension modules
+>           if you modify any C/C++/Fortran source files.  
+>           To automatically rebuild C extension modules, set
+>           `editable.mode = "symlink"` and `editable.build_hook = true` in the
+>           [configuration](Config.html).
+>           See the [Build hooks](#build-hooks) section below for details.
 
-The following sections go into the details of the different modes.
+```toml
+[tool.py-build-cmake.editable]
+mode = "symlink"
+build_hook = true
+```
 
-## Wrapper (default)
+The following sections go into the details of the different editable
+installation modes.
+
+## Wrapper
 
 The `wrapper` mode installs all files generated using CMake, but not the Python
 source files in your package. To make these Python files available, a wrapper
@@ -147,7 +158,9 @@ class EditablePathFinder(PathFinder):
     def find_spec(self, name, path=None, target=None):
         if name.split('.', 1)[0] != self.name:
             return None
-        path = (path or []) + [self.extra_path]
+        if path is None:
+            path = []
+        path.append(self.extra_path)
         return super().find_spec(name, path, target)
 
 def install(name: str):
@@ -166,7 +179,7 @@ This file is loaded by the `my_package.pth` file, which contains:
 import my_package_editable_hook
 ```
 
-## Symlink
+## Symlink (default)
 
 The disadvantage of the previous two methods is that they split up the package
 across different folders, and not all external tools and IDEs deal with this
@@ -209,11 +222,57 @@ The Wheel package format does not support symbolic links, so only a `.pth` file
 is included in the Wheel, and the actual files and symlinks are copied to a
 hidden folder in the project's source directory, [as proposed by PEP 660](https://peps.python.org/pep-0660/#what-to-put-in-the-wheel).
 
+Note that any binaries installed into `my_package-1.2.3.data/scripts` will not
+be in the path, since they are installed in the `.py-build-cmake_cache/editable`
+folder, not in `site-packages/bin` or `site-packages/Scripts`.
+
+# Build hooks
+
+During development, py-build-cmake can be configured to automatically recompile
+any C extension modules that changed. This is done by setting the
+`editable.build_hook` option to `true`. Under the hood, this will cause a hook
+to be installed in the [meta path](https://docs.python.org/3/reference/import.html#import-hooks),
+which will invoke `cmake --build` and `cmake --install` when your package is
+first imported.
+
+Modern build systems like Ninja are very fast at figuring out whether anything
+has to be recompiled, so the overhead of this hook is relatively low when no
+files changed.
+
+Keep in mind that C extension modules cannot be unloaded or reloaded after they
+have been imported once. You need to restart the Python interpreter for any
+changes to take effect. This is why the build is only carried out during the
+first import (and before the module is first loaded).
+
+To avoid depending on packages in Pip's temporary build directory or virtual
+environment, you can use the `--no-build-isolation` flag:
+
+```sh
+pip install -e . --no-build-isolation
+```
+
+This requires you to install any dependencies into your environment beforehand.
+
+The only mode that is currently supported is `symlink`. This is because
+`symlink` mode installs the extension modules into a hidden folder inside of the
+project folder, whereas the `hook` and `wrapper` modes include the extension
+modules in the package. In such a case, the build hook would have to install its
+artifacts into the Python site-packages directory directly. This comes with the
+risk of installing files that were not included in the original package's RECORD
+(e.g. if the user modifies any CMake code or options), and these files would not
+be cleaned up when uninstalling the package. Files left behind by old packages
+could cause all kinds of issues that are hard to debug, so py-build-cmake simply
+does not allow this.
+
 ---
 
 <small>
 
 (\*) Specifically, to create symbolic links on Windows without administrator
 rights, you need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+Otherwise, you'll see `OSError: symbolic link privilege not held` or
+`[WinError 1314] A required privilege is not held by the client`. If you
+cannot change the privilege, you can override the editable mode in a
+`py-build-cmake.local.toml` file as described above.
 
 </small>

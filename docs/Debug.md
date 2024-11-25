@@ -3,7 +3,7 @@
 # Debugging
 
 You'll most likely end up in a situation where you'd like to debug your C++
-code while it is being called from Python. For this reason, py-build-cmake 
+code while it is being called from Python. For this reason, py-build-cmake
 allows you to install multiple configurations of your project (e.g. `Debug` and
 `Release` builds). This page covers how to get your package ready for debugging.
 
@@ -29,12 +29,14 @@ options = { "CMAKE_DEBUG_POSTFIX:STRING" = "_d" }
 ## CMakeLists.txt and C++ code
 
 Since the name of the Python module now depends on whether it's a debug build or
-not, we have to make sure that the Python bindings use the correct name: 
+not, we have to make sure that the Python bindings use the correct name:
 In your CMakeLists.txt script, add a macro that defines the `MODULE_NAME` as the
 base name of the extension module (which includes the `_d` suffix):
 
 ```cmake
 pybind11_add_module(_add_module MODULE "src/add_module.cpp")
+set_target_properties(_add_module PROPERTIES
+    DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}${PYTHON_MODULE_DEBUG_POSTFIX}")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>)
 ```
@@ -74,7 +76,7 @@ and `build` not to use a temporary build folder using the respective
 
 ## Debugging in VSCode
 
-First, create a task to build the package. This task will be executed before 
+First, create a task to build the package. This task will be executed before
 each debug session. In `.vscode/tasks.json`, add:
 
 ```json
@@ -133,10 +135,10 @@ Next, define the debug configuration in `.vscode/launch.json`:
     ]
 }
 ```
-Note how the program to debug is the Python interpreter itself. The Python 
+Note how the program to debug is the Python interpreter itself. The Python
 script to execute is passed as an argument.  
 The environment variable `PYBIND11_PROJECT_PYTHON_DEBUG` is set, which causes
-the Python wrapper to load the debug version of the extension module, as 
+the Python wrapper to load the debug version of the extension module, as
 explained above.
 
 Now open `src/add_module.cpp` and add a breakpoint in the `add` function:
@@ -144,7 +146,7 @@ Now open `src/add_module.cpp` and add a breakpoint in the `add` function:
 ![Breakpoint in the add function](images/breakpoint.png)
 
 If you now press <kbd>F5</kbd> to launch the debugger, the execution will be
-paused when the Python script calls the `add` function, and you can debug the 
+paused when the Python script calls the `add` function, and you can debug the
 program as usual:
 
 ![Execution paused in the add function](images/debug.png)
@@ -164,7 +166,7 @@ function(install_debug_syms target component dest_lib dest_bin)
         install(FILES "$<TARGET_PDB_FILE:${target}>"
             DESTINATION ${dest_bin}
             CONFIGURATIONS Debug RelWithDebInfo
-            COMPONENT ${component} 
+            COMPONENT ${component}
             OPTIONAL EXCLUDE_FROM_ALL)
     elseif (CMAKE_STRIP AND CMAKE_OBJCOPY)
         set(DEBUG_FILE "$<TARGET_FILE_NAME:${target}>.debug")

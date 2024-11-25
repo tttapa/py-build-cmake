@@ -1,10 +1,11 @@
-py*-venv
-.venv
+/toolchains
+.venv*
 build
 .build
 .*cache
 __pycache__
 *.pyc
 dist
+dist-nox
 .nox
 old

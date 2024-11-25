@@ -1,19 +1,23 @@
+from __future__ import annotations
+
+import logging
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-import os
-from pprint import pprint
 
-from . import config
-from .build import _BuildBackend
-from .datastructures import BuildPaths, PackageInfo
-from .cmd_runner import CommandRunner
+from .build import _BuildBackend as std_backend
+from .commands.cmd_runner import CommandRunner
+from .common import (
+    ConfigError,
+    PackageInfo,
+    format_and_rethrow_exception,
+)
+from .config import load as config_load
+from .export import metadata as export_metadata
 
-import flit_core.config
+logger = logging.getLogger(__name__)
 
 
-class _BuildComponentBackend(object):
-
+class _BuildComponentBackend:
     # --- Constructor ---------------------------------------------------------
 
     def __init__(self) -> None:
@@ -27,16 +31,20 @@ class _BuildComponentBackend(object):
 
     def get_requires_for_build_wheel(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-wheel"""
-        self.parse_config_settings(config_settings)
+        try:
+            self.parse_config_settings(config_settings)
 
-        comp_pyproject = Path('pyproject.toml').resolve()
-        comp_cfg = self.read_component_config(comp_pyproject, config_settings,
-                                              self.verbose)
-        cfg = _BuildBackend.read_config(
-            Path(comp_cfg.component['main_project']) / 'pyproject.toml',
-            config_settings, self.verbose)
-        return _BuildBackend.get_requires_build_project(
-            config_settings, cfg, self.runner)
+            comp_source_dir = Path().resolve()
+            comp_cfg = self.read_all_metadata(
+                comp_source_dir, config_settings, self.verbose
+            )
+            src_dir = comp_cfg.main_project.resolve()
+            cfg = std_backend.read_config(src_dir, config_settings, self.verbose)
+            return std_backend.get_requires_build_project(
+                config_settings, cfg, self.runner
+            )
+        except Exception as e:
+            format_and_rethrow_exception(e, component=True)
 
     def get_requires_for_build_editable(self, config_settings=None):
         """https://www.python.org/dev/peps/pep-0660/#get-requires-for-build-editable"""
@@ -46,179 +54,149 @@ class _BuildComponentBackend(object):
         """https://www.python.org/dev/peps/pep-0517/#get-requires-for-build-sdist"""
         return []
 
-    def build_wheel(self,
-                    wheel_directory,
-                    config_settings=None,
-                    metadata_directory=None):
+    def build_wheel(
+        self, wheel_directory, config_settings=None, metadata_directory=None
+    ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
-        assert metadata_directory is None
+        try:
+            assert metadata_directory is None
 
-        # Parse options
-        self.parse_config_settings(config_settings)
+            # Parse options
+            self.parse_config_settings(config_settings)
 
-        # Build wheel
-        with tempfile.TemporaryDirectory() as tmp_build_dir:
-            whl_name = self.build_wheel_in_dir(wheel_directory, tmp_build_dir,
-                                               config_settings)
-        return whl_name
+            # Build wheel
+            with tempfile.TemporaryDirectory() as tmp_build_dir:
+                return self.build_wheel_in_dir(
+                    wheel_directory, tmp_build_dir, config_settings
+                )
+        except Exception as e:
+            format_and_rethrow_exception(e, component=True)
 
-    def build_editable(self,
-                       wheel_directory,
-                       config_settings=None,
-                       metadata_directory=None):
-        raise NotImplementedError(
-            "Editable installation not supported for individual components.")
+    def build_editable(
+        self, wheel_directory, config_settings=None, metadata_directory=None
+    ):
+        msg = "Editable installation not supported for individual components."
+        raise NotImplementedError(msg)
 
     def build_sdist(self, sdist_directory, config_settings=None):
-        raise NotImplementedError(
-            "Source distribution not supported for individual components.")
+        msg = "Source distribution not supported for individual components."
+        raise NotImplementedError(msg)
 
     # --- Parsing config options and metadata ---------------------------------
 
-    def parse_config_settings(self, config_settings: Optional[Dict]):
-        self.runner.verbose = _BuildBackend.is_verbose_enabled(config_settings)
-
-    @staticmethod
-    def read_component_config(pyproject_path: Path,
-                              config_settings: Optional[Dict],
-                              verbose: bool) -> config.ComponentConfig:
-        config_settings = config_settings or {}
+    def parse_config_settings(self, config_settings: dict | None):
         try:
-            cfg = config.read_component_config(pyproject_path)
-            if cfg.dynamic_metadata:
-                raise flit_core.config.ConfigError(
-                    "Dynamic metadata not supported for components.")
-        except flit_core.config.ConfigError as e:
-            e.args = ("\n"
-                      "\n"
-                      "\t❌ Error in user configuration:\n"
-                      "\n"
-                      f"\t\t{e}\n"
-                      "\n", )
-            raise
-        except AssertionError as e:
-            e.args = (
-                "\n"
-                "\n"
-                "\t❌ Internal error while processing the configuration\n"
-                "\t   Please notify the developers: https://github.com/tttapa/py-build-cmake/issues\n"
-                "\n"
-                f"\t\t{e}\n"
-                "\n", )
-            raise
-        if verbose:
-            _BuildComponentBackend.print_config_verbose(cfg)
-        return cfg
+            level = std_backend.get_log_level(config_settings)
+            logging.basicConfig(level=level)
+        except ValueError as e:
+            logger.error("Invalid log level specified", exc_info=e)
+        self.runner.verbose = std_backend.is_verbose_enabled(config_settings)
 
     @staticmethod
     def read_all_metadata(src_dir, config_settings, verbose):
-        from flit_core.common import Metadata
-        cfg = _BuildComponentBackend.read_component_config(
-            src_dir / 'pyproject.toml', config_settings, verbose)
-        md_dict = {'name': cfg.package_name}
-        md_dict.update(cfg.metadata)
-        metadata = Metadata(md_dict)
-        metadata.version = _BuildBackend.normalize_version(metadata.version)
-        return cfg, metadata
+        return config_load.read_full_component_config(
+            src_dir / "pyproject.toml", config_settings, verbose
+        )
 
     # --- Building wheels -----------------------------------------------------
 
-    def build_wheel_in_dir(self,
-                           wheel_directory_,
-                           tmp_build_dir,
-                           config_settings,
-                           editable=False):
+    def build_wheel_in_dir(
+        self, wheel_dir, tmp_build_dir, config_settings, editable=False
+    ):
         """This is the main function that contains all steps necessary to build
         a complete wheel package, including the CMake builds etc."""
         comp_source_dir = Path().resolve()
 
         # Load metadata from the current (component) pyproject.toml file
-        comp_cfg, comp_metadata = self.read_all_metadata(
-            comp_source_dir, config_settings, self.verbose)
-
-        # Set up all paths
-        paths = BuildPaths(
-            source_dir=Path(comp_cfg.component['main_project']),
-            wheel_dir=Path(wheel_directory_),
-            temp_dir=Path(tmp_build_dir),
-            staging_dir=Path(tmp_build_dir) / 'staging',
-            pkg_staging_dir=Path(tmp_build_dir) / 'staging',
+        comp_cfg = self.read_all_metadata(
+            comp_source_dir, config_settings, self.verbose
         )
 
         # Load the config from the main pyproject.toml file
-        cfg = _BuildBackend.read_config(paths.source_dir / 'pyproject.toml',
-                                        config_settings, self.verbose)
-
-        pkg_info = PackageInfo(
-            version=comp_metadata.version,
-            package_name=comp_cfg.package_name,
-            module_name=cfg.module['name'],  # unused, CMake configuration only
+        src_dir = comp_cfg.main_project.resolve()
+        cfg, module = std_backend.read_all_metadata(
+            src_dir, config_settings, self.verbose
         )
+        pkg_info = std_backend.get_pkg_info(comp_cfg, module)
+        cmake_cfg = std_backend.get_cmake_config(cfg)
+
+        # Set up all paths
+        paths = std_backend.get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg)
 
         # Create dist-info folder
-        distinfo_dir = f'{pkg_info.package_name}-{pkg_info.version}.dist-info'
+        distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
         distinfo_dir = paths.pkg_staging_dir / distinfo_dir
-        os.makedirs(distinfo_dir, exist_ok=True)
+        distinfo_dir.mkdir(parents=True, exist_ok=True)
 
-        # Write metadata
-        metadata_path = distinfo_dir / 'METADATA'
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            comp_metadata.write_metadata_file(f)
-        # Write or copy license
-        _BuildBackend.write_license_files(comp_cfg.license, comp_source_dir,
-                                          distinfo_dir)
-        # Write entrypoints/scripts
-        _BuildBackend.write_entrypoints(distinfo_dir, comp_cfg.entrypoints)
+        # Write metadata, license and entry points to Wheel's distinfo
+        export_metadata.write_metadata(comp_cfg, distinfo_dir)
+        export_metadata.write_license_files(comp_cfg, distinfo_dir)
+        export_metadata.write_entry_points(comp_cfg, distinfo_dir)
 
-        # Configure, build and install the CMake project
-        if cfg.cmake:
-            self.do_cmake_build(comp_cfg, paths, cfg, pkg_info)
+        # Build and install the CMake project(s)
+        sort_comp = sorted(comp_cfg.component.items(), key=lambda item: int(item[0]))
+        components = {int(key): value for key, value in sort_comp}
+        for k, component in components.items():
+            if k not in cmake_cfg:
+                msg = f"Index {k} in [tool.py-build-cmake.component] does not "
+                msg += "refer to an exiting CMake configuration in the main "
+                msg += "project."
+                raise ConfigError(msg)
+            cmkcfg = cmake_cfg[k]
+            build_cfg_name = std_backend.get_build_config_name(cfg.cross, k)
+            path = cmkcfg["build_path"]
+            path = str(path).replace("{build_config}", build_cfg_name)
+            build_dir = Path(path)
+            cmaker = self.get_cmaker(
+                paths.source_dir,
+                build_dir,
+                paths.staging_dir,
+                cmkcfg,
+                cfg.cross,
+                pkg_info,
+                component,
+                runner=self.runner,
+            )
+            if not component["install_only"]:
+                cmaker.build()
+            cmaker.install()
 
         # Create wheel
-        whl_name = _BuildBackend.create_wheel(paths, cfg, pkg_info)
-        return whl_name
+        return std_backend.create_wheel(paths, cfg, cmake_cfg, pkg_info)
 
-    # --- Invoking CMake builds -----------------------------------------------
-
-    def do_cmake_build(self, comp_cfg, paths: BuildPaths, cfg, pkg_info):
-        """Configure, build and install using CMake."""
-
-        cmake_cfg, native_cmake_cfg = _BuildBackend.get_cmake_configs(cfg)
-        cmaker = _BuildBackend.get_cmaker(paths.source_dir,
-                                          paths.staging_dir,
-                                          cmake_cfg,
-                                          cfg.cross,
-                                          None,
-                                          pkg_info,
-                                          runner=self.runner)
-
-        comp = comp_cfg.component
-        if 'build_presets' in comp:
-            cmaker.build_settings.presets = comp['build_presets']
-        if 'install_presets' in comp:
-            cmaker.install_settings.presets = comp['install_presets']
-        if 'build_args' in comp:
-            cmaker.build_settings.args = comp['build_args']
-        if 'build_tool_args' in comp:
-            cmaker.build_settings.tool_args = comp['build_tool_args']
-        if 'install_args' in comp:
-            cmaker.install_settings.args = comp['install_args']
-        if 'install_components' in comp:
-            cmaker.install_settings.components = comp['install_components']
-
-        if not comp_cfg.component["install_only"]:
-            cmaker.build()
-        cmaker.install()
-
-    # --- Misc helper functions -----------------------------------------------
+    # --- CMake builds --------------------------------------------------------
 
     @staticmethod
-    def print_config_verbose(cfg):
-        print("\npy-build-cmake options")
-        print("======================")
-        print("component:")
-        pprint(cfg.component)
-        print("======================\n")
+    def get_cmaker(
+        source_dir: Path,
+        build_dir: Path,
+        install_dir: Path | None,
+        cmake_cfg: dict,
+        cross_cfg: dict | None,
+        package_info: PackageInfo,
+        component: dict,
+        **kwargs,
+    ):
+        cmaker = std_backend.get_cmaker(
+            source_dir=source_dir,
+            build_dir=build_dir,
+            install_dir=install_dir,
+            cmake_cfg=cmake_cfg,
+            cross_cfg=cross_cfg,
+            package_info=package_info,
+            **kwargs,
+        )
+        if "build_presets" in component:
+            cmaker.build_settings.presets = component["build_presets"]
+        if "build_args" in component:
+            cmaker.build_settings.args = component["build_args"]
+        if "build_tool_args" in component:
+            cmaker.build_settings.tool_args = component["build_tool_args"]
+        if "install_args" in component:
+            cmaker.install_settings.args = component["install_args"]
+        if "install_components" in component:
+            cmaker.install_settings.components = component["install_components"]
+        return cmaker
 
 
 _BACKEND = _BuildComponentBackend()
