@@ -15,9 +15,9 @@ backend for creating Python packages with extensions built using CMake.
  - Easy integration with [pybind11](https://github.com/pybind/pybind11) and [nanobind](https://github.com/wjakob/nanobind), with stable ABI support
  - Stub generation for type checking and autocompletion
  - Customizable CMake configuration, build, and installation options
- - Support for multiple installation configurations and components, across different Wheel packages
+ - Support for installation of multiple configurations and components, across different Wheel packages
  - First-class cross-compilation support
- - Reproducible source distributions
+ - Reproducible Wheels and source distributions
  - No dependency on [setuptools](https://github.com/pypa/setuptools)
  - Compatible with [cibuildwheel](https://github.com/pypa/cibuildwheel) for building Wheels
 
@@ -134,5 +134,4 @@ py-build-cmake as their Python build backend:
 
  - [x] ~~macOS support~~
  - [x] ~~Entry point support~~
- - [ ] Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))
- - [ ] Doxygen and Sphinx support
+ - [x] ~~Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))~~
