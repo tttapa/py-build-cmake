@@ -100,7 +100,8 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["T20"]                               # Removes print statements
+"noxfile.py" = ["T20"]                                # Removes print statements
+"**/tests/**" = ["T20"]
 "examples/**" = ["T20"]
 "scripts/**" = ["T20"]
 "src/py_build_cmake/build.py" = ["T20"]

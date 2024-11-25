@@ -18,6 +18,9 @@ else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 
+# Make build reproducible and independent of Python installation directory.
+include(cmake/Reproducible.cmake)
+
 # Find the pybind11 package
 include(cmake/QueryPythonForPybind11.cmake)
 find_pybind11_python_first()

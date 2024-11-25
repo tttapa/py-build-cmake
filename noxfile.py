@@ -14,6 +14,7 @@ Tests for the py-build-cmake package.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -183,6 +184,50 @@ def component(session: nox.Session):
             session.install(".")
             session.install("./debug")
             session.run("pytest")
+
+
+@nox.session
+def reproducible(session: nox.Session):
+    if os.name != "posix":
+        session.skip("Skipping reproducible builds")
+    session.install("-U", "pip", "build", "pytest")
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
+    if dist_dir is None:
+        session.run("python", "-m", "build", ".")
+        dist_dir = "dist"
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
+    session.env["SOURCE_DATE_EPOCH"] = "1732565790"
+
+    def build_and_hash(name):
+        shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
+        shutil.rmtree("dist-nox", ignore_errors=True)
+        override = "override.cmake.options.REPRODUCIBLE_PROJECT_DIR=true"
+        session.run("python", "-m", "build", "-o", "dist-nox", "-C", override)
+        normname = re.sub(r"[-_.]+", "_", name).lower()
+        plat = get_platform().replace(".", "_").replace("-", "_")
+        sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
+        whl_pattern = f"dist-nox/{normname}-{version}-*{plat}*.whl"
+        whls = list(Path().glob(whl_pattern))
+        if len(whls) != 1:
+            session.error(f"Unexpected number of Wheels {whls} ({whl_pattern})")
+        whl = whls[0]
+        sdist_hash = hashlib.sha256(sdist.read_bytes()).hexdigest()
+        whl_hash = hashlib.sha256(whl.read_bytes()).hexdigest()
+        return sdist_hash, whl_hash
+
+    test_proj = Path("test-packages/namespace-project-a")
+    with session.chdir(test_proj):
+        hashes = build_and_hash(test_proj.name)
+    tmpdir = Path(session.create_tmp()).resolve()
+    try:
+        shutil.copytree(test_proj, tmpdir / test_proj.name)
+        with session.chdir(tmpdir / test_proj.name):
+            tmp_hashes = build_and_hash(test_proj.name)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+    print(hashes)
+    print(tmp_hashes)
+    assert hashes == tmp_hashes
 
 
 def test_editable(
