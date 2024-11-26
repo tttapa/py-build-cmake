@@ -45,8 +45,8 @@ You can enable py-build-cmake's verbose mode to make it print information about
 the configuration, the exact subprocesses it invokes, the configure and build
 environments, and so on.
 
-When using a tool like PyPA `build`, you can use the `-C` flag to pass the
-`verbose` option:
+When using a tool like PyPA `build` or `pip`, you can use the `-C` flag to pass
+the `verbose` option:
 ```sh
 python -m build . -C verbose
 ```
@@ -96,52 +96,70 @@ rm .py-build-cmake_cache/*/CMakeCache.txt
 
 ## How to upload my package to PyPI?
 
-After building the source and binary distributions using PyPA `build`, you can
-use a tool like `twine` to upload them to PyPI:
-- [Python Packaging User Guide: Uploading the distribution archives](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)
-- https://twine.readthedocs.io/en/latest/
-
 You'll have to upload a single source distribution, and one binary wheel for
 each combination of Python version and platform you wish to support
 (see next section).
+
+For the actual upload of the packages to PyPI, it is highly recommended to use
+trusted publishing:
+
+- https://docs.pypi.org/trusted-publishers
+- [pypa/gh-action-pypi-publish (GitHub Actions)](https://github.com/pypa/gh-action-pypi-publish)
+- [Python Packaging User Guide: Uploading the distribution archives](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)
+- https://twine.readthedocs.io/en/latest
 
 ## How to build my package for many Python versions, operating systems, and architectures?
 
 You can use a tool like [cibuildwheel](https://github.com/pypa/cibuildwheel) to
 automate the build process for this large matrix of platform/version
 combinations. Continuous integration providers like GitHub Actions also provide
-job matrix capabilities. For example, the [alpaqa](https://github.com/kul-optec/alpaqa/blob/bac0067c312a781c444204d0918339f4cb35ab1c/.github/workflows/wheel.yml#L75-L173)
-library uses the following matrix to build the package for multiple
+job matrix capabilities. For example, the [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example/blob/24c5a0c4f796beedafd2d0a62134087a5be221d4/.github/workflows/wheels.yml#L107-L145)
+project uses the following matrix to build the package for multiple
 architectures and Python versions:
 
 ```yaml
-strategy:
-  matrix:
-    pypy: ['', pypy]
-    python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-    host: [x86_64-centos7-linux-gnu, armv7-neon-linux-gnueabihf, armv6-rpi-linux-gnueabihf, aarch64-rpi3-linux-gnu]
-    include:
-      - python-version: '3.8'
-        pypy-version: '7.3.11'
-      - python-version: '3.9'
-        pypy-version: '7.3.12'
-      - python-version: '3.10'
-        pypy-version: '7.3.12'
-    exclude:
-      - pypy: pypy
-        python-version: '3.11'
-      - pypy: pypy
-        python-version: '3.12'
-      - pypy: pypy
-        host: armv7-neon-linux-gnueabihf
-      - pypy: pypy
-        host: armv6-rpi-linux-gnueabihf
+  cross-build-linux:
+    name: Cross-build wheels for ${{ matrix.host }} - ${{ matrix.python-version }}
+    needs: [build-sdist]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        host: [x86_64-bionic-linux-gnu, aarch64-rpi3-linux-gnu, armv7-neon-linux-gnueabihf, armv6-rpi-linux-gnueabihf]
+        python-version:
+          - python3.7
+          - python3.8
+          - python3.9
+          - python3.10
+          - python3.11
+          - python3.12
+          - python3.13
+          - pypy3.7-v7.3
+          - pypy3.8-v7.3
+          - pypy3.9-v7.3
+          - pypy3.10-v7.3
+        # PyPy does not provide 32-bit ARM binaries, so we exclude these:
+        exclude:
+          - python-version: pypy3.7-v7.3
+            host: armv7-neon-linux-gnueabihf
+          - python-version: pypy3.8-v7.3
+            host: armv7-neon-linux-gnueabihf
+          - python-version: pypy3.9-v7.3
+            host: armv7-neon-linux-gnueabihf
+          - python-version: pypy3.10-v7.3
+            host: armv7-neon-linux-gnueabihf
+          - python-version: pypy3.7-v7.3
+            host: armv6-rpi-linux-gnueabihf
+          - python-version: pypy3.8-v7.3
+            host: armv6-rpi-linux-gnueabihf
+          - python-version: pypy3.9-v7.3
+            host: armv6-rpi-linux-gnueabihf
+          - python-version: pypy3.10-v7.3
+            host: armv6-rpi-linux-gnueabihf
 ```
 
 The same workflow file also contains some steps to test the resulting wheels and
 upload them to to PyPI. It's a good idea to check that the package version
-matches the Git tag before uploading anything. Also note the use of a [secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
-for the PyPI access token.
+matches the Git tag before uploading anything.
 
 To build Universal Wheels for macOS (that work on both Intel- and ARM-based
 machines), you can [set the following environment variables](https://github.com/pypa/cibuildwheel/blob/d018570bc4bdc792a1c7ba1e720d118686fa145b/cibuildwheel/macos.py#L250-L252):
