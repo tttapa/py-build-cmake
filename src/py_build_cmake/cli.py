@@ -7,7 +7,7 @@ import click
 from . import __version__
 
 
-def cmake_command(directory, build_path, verbose, dry, cross, local):
+def cmake_command(directory, build_path, verbose, dry, cross, local, override):
     def get_cmaker(index: int):
         from .build import _BuildBackend as backend
         from .commands.cmd_runner import CommandRunner
@@ -16,6 +16,7 @@ def cmake_command(directory, build_path, verbose, dry, cross, local):
         config_settings = {
             "--cross": list(cross),
             "--local": list(local),
+            "--override": list(override),
         }
         # Read configuration and package metadata
         cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
@@ -95,6 +96,15 @@ def cmake_command(directory, build_path, verbose, dry, cross, local):
     help="Specifies a toml file that overrides the "
     "tool.py-build-cmake.cross section of pyproject.toml, "
     "similar to py-build-cmake.cross.toml.",
+)
+@click.option(
+    "-o",
+    "--override",
+    type=str,
+    required=False,
+    multiple=True,
+    help="Override the user configuration in the tool.py-build-cmake section "
+    "of pyproject.toml. For example --override wheel.platform_tag=guess",
 )
 @click.version_option(__version__, "-v", "--version", prog_name="py-build-cmake")
 @click.pass_context
