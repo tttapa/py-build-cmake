@@ -109,6 +109,8 @@ for a detailed overview of the configuration files and the directory structure,
 using a very simple Python module as an example.  
 For a more advanced, real-world example, see [`examples/pybind11-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/pybind11-project)
 and [`examples/nanobind-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/nanobind-project).  
+Alternatively, SWIG can also be used instead of pybind11 or nanobind, as
+demonstrated in [`examples/swig-project`](https://github.com/tttapa/py-build-cmake/tree/main/examples/swig-project).  
 If you are interested in packaging C/C++/Fortran programs using py-build-cmake,
 have a look at [`examples/minimal-program`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal-program).  
 See the [`examples`](https://github.com/tttapa/py-build-cmake/tree/main/examples) folder for a full list of examples.
@@ -133,9 +135,3 @@ py-build-cmake as their Python build backend:
 - [hatchling](https://hatch.pypa.io/latest/config/build/#build-system): build backend of the [Hatch](https://hatch.pypa.io/latest/) project manager, supports build hooks
 - [poetry-core](https://python-poetry.org/docs/pyproject/#poetry-and-pep-517): pure-Python build backend for the [Poetry](https://python-poetry.org/) package manager
 - [crossenv](https://github.com/benfogle/crossenv): tool to trick `setuptools` into cross-compiling by monkey patching the `sysconfig` and `distutils` modules
-
-## Planned features
-
- - [x] ~~macOS support~~
- - [x] ~~Entry point support~~
- - [x] ~~Namespace package support ([PEP 420](https://www.python.org/dev/peps/pep-0420/))~~
