@@ -110,6 +110,8 @@ trusted publishing:
 
 ## How to build my package for many Python versions, operating systems, and architectures?
 
+In short: have a look at [py-build-cmake-example: .github/workflows](https://github.com/tttapa/py-build-cmake-example/tree/main/.github/workflows).
+
 You can use a tool like [cibuildwheel](https://github.com/pypa/cibuildwheel) to
 automate the build process for this large matrix of platform/version
 combinations. Continuous integration providers like GitHub Actions also provide
@@ -172,6 +174,6 @@ export ARCHFLAGS='-arch arm64 -arch x86_64'
 
 To build packages for multiple architectures on Linux, I recommend [cross-compilation](./Cross-compilation.html).
 This ensures that your package doesn't depend on any libraries (including GLIBC)
-from the build server. You can use the modern GCC 13.1 cross-compilers from
-<https://github.com/tttapa/docker-cross-python>, which also include pre-built
+from the build server. You can use the modern GCC cross-compilers from
+<https://github.com/tttapa/python-dev>, which also include pre-built
 cross-compiled versions of Python.
