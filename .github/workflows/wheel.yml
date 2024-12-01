@@ -175,6 +175,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-13, macos-latest]
+        project: [pybind11-project, nanobind-project, swig-project]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
@@ -184,7 +185,7 @@ jobs:
     - name: Build Wheels
       uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b
       with:
-        package-dir: examples/pybind11-project
+        package-dir: examples/${{ matrix.project }}
         output-dir: dist
       env:
         CIBW_ARCHS_LINUX: 'x86_64 i686'
@@ -197,7 +198,7 @@ jobs:
     - name: Upload Wheels
       uses: actions/upload-artifact@v4
       with:
-        name: pybind11_project-${{ matrix.os }}-whl
+        name: ${{ matrix.project }}-${{ matrix.os }}-whl
         path: dist/*.whl
 
   check-release:

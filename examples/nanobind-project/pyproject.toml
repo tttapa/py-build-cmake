@@ -26,6 +26,9 @@ dynamic = ["version", "description"]
 [project.scripts]
 add = "nanobind_project.add:main"
 
+[project.optional-dependencies]
+test = ["pytest>=7.2.0,<7.5"]
+
 [build-system]
 requires = [
     "py-build-cmake~=0.3.1.dev0",
@@ -82,3 +85,9 @@ args = ["-v"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.cibuildwheel]
+build-verbosity = 1
+environment = { PY_BUILD_CMAKE_VERBOSE="1" }
+test-command = "pytest {package}/tests"
+test-extras = ["test"]
