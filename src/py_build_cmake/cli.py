@@ -32,7 +32,7 @@ def cmake_command(directory, build_path, verbose, dry, cross, local):
             raise ValueError(msg) from e
 
         # Set up all paths
-        build_cfg_name = backend.get_build_config_name(cfg.cross, index)
+        build_cfg_name = backend.get_build_config_name(cfg, index)
         path = build_path or cmake_cfg["build_path"]
         build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 

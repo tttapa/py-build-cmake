@@ -143,7 +143,7 @@ class _BuildComponentBackend:
                 msg += "project."
                 raise ConfigError(msg)
             cmkcfg = cmake_cfg[k]
-            build_cfg_name = std_backend.get_build_config_name(cfg.cross, k)
+            build_cfg_name = std_backend.get_build_config_name(cfg, k)
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
             build_dir = Path(path)

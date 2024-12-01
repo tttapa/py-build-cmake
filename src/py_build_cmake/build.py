@@ -222,7 +222,7 @@ class _BuildBackend:
 
         # Configure, build and install the CMake project
         for idx, cmkcfg in cmake_cfg.items():
-            build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross, idx)
+            build_cfg_name = _BuildBackend.get_build_config_name(cfg, idx)
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
             build_dir = Path(path)
@@ -259,7 +259,7 @@ class _BuildBackend:
 
     @staticmethod
     def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg):
-        build_cfg_name = _BuildBackend.get_build_config_name(cfg.cross, 0)
+        build_cfg_name = _BuildBackend.get_build_config_name(cfg, 0)
         build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
         return BuildPaths(
             source_dir=src_dir,
@@ -326,29 +326,34 @@ class _BuildBackend:
         whl.version = package_info.version
         wheel_cfg = _BuildBackend.get_wheel_config(cfg)
         pure = is_pure(wheel_cfg, cmake_cfg)
+        tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
         libdir = "purelib" if pure else "platlib"
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
         whl.dirname = paths.wheel_dir
         if wheel_cfg.get("build_tag"):
             whl.buildver = wheel_cfg["build_tag"]
+        wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
+        logger.debug("Built Wheel: %s", wheel_path)
+        return str(Path(wheel_path).relative_to(paths.wheel_dir))
+
+    @staticmethod
+    def get_wheel_tags(pure: bool, wheel_cfg: dict[str, Any], cross_cfg):
         plat = wheel_cfg.get("platform_tag", "")
         guess_plat = "guess" in plat
         if pure:
             tags = {"pyver": ["py3"]}
-        elif cfg.cross:
+        elif cross_cfg:
             if guess_plat:
                 msg = "Option `wheel.platform_tag=guess` is not supported when "
                 msg += "cross-compiling. Ignoring."
                 logger.warning(msg)
-            tags = get_cross_tags(cfg.cross)
+            tags = get_cross_tags(cross_cfg)
             tags = convert_wheel_tags(tags, wheel_cfg)
         else:
             tags = get_native_tags(guess_plat)
             tags = convert_wheel_tags(tags, wheel_cfg)
-        wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
-        logger.debug("Built Wheel: %s", wheel_path)
-        return str(Path(wheel_path).relative_to(paths.wheel_dir))
+        return tags
 
     @staticmethod
     def get_cmake_config(cfg: Config) -> dict[int, Any]:
@@ -604,12 +609,14 @@ class _BuildBackend:
     # --- Misc helper functions -----------------------------------------------
 
     @staticmethod
-    def get_build_config_name(cross_cfg, index: int):
+    def get_build_config_name(cfg: Config, index: int):
         """Get a string representing the Python version, ABI and architecture,
         used to name the build folder so builds for different versions don't
         interfere."""
-        tags = get_cross_tags(cross_cfg) if cross_cfg else get_native_tags()
-        name = "-".join(x[0] for x in tags.values())
+        wheel_cfg = _BuildBackend.get_wheel_config(cfg)
+        pure = is_pure(wheel_cfg, cfg.cmake)
+        tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
+        name = "-".join(".".join(x) for x in tags.values())
         if index != 0:
             name += f"-{index}"
         return name
