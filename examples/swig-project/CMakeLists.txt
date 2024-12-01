@@ -52,7 +52,10 @@ set_target_properties(add_module PROPERTIES
 target_compile_definitions(add_module PRIVATE VERSION_INFO="${PY_FULL_VERSION}")
 
 # Link to the correct Python library and configure the appropriate ABI
-if (TARGET Python::SABIModule AND Python_INTERPRETER_ID STREQUAL "Python")
+if (Python_INTERPRETER_ID STREQUAL "Python")
+    if (NOT TARGET Python::SABIModule)
+        message(SEND_ERROR "CPython requires component Development.SABIModule")
+    endif()
     message(STATUS "Using CPython stable ABI (${Py_LIMITED_API} - ${Python_SOSABI})")
     set_target_properties(add_module PROPERTIES
         SWIG_COMPILE_DEFINITIONS Py_LIMITED_API=${Py_LIMITED_API})
