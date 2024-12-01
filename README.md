@@ -56,13 +56,9 @@ and tell py-build-cmake how to build your CMake project. For example:
 ```toml
 [project] # Project metadata
 name = "example-project"
-readme = "README.md"
 requires-python = ">=3.7"
+readme = "README.md"
 license = { "file" = "LICENSE" }
-authors = [{ "name" = "Pieter P", "email" = "pieter.p.dev@outlook.com" }]
-keywords = ["some", "keywords"]
-classifiers = ["Topic :: Scientific/Engineering"]
-urls = { "Documentation" = "https://tttapa.github.io/py-build-cmake" }
 dependencies = ["numpy"]
 dynamic = ["version", "description"]
 
