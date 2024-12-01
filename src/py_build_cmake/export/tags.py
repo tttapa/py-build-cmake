@@ -37,12 +37,30 @@ def convert_abi_tag(abi_tag: str, wheel_cfg: dict) -> str:
         raise AssertionError(msg)
 
 
+def convert_pyver_tag(pyver_tag: str, wheel_cfg: dict) -> str:
+    """Convert the Python tag to the version specified by
+    abi3_minimum_cpython_version if ABI3 is supported."""
+    if wheel_cfg["python_abi"] == "abi3":
+        # Only use abi3 if we're actually building for CPython
+        min_cpython_version = wheel_cfg["abi3_minimum_cpython_version"]
+        m = re.match(r"^cp(\d+).*$", pyver_tag)
+        if m and int(m[1]) >= min_cpython_version:
+            return f"cp{min_cpython_version}"
+    # By default, we don't change anything if ABI3 is not available or if this
+    # is not a new enough version of CPython.
+    return pyver_tag
+
+
 def convert_wheel_tags(tags: dict[str, list[str]], wheel_cfg: dict) -> WheelTags:
     """Apply convert_abi_tag to each of the abi tags and override any tags
     that were specified in the config file."""
     tags = copy(tags)
-    cvt_abi = lambda tag: convert_abi_tag(tag, wheel_cfg)
-    tags["abi"] = list(map(cvt_abi, tags["abi"]))
+    # Convert the given Python and ABI tags according to the "python_abi" and
+    # "abi3_minimum_cpython_version" settings in the user's config.
+    tags["pyver"] = [convert_pyver_tag(t, wheel_cfg) for t in tags["pyver"]]
+    tags["abi"] = [convert_abi_tag(t, wheel_cfg) for t in tags["abi"]]
+    # Finally, override these "default" and "automatic" tags by any explicit
+    # overrides specified by the user.
     if wheel_cfg["python_tag"] != ["auto"]:
         pyver = tags["pyver"][0]
         pyver_cfg = wheel_cfg["python_tag"]

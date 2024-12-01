@@ -312,9 +312,21 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                         "CPython API for CPython version that are newer than "
                         "`abi3_minimum_version`. Useful for nanobind, which "
                         "supports the stable ABI for CPython 12 and later.\n"
+                        "This option only applies to CPython using the stable "
+                        "ABI, in which case it has the following effect: the "
+                        "Python tag of the resulting wheel is set to the given "
+                        "version of CPython, and the ABI tag of the wheel is "
+                        "set to ABI3.\n"
                         "The Python version is encoded as a single integer, "
                         "consisting of the major and minor version numbers, "
-                        "without a dot.",
+                        "without a dot (the same format as the Python tag).\n"
+                        "This value should match the value of the "
+                        "`Py_LIMITED_API` macro used to build the Python "
+                        "module. For example, if you're using "
+                        "`abi3_minimum_cpython_version=312`, you should set "
+                        "`Py_LIMITED_API=0x030C0000`. If you're using CMake's "
+                        "`Python3_add_library` command, you should specify the "
+                        "`USE_SABI 3.12` option.",
                         "abi3_minimum_cpython_version = 312",
                         default=DefaultValueValue(32)),
         ListOfStrConfigOption("abi_tag",
