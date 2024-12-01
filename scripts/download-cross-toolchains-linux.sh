@@ -9,8 +9,8 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"/..
 
 triples=(x86_64-bionic-linux-gnu armv6-rpi-linux-gnueabihf armv7-neon-linux-gnueabihf aarch64-rpi3-linux-gnu)
 gcc_version="14"
-toolchain_version="1.0.0"
-python_dev_version="0.0.6"
+toolchain_version="1.0.1"
+python_dev_version="0.0.7"
 toolchain_folder="$PWD/toolchains"
 
 set -ex
