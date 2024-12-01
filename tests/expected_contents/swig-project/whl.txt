@@ -1,0 +1,10 @@
+swig_project-{{version}}.dist-info/LICENSE
+swig_project-{{version}}.dist-info/METADATA
+swig_project-{{version}}.dist-info/RECORD
+swig_project-{{version}}.dist-info/WHEEL
+swig_project-{{version}}.dist-info/entry_points.txt
+swig_project/__init__.py
+swig_project/_add_module{{ext_suffix}}
+swig_project/add.py
+swig_project/add_module.py
+swig_project/sub_package/__init__.py

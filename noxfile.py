@@ -36,7 +36,8 @@ else:
 version = "0.3.1.dev0"
 project_dir = Path(__file__).resolve().parent
 
-examples = "minimal-program", "pybind11-project", "nanobind-project", "minimal"
+examples = "minimal-program", "pybind11-project", "nanobind-project"
+examples += "swig-project", "minimal"
 test_packages = "namespace-project-a", "namespace-project-b"
 test_packages += "bare-c-module", "cmake-preset", "cmake-options"
 
@@ -122,10 +123,15 @@ def get_ext_suffix(name: str):
     simple = name in ["minimal", "bare-c-module"]
     if simple and ext_suffix.endswith(".pyd") and py_v < (3, 8):
         ext_suffix = ".pyd"  # what a mess ...
-    if name == "nanobind-project":
+    elif name == "nanobind-project":
         if py_v < (3, 8):
             ext_suffix = None  # skip
         elif impl.name == "cpython" and py_v >= (3, 12):
+            ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
+            if sys.platform != "win32":
+                ext_suffix = ".abi3" + ext_suffix
+    elif name == "swig-project":  # noqa: SIM102
+        if impl.name == "cpython" and py_v >= (3, 7):
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix
