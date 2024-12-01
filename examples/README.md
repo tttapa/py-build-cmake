@@ -19,6 +19,9 @@
 - [`nanobind-project`](./nanobind-project): Very similar to `pybind11_project`,
     but using the more modern [nanobind](https://github.com/wjakob/nanobind)
     library to generate the Python bindings instead of pybind11.
+- [`swig-project`](./swig-project): Very similar to the previous two examples,
+    but using the [SWIG](https://github.com/swig/swig) tool to generate the
+    Python bindings instead of pybind11 or nanobind.
 - [`minimal-debug-component`](./minimal-debug-component):
     Largely the same as the [minimal](../minimal) example, but uses
     py-build-cmake's `build_component` backend to package the debugging symbols

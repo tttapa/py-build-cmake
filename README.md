@@ -12,7 +12,7 @@ backend for creating Python packages with extensions built using CMake.
  - Building and packaging C, C++ or Fortran extension modules for Python using CMake
  - Declarative configuration using `pyproject.toml` ([PEP 621](https://www.python.org/dev/peps/pep-0621/))
  - Editable/development installations for Python modules ([PEP 660](https://www.python.org/dev/peps/pep-0660/))
- - Easy integration with [pybind11](https://github.com/pybind/pybind11) and [nanobind](https://github.com/wjakob/nanobind), with stable ABI support
+ - Easy integration with [pybind11](https://github.com/pybind/pybind11), [nanobind](https://github.com/wjakob/nanobind) and [SWIG](https://github.com/swig/swig), with stable ABI support
  - Stub generation for type checking and autocompletion
  - Customizable CMake configuration, build, and installation options
  - Support for installation of multiple configurations and components, across different Wheel packages
