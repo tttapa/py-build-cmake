@@ -193,6 +193,7 @@ jobs:
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
         CIBW_BUILD: 'cp311-* pp39-*'
         CIBW_ENVIRONMENT: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1'
+        CIBW_ENVIRONMENT_MACOS: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1 MACOSX_DEPLOYMENT_TARGET="10.15"'
         CIBW_ENVIRONMENT_LINUX: 'PIP_FIND_LINKS=/project/dist PY_BUILD_CMAKE_VERBOSE=1'
         CIBW_ENVIRONMENT_WINDOWS: 'PIP_FIND_LINKS=D:/a/py-build-cmake/py-build-cmake/dist PY_BUILD_CMAKE_VERBOSE=1'
     - name: Upload Wheels

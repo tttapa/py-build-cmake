@@ -48,7 +48,7 @@ exclude = []
 [tool.py-build-cmake.cmake]
 minimum_version = "3.26"
 build_type = "Release"
-source_path = "." # Containing CMakeLists.txt
+source_path = "."                       # Containing CMakeLists.txt
 options = {}
 args = ["-Wdev"]
 find_python3 = false
@@ -88,8 +88,10 @@ testpaths = ["tests"]
 
 [tool.cibuildwheel]
 build-verbosity = 1
-environment = { PY_BUILD_CMAKE_VERBOSE="1" }
+environment = { PY_BUILD_CMAKE_VERBOSE = "1" }
 test-command = "pytest {package}/tests"
 test-extras = ["test"]
 [tool.cibuildwheel.windows]
 archs = ["AMD64", "x86"] # No ARM64: https://gitlab.kitware.com/cmake/cmake/-/issues/26493
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET = "10.15" }
