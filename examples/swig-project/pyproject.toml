@@ -75,3 +75,5 @@ build-verbosity = 1
 environment = { PY_BUILD_CMAKE_VERBOSE = "1" }
 test-command = "pytest {package}/tests"
 test-extras = ["test"]
+[tool.cibuildwheel.windows]
+archs = ["AMD64", "x86"] # No ARM64: https://gitlab.kitware.com/cmake/cmake/-/issues/26493

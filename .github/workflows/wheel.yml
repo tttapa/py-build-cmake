@@ -189,7 +189,7 @@ jobs:
         output-dir: dist
       env:
         CIBW_ARCHS_LINUX: 'x86_64 i686'
-        CIBW_ARCHS_WINDOWS: 'AMD64 x86 ARM64'
+        CIBW_ARCHS_WINDOWS: 'AMD64 x86' # No ARM64: https://gitlab.kitware.com/cmake/cmake/-/issues/26493
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
         CIBW_BUILD: 'cp311-* pp39-*'
         CIBW_ENVIRONMENT: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1'
