@@ -33,7 +33,7 @@ if sys.version_info < (3, 8):
 else:
     import sysconfig as dist_sysconfig
 
-version = "0.3.1"
+version = "0.3.2.dev0"
 project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project"
