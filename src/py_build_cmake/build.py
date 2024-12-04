@@ -147,7 +147,8 @@ class _BuildBackend:
             numeric_level = getattr(logging, loglevel.upper(), None)
             if isinstance(numeric_level, int):
                 return numeric_level
-            raise ValueError("Invalid log level: %s" % loglevel)
+            msg = f"Invalid log level: {loglevel}"
+            raise ValueError(msg)
 
         if config_settings is not None:
             log_keys = {"loglevel", "--loglevel"}

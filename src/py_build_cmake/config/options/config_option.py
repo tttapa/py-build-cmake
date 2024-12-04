@@ -129,7 +129,7 @@ class MultiConfigOption(ConfigOption):
         """Return the names of the sub-options of this config option, along with
         the corresponding value path relative to the given value pth."""
         if values.values is None:
-            return ()
+            return
         for k in values.values:
             val = values.sub_ref(k)
             for name in self.sub_options:
@@ -141,7 +141,7 @@ class MultiConfigOption(ConfigOption):
         """Return the names of the sub-options of this config option, along with
         the corresponding value reference relative to the given value if set."""
         if values.values is None:
-            return ()
+            return
         for k in values.values:
             val = values.sub_ref(k)
             for name in self.sub_options:

@@ -2,6 +2,7 @@ from pprint import pprint
 from typing import Any
 
 import pytest
+
 from py_build_cmake.common import ConfigError
 from py_build_cmake.config.options.config_option import ConfigOption
 from py_build_cmake.config.options.config_path import ConfPath

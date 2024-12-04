@@ -1,6 +1,7 @@
 from pprint import pprint
 
 import pytest
+
 from py_build_cmake.common import ConfigError
 from py_build_cmake.config.load import (
     inherit_default_and_finalize_config,

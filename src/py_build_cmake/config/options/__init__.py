@@ -15,17 +15,17 @@ from .value_reference import ValueReference
 from .verify import ConfigVerifier
 
 __all__ = [
-    "ConfigOption",
     "ConfPath",
-    "ConfigReference",
     "ConfigDefaulter",
+    "ConfigInheritor",
+    "ConfigOption",
+    "ConfigOverrider",
+    "ConfigReference",
+    "ConfigVerifier",
     "DefaultValueValue",
     "MissingDefaultError",
     "NoDefaultValue",
     "RefDefaultValue",
     "RequiredValue",
-    "ConfigInheritor",
-    "ConfigOverrider",
     "ValueReference",
-    "ConfigVerifier",
 ]

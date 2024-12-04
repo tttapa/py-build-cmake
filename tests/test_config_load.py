@@ -2,6 +2,7 @@ import os
 from pathlib import PurePosixPath
 
 import pytest
+
 from py_build_cmake.config.cli_override import parse_file
 from py_build_cmake.config.load import (
     Config,

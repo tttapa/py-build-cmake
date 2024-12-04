@@ -82,7 +82,8 @@ def check_pkg_contents(
         sdist_template = template_env.get_template("sdist.txt")
         sdist_expect = sdist_template.render(**subs).split("\n")
         sdist_expect = sorted(filter(bool, sdist_expect))
-        sdist_actual = sorted(open_tar(sdist).getnames())
+        with open_tar(sdist) as t:
+            sdist_actual = sorted(t.getnames())
         if sdist_expect != sdist_actual:
             diff = "\n".join(unified_diff(sdist_expect, sdist_actual))
             session.error("sdist contents mismatch:\n" + diff)
@@ -96,7 +97,8 @@ def check_pkg_contents(
     whl_template = template_env.get_template("whl.txt")
     whl_expect = whl_template.render(**subs).split("\n")
     whl_expect = sorted(filter(bool, whl_expect))
-    whl_actual = sorted(ZipFile(whl).namelist())
+    with ZipFile(whl) as z:
+        whl_actual = sorted(z.namelist())
     if whl_expect != whl_actual:
         diff = "\n".join(unified_diff(whl_expect, whl_actual))
         session.error("Wheel contents mismatch:\n" + diff)

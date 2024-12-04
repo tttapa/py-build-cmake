@@ -110,7 +110,7 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     logger.debug("Loading module %s", mod_filename)
     from importlib.util import module_from_spec, spec_from_file_location
 
-    mod_name = "py_build_cmake.dummy.import%d" % _import_i
+    mod_name = f"py_build_cmake.dummy.import{_import_i}"
     spec = spec_from_file_location(mod_name, mod_filename)
     if spec is None:
         msg = f"Unable to import '{mod_filename}' (missing spec)"
