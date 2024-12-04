@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import click
 
@@ -268,7 +268,7 @@ def format(md, component):
             "projects and components should be installed in this component "
             "package.\n"
         )
-        opts = get_component_options(Path("/"))
+        opts = get_component_options(PurePosixPath("/"))
         root_ref = ConfigReference(ConfPath.from_string("/"), opts)
         help_print(root_ref.sub_ref(help_pth).config)
 
@@ -279,7 +279,7 @@ def format(md, component):
             "These options go in the `[tool.py-build-cmake]` section of "
             "the `pyproject.toml` configuration file.\n"
         )
-        opts = get_options(Path("/"))
+        opts = get_options(PurePosixPath("/"))
         root_ref = ConfigReference(ConfPath.from_string("/"), opts)
         help_print(root_ref.sub_ref(help_pth).config)
         pr_md("# Local overrides\n")
