@@ -70,12 +70,12 @@ def cross_compile_win(
     options = {
         "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
         "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
-        "CMAKE_GENERATOR_PLATFORM": CMakeOption.create(cmake_plat, "STRING"),
     }
     cross_cfg = {
         "os": "windows",
         "arch": StringOption.create(platform_to_platform_tag(plat_name)),
         "cmake": {all: {"options": options}},
+        "generator_platform": cmake_plat,
     }
     python_lib = get_python_lib(library_dirs)
     if python_lib is not None:

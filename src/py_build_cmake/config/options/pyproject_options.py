@@ -520,6 +520,14 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          must_exist=not test,
                          allow_abs=True,
                          is_folder=False),
+        StringConfigOption("generator_platform",
+                           "The value for CMAKE_GENERATOR_PLATFORM. Only "
+                           "applies to the Visual Studio generator on "
+                           "Windows. See https://cmake.org/cmake/help/"
+                           "latest/variable/CMAKE_GENERATOR_PLATFORM.html "
+                           "for details.",
+                           "generator_platform = 'ARM64'",
+                           default=None),
         ConfigOption("editable",
                      "Override editable options when cross-compiling.",
                      inherit_from=editable_pth,

@@ -13,7 +13,6 @@ from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
 from .. import __version__
 from ..common import PackageInfo
-from ..common.util import python_sysconfig_platform_to_cmake_platform_win
 from .cmd_runner import CommandRunner
 
 logger = logging.getLogger(__name__)
@@ -28,6 +27,7 @@ class CMakeSettings:
     find_python: bool
     find_python3: bool
     minimum_required: str
+    generator_platform: str | None
     command: Path = Path("cmake")
 
 
@@ -267,17 +267,13 @@ class CMaker:
         return ["-C", str(preload_file)]
 
     def get_cmake_generator_platform(self) -> list[str]:
+        """Returns -A <platform> for the Visual Studio generator on Windows."""
         win = self.cmake_settings.os == "windows"
         gen = self.conf_settings.generator
         vs_gen = win and (not gen or gen.lower().startswith("visual studio"))
-        if vs_gen and not self.cross_compiling():
-            plat = sysconfig.get_platform()
-            cmake_plat = python_sysconfig_platform_to_cmake_platform_win(plat)
-            if cmake_plat:
-                return ["-A", cmake_plat]
-            else:
-                msg = "Unknown platform, CMake generator platform option (-A) will not be set"
-                logger.warning(msg)
+        cmake_plat = self.cmake_settings.generator_platform
+        if vs_gen and cmake_plat:
+            return ["-A", cmake_plat]
         return []
 
     def get_configure_command(self):

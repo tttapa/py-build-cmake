@@ -5,6 +5,7 @@ import logging
 import os
 import platform
 import shutil
+import sysconfig
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -414,6 +415,7 @@ class _BuildBackend:
         # Optionally include the cross-compilation settings
         if cross_cfg:
             cross_compiling = True
+            cmake_plat = cross_cfg.get("generator_platform")
 
             def cvt_path(x):
                 if x is None:
@@ -444,6 +446,8 @@ class _BuildBackend:
             }
         else:
             cross_compiling = False
+            plat = sysconfig.get_platform()
+            cmake_plat = util.python_sysconfig_platform_to_cmake_platform_win(plat)
             cross_opts = {
                 "toolchain_file": None,
                 "python_prefix": None,
@@ -479,6 +483,7 @@ class _BuildBackend:
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
                 minimum_required=cmake_cfg["minimum_version"],
+                generator_platform=cmake_plat,
                 command=Path("cmake"),
             ),
             conf_settings=CMakeConfigureSettings(
