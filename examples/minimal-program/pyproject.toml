@@ -25,7 +25,7 @@ dependencies = []
 dynamic = ["version", "description"]
 
 [build-system]
-requires = ["py-build-cmake~=0.3.3.dev0"]
+requires = ["py-build-cmake~=0.3.3"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
