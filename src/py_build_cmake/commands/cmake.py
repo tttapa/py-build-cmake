@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import sys
 import sysconfig
 from dataclasses import dataclass
@@ -153,10 +154,24 @@ class CMaker:
         impl = self.get_native_python_implementation()
         if impl:
             yield Option(prefix + "_FIND_IMPLEMENTATIONS", impl)
+        # Just setting ROOT_DIR is not enough for CMake 3.31.1 to find the PyPy
+        # headers using find_package(Python COMPONENTS Development), so we
+        # explicitly set the INCLUDE_DIR as well. However, searching for the
+        # Development component without Interpreter leaves SOABI unset, so we
+        # need to set it explicitly as well.
         if impl == "PyPy":
             inc = sysconfig.get_path("platinclude")
             if inc:
                 yield Option(prefix + "_INCLUDE_DIR", Path(inc).as_posix())
+            ext_suffix = sysconfig.get_config_var("EXT_SUFFIX") or ""
+            # This regex was taken from CMake's FindPython module.
+            m = re.match(r"^([.-]|_d\.)(.+)(\.(so|pyd))$", ext_suffix)
+            if m:
+                yield Option(prefix + "_SOABI", m.group(2))
+            if self.cmake_settings.os == "windows":
+                yield Option(prefix + "_SOSABI", "")
+            else:
+                yield Option(prefix + "_SOSABI", "abi3")
         return
         # FIND_ABI seems to confuse CMake
         yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
