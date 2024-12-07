@@ -134,7 +134,7 @@ class CMaker:
             Path(sys.base_exec_prefix).as_posix(),
             Path(sys.base_prefix).as_posix(),
         ]
-        return ";".join(pfxs)
+        return ";".join(dict.fromkeys(pfxs))  # remove duplicates, preserve order
 
     def get_native_python_abi_tuple(self):
         cmake_version = self.cmake_settings.minimum_required
