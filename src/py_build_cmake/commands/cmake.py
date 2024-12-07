@@ -153,11 +153,13 @@ class CMaker:
         impl = self.get_native_python_implementation()
         if impl:
             yield Option(prefix + "_FIND_IMPLEMENTATIONS", impl)
+        if impl == "PyPy":
+            inc = sysconfig.get_path("platinclude")
+            if inc:
+                yield Option(prefix + "_INCLUDE_DIR", Path(inc).as_posix())
         return
         # FIND_ABI seems to confuse CMake
         yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
-        if impl == "PyPy":
-            yield Option(prefix + "_INCLUDE_DIR", sysconfig.get_path("platinclude"))
 
     def get_cross_python_hints(self, prefix):
         """FindPython hints and artifacts to set when cross-compiling."""
