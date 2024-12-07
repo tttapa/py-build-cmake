@@ -1,0 +1,19 @@
+[project]
+name = "find-python"
+version = "0.3.3.dev0"
+description = "Test for CMake FindPython"
+requires-python = ">=3.7"
+license = { "text" = "-" }
+
+[build-system]
+requires = ["py-build-cmake~=0.3.3.dev0"]
+build-backend = "py_build_cmake.build"
+
+[tool.py-build-cmake.module]
+generated = "package"
+
+[tool.py-build-cmake.sdist]
+include = ["CMakeLists.txt"]
+
+[tool.py-build-cmake.cmake]
+minimum_version = "3.17"

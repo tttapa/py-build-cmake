@@ -141,6 +141,21 @@ def get_ext_suffix(name: str):
 
 
 @nox.session
+def find_python(session: nox.Session):
+    session.install("-U", "pip", "build", "pytest")
+    dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
+    if dist_dir is None:
+        session.run("python", "-m", "build", ".")
+        dist_dir = "dist"
+    session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
+    session.install(f"py-build-cmake=={version}")
+    with session.chdir("test-packages/find-python"):
+        shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
+        shutil.rmtree("dist-nox", ignore_errors=True)
+        session.run("python", "-m", "build", ".", "-o", "dist-nox")
+
+
+@nox.session
 def example_projects(session: nox.Session):
     session.install("-U", "pip", "build", "pytest")
     dist_dir = os.getenv("PY_BUILD_CMAKE_WHEEL_DIR")
