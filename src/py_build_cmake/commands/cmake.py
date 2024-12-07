@@ -124,6 +124,17 @@ class CMaker:
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
         ]
 
+    def get_native_python_prefixes(self) -> str:
+        """Get the prefix paths to locate this (native) Python installation in,
+        as a semicolon-separated string."""
+        pfxs = [
+            Path(sys.exec_prefix).as_posix(),
+            Path(sys.prefix).as_posix(),
+            Path(sys.base_exec_prefix).as_posix(),
+            Path(sys.base_prefix).as_posix(),
+        ]
+        return ";".join(pfxs)
+
     def get_native_python_abi_tuple(self):
         cmake_version = self.cmake_settings.minimum_required
         has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
@@ -138,17 +149,15 @@ class CMaker:
 
     def get_native_python_hints(self, prefix):
         """FindPython hints and artifacts for this (native) Python installation."""
-        yield Option(prefix + "_ROOT_DIR", Path(sys.prefix).as_posix())
+        yield Option(prefix + "_ROOT_DIR", self.get_native_python_prefixes())
         impl = self.get_native_python_implementation()
         if impl:
             yield Option(prefix + "_FIND_IMPLEMENTATIONS", impl)
-        if impl == "PyPy":
-            inc = sysconfig.get_path("platinclude")
-            if inc:
-                yield Option(prefix + "_INCLUDE_DIR", Path(inc).as_posix())
         return
         # FIND_ABI seems to confuse CMake
         yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
+        if impl == "PyPy":
+            yield Option(prefix + "_INCLUDE_DIR", sysconfig.get_path("platinclude"))
 
     def get_cross_python_hints(self, prefix):
         """FindPython hints and artifacts to set when cross-compiling."""
