@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
 from string import Template
+from typing import Generator
 
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
@@ -151,7 +152,8 @@ class CMaker:
         cmake_version = self.cmake_settings.minimum_required
         has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
         dmu = "dmut" if has_t_flag else "dmu"
-        return ";".join("ON" if c in sys.abiflags else "OFF" for c in dmu)
+        abiflags = getattr(sys, "abiflags", "")
+        return ";".join("ON" if c in abiflags else "OFF" for c in dmu)
 
     def get_native_python_implementation(self) -> str | None:
         return {
@@ -159,9 +161,36 @@ class CMaker:
             "pypy": "PyPy",
         }.get(sys.implementation.name)
 
-    def get_native_python_hints(self, prefix):
+    def get_native_python_hints(self, prefix: str) -> Generator[Option]:
         """FindPython hints and artifacts for this (native) Python installation."""
+        # Python_ROOT_DIR is the most important one, because it tells CMake to
+        # look in the given directories first. If the ROOT_DIR contains just
+        # one version of Python, CMake should locate it correctly. Note that
+        # we also set Python_FIND_STRATEGY=LOCATION to make sure that CMake
+        # does not select a newer version of Python it found elsewhere.
         yield Option(prefix + "_ROOT_DIR", self.get_native_python_prefixes())
+        # If there are multiple versions of Python installed in the same
+        # ROOT_DIR, then CMake could pick up the wrong version (it picks the
+        # latest version by default).
+        # To prevent this, the most robust solution is to request both the
+        # Interpreter and the Development components in the same call to
+        # find_package. Since we also set the Python_EXECUTABLE artifact, CMake
+        # should pick the correct version of the development files as well (it
+        # tries to match them to the given interpreter).
+        # If the user is searching for the Development components only, this
+        # won't work, though. We therefore set some of CMake's find_package
+        # version variables to guide CMake to the correct version. If the user
+        # includes version requirements in their find_package call, though, all
+        # bets are off ...
+        version_majmin = f"{sys.version_info.major}.{sys.version_info.minor}"
+        yield Option(prefix + "_FIND_VERSION_COUNT", "2")
+        yield Option(prefix + "_FIND_VERSION_EXACT", "TRUE")
+        yield Option(prefix + "_FIND_VERSION", version_majmin)
+        yield Option(prefix + "_FIND_VERSION_MAJOR", str(sys.version_info.major))
+        yield Option(prefix + "_FIND_VERSION_MINOR", str(sys.version_info.minor))
+        # Another hint to help CMake find the correct version of Python. Note
+        # that py-build-cmake only supports CPython and PyPy. If you're using
+        # an exotic Python implementation, you should set these hints manually.
         impl = self.get_native_python_implementation()
         if impl:
             yield Option(prefix + "_FIND_IMPLEMENTATIONS", impl)
@@ -170,7 +199,11 @@ class CMaker:
         # explicitly set the INCLUDE_DIR as well. However, searching for the
         # Development component without Interpreter leaves SOABI unset, so we
         # need to set it explicitly as well.
-        if impl == "PyPy":
+        # For CPython, CMake seems to be able to locate the headers without
+        # explicitly setting Python_INCLUDE_DIR, but it might find the wrong
+        # version if searched without the Interpreter component (see above),
+        # so we set the INCLUDE_DIR artifact as well.
+        if impl in ("CPython", "PyPy"):
             inc = sysconfig.get_path("platinclude")
             if inc:
                 yield Option(prefix + "_INCLUDE_DIR", Path(inc).as_posix())
@@ -183,11 +216,10 @@ class CMaker:
                 yield Option(prefix + "_SOSABI", "")
             else:
                 yield Option(prefix + "_SOSABI", "abi3")
-        return
-        # FIND_ABI seems to confuse CMake
-        yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
+        # TODO: FIND_ABI seems to confuse CMake
+        # yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
 
-    def get_cross_python_hints(self, prefix):
+    def get_cross_python_hints(self, prefix: str) -> Generator[Option]:
         """FindPython hints and artifacts to set when cross-compiling."""
         if self.conf_settings.python_prefix:
             pfx = self.conf_settings.python_prefix.as_posix()
