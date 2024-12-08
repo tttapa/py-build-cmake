@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import platform
 import re
 import sys
 import sysconfig
@@ -98,15 +99,16 @@ class CMaker:
         """Copy of the current environment with the variables defined in the
         user's configuration settings."""
         if self.environment is None:
+            pbc = "PY_BUILD_CMAKE"
             self.environment = os.environ.copy()
-            self.environment["PY_BUILD_CMAKE_VERSION"] = str(__version__)
-            self.environment["PY_BUILD_CMAKE_BINARY_DIR"] = str(
-                self.cmake_settings.build_path
-            )
+            self.environment[f"{pbc}_VERSION"] = str(__version__)
+            self.environment[f"{pbc}_PACKAGE_VERSION"] = self.package_info.version
+            self.environment[f"{pbc}_PACKAGE_NAME"] = self.package_info.norm_name
+            self.environment[f"{pbc}_MODULE_NAME"] = self.package_info.module_name
+            self.environment[f"{pbc}_BINARY_DIR"] = str(self.cmake_settings.build_path)
             if self.install_settings.prefix is not None:
-                self.environment["PY_BUILD_CMAKE_INSTALL_PREFIX"] = str(
-                    self.install_settings.prefix
-                )
+                install_prefix = str(self.install_settings.prefix)
+                self.environment[f"{pbc}_INSTALL_PREFIX"] = install_prefix
             if self.conf_settings.environment:
                 for k, v in self.conf_settings.environment.items():
                     templ = Template(v)
@@ -118,11 +120,20 @@ class CMaker:
 
     def get_configure_options_package(self) -> list[Option]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
+        executable = Path(sys.executable).as_posix()
+        version = sys.version_info
         return [
             Option("PY_BUILD_CMAKE_VERSION", str(__version__)),
             Option("PY_BUILD_CMAKE_PACKAGE_VERSION", self.package_info.version),
             Option("PY_BUILD_CMAKE_PACKAGE_NAME", self.package_info.norm_name),
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
+            Option("PY_BUILD_CMAKE_PYTHON_INTERPRETER", executable, "FILEPATH"),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION", platform.python_version()),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MAJOR", str(version.major)),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MINOR", str(version.minor)),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_PATCH", str(version.micro)),
+            Option("PY_BUILD_CMAKE_PYTHON_RELEASE_LEVEL", str(version.releaselevel)),
+            Option("PY_BUILD_CMAKE_PYTHON_ABIFLAGS", getattr(sys, "abiflags", "")),
         ]
 
     def get_native_python_prefixes(self) -> str:
