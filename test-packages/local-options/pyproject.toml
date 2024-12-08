@@ -1,6 +1,6 @@
 [project]
 name = "local_options"
-version = "0.3.3"
+version = "0.3.4.dev0"
 description = "Checks loading of local override files"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -12,7 +12,7 @@ urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 
 [build-system]
-requires = ["py-build-cmake~=0.3.3"]
+requires = ["py-build-cmake~=0.3.4.dev0"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.sdist]

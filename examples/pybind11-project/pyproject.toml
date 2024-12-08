@@ -32,7 +32,7 @@ test = ["pytest>=7.2.0,<7.5"]
 
 [build-system]
 requires = [
-    "py-build-cmake~=0.3.3",
+    "py-build-cmake~=0.3.4.dev0",
     "pybind11~=2.13.6",
     "pybind11-stubgen~=2.5.1",
 ]

@@ -1,6 +1,6 @@
 [project]
 name = "bare_c_module"
-version = "0.3.3"
+version = "0.3.4.dev0"
 description = "Single extension module, without any folders or __init__.py"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -26,7 +26,7 @@ urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 
 [build-system]
-requires = ["py-build-cmake~=0.3.3"]
+requires = ["py-build-cmake~=0.3.4.dev0"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]

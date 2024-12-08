@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
-project(pybind11-project VERSION 0.3.3)
-set(PY_VERSION_SUFFIX "")
+project(pybind11-project VERSION 0.3.4)
+set(PY_VERSION_SUFFIX ".dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 
 # Make sure that the Python and CMake versions match

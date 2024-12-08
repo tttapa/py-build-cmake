@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
-project(swig-project VERSION 0.3.3)
-set(PY_VERSION_SUFFIX "")
+project(swig-project VERSION 0.3.4)
+set(PY_VERSION_SUFFIX ".dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
 set(Py_LIMITED_API 0x03070000 CACHE STRING
     "CPython stable ABI version. Should match abi3_minimum_cpython_version")

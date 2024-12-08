@@ -1,6 +1,6 @@
 [project]
 name = "namespace-project-b" # Name on PyPI
-version = "0.3.3"
+version = "0.3.4.dev0"
 readme = "README.md"
 description = "Part B of a namespace package"
 requires-python = ">=3.7"
@@ -13,7 +13,7 @@ dependencies = []
 
 [build-system]
 requires = [
-    "py-build-cmake~=0.3.3",
+    "py-build-cmake~=0.3.4.dev0",
 ]
 build-backend = "py_build_cmake.build"
 
