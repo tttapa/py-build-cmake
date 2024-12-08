@@ -37,7 +37,7 @@ include = ["CMakeLists.txt", "src/*"]
 [tool.py-build-cmake.cmake]
 minimum_version = "3.17"
 build_type = "RelWithDebInfo"
-source_path = "src"
+source_path = "."
 build_args = ["-j"]
 install_components = ["python_modules"]
 

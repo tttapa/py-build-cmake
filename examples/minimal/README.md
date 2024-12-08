@@ -11,7 +11,7 @@ long add(long a, long b) {
 }
 ```
 ```py
-# This is how we call the addition function from Python
+# This is how to call the addition function from Python
 from minimal.add_module import add
 
 def test_add_positive():
@@ -22,7 +22,8 @@ def test_add_positive():
 > modules by hand.  
 > Instead, consider using a library such as [pybind11](https://github.com/pybind/pybind11)
 > or [nanobind](https://github.com/wjakob/nanobind) to generate Python bindings
-> for your C or C++ code.
+> for your C or C++ code. Examples using py-build-cmake with pybind11 or
+> nanobind can be found in [examples](../README.md).
 
 The remainder of this tutorial first goes over the directory structure of the
 package and the necessary files ([§ Package structure](#package-structure)),
@@ -40,8 +41,7 @@ More general information about Python packages can be found at https://packaging
 minimal
    ├── src
    │   ├── add_module.c
-   │   ├── _add_module.pyi
-   │   └── CMakeLists.txt
+   │   └── _add_module.pyi
    ├── src-python
    │   └── minimal
    │       ├── __init__.py
@@ -56,7 +56,7 @@ minimal
 ```
 
 `README.md`  
-This file. Will be included in the Python package as the long description and
+This file. It will be included in the Python package as the long description and
 will be shown on your PyPI project page.
 
 `pyproject.toml`  
@@ -70,26 +70,22 @@ process.
 The software license for your package. Is included in the Python package.
 
 `CMakeLists.txt`  
-The CMake script for developer builds (used by e.g. your IDE while you're
-developing your package).
+The main CMake script for the C, C++ and Fortran code. It defines how the
+Python extension module will be built and installed. This is the entry point to
+your project that's used by py-build-cmake (as defined in pyproject.toml).
 
 `src`  
-The folder containing all C, C++ and Fortran code, built using CMake.
-
-`src/CMakeLists.txt`  
-The main CMake script for the C, C++ and Fortran code. It defines how the
-Python extension module will be built and installed. This is the entry point
-used by py-build-cmake (as defined in pyproject.toml).
+The folder containing all C, C++ and Fortran code that will be built using CMake.
 
 `src/add_module.c`  
-The source file to be compiled. In practice, this can be much more involved,
-e.g. multiple directories, separate libraries, etc.
+The source file for the Python extension module to be compiled. In practice,
+you may have multiple directories with source code, separate libraries, etc.
 
 `src/_add_module.pyi`  
 Python stub file ([PEP 561](https://peps.python.org/pep-0561/)). Defines the
 types and signatures of the functions and classes in your C extension module.
 It is used by IDEs and other tools for type checking and autocompletion.
-This handwritten file is provided as a simple example, in a real project,
+This handwritten file is provided as a simple example: in a real project,
 consider using a tool to generate stubs automatically, as demonstrated in the
 [pybind11-project](../pybind11-project) and [nanobind-project](../nanobind-project)
 examples.
@@ -98,12 +94,12 @@ examples.
 Directory for the Python source files of your package.
 
 `src-python/minimal/__init__.py`  
-Makes this folder a Python package. Also contains the brief description and the
-version number that will be read by py-build-cmake and included in the package
-metadata.
+Marks this folder as a Python package. It also contains the brief description
+and the version number that will be read by py-build-cmake and included in the
+package metadata.
 
 `src-python/minimal/add_module.py`  
-Python module that just wraps the C extension module and imports all its
+Python module that simply wraps the C extension module and imports all its
 contents.
 
 `src-python/minimal/py.typed`  
@@ -111,8 +107,7 @@ Tells [mypy](https://github.com/python/mypy) to provide type checking for your
 package, and to look at the stub files.
 
 `tests/test_add_module.py`  
-Unit tests for testing the extension module using
-[pytest](https://github.com/pytest-dev/pytest).
+Unit tests for testing the extension module using [pytest](https://github.com/pytest-dev/pytest).
 
 ---
 
@@ -165,7 +160,7 @@ dynamic = ["version", "description"]
 ```
 
 The `project` section contains all metadata of the package. Its format is
-defined in [PEP 621](https://www.python.org/dev/peps/pep-0621/), see
+defined by [PEP 621](https://www.python.org/dev/peps/pep-0621/), see
 https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
 for the full documentation. This metadata will be displayed on PyPI when you
 publish your package.
@@ -179,7 +174,7 @@ the module docstring as the description, and the `__version__` variable for the
 version number). Have a look at [\_\_init\_\_.py](src-python/minimal/__init__.py)
 for an example.
 
-If your package has runtime dependencies, you can specify them here as well.
+If your package has any runtime dependencies, you can specify them here as well.
 When a user installs your package, e.g. using `pip install`, `pip` will install
 these dependencies as well.  
 It is recommended to add version ranges for your dependencies, see [PEP 631](https://peps.python.org/pep-0631)
@@ -192,7 +187,7 @@ directory = "src-python"
 This is the first py-build-cmake specific section: `module` defines the path
 where it should look for your Python package. You can also include the `name`
 option when your module or package name is different from the name of your
-project on PyPI.
+project on PyPI (which is determined by `[project].name`).
 
 ```toml
 [tool.py-build-cmake.sdist]
@@ -202,16 +197,15 @@ The `sdist` section declares which files should be included for a source
 distribution. You should include everything needed to build your package, so
 including the C and CMake files. The README.md and LICENSE files mentioned in
 the metadata are included automatically, and so is the entire Python package
-directory.  
+directory `src-python/minimal`.  
 You can use the `exclude` option to exclude specific files. Referenced
-directories are always included/excluded recursively. The `'**'` glob pattern is
-not supported.
+directories are always included/excluded recursively.
 
 ```toml
 [tool.py-build-cmake.cmake]
 minimum_version = "3.17"
 build_type = "RelWithDebInfo"
-source_path = "src"
+source_path = "."
 build_args = ["-j"]
 install_components = ["python_modules"]
 ```
@@ -220,12 +214,12 @@ project. The most important option is the `source_path`, the folder containing
 your main CMakeLists.txt file. The `-j` flag enables parallel builds, and the
 `install_components` option defines which CMake components to install into the
 Wheel package. In this example, the `python_modules` component is defined in
-[src/CMakeLists.txt](src/CMakeLists.txt).  
-The `minimum_version` option defines which version of CMake is required to build
-this project. If this version (or newer) is not found in the system PATH, it is
-automatically added as a build requirement and installed by the build frontend
-(e.g. pip) before building.  
-There are many other options, take a moment to look at the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
+[CMakeLists.txt](CMakeLists.txt).  
+The `minimum_version` option specifies which version of CMake is required to
+build this project. If this version (or newer) is not found in the system PATH,
+it is automatically added as a build requirement and installed by the build
+frontend (e.g. pip) before building.  
+There are many other options: take a moment to look at the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
 for an overview and more detailed explanations.
 
 ```toml
@@ -233,7 +227,7 @@ for an overview and more detailed explanations.
 ```
 This section enables stub file generation for Python source files using mypy's
 [`stubgen`](https://mypy.readthedocs.io/en/stable/stubgen.html) tool. Refer to
-the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
+the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#stubgen)
 for information about the optional options in this section.
 
 ```toml
@@ -248,9 +242,9 @@ details.
 
 ## Building and installing
 
-### Building sdists and wheels
+### Building sdists and Wheels
 
-To distribute or publish your project, you'll need to package source and binary
+To distribute or publish your project, you'll need to create source and binary
 distributions. The easiest way to do this is using
 [PyPA build](https://github.com/pypa/build).
 
@@ -263,17 +257,21 @@ pyproject.toml file), and start the build:
 ```sh
 python -m build .
 ```
-This will first package the source distribution, and then use it to build a
-binary wheel package for your platform. While building the wheel, py-build-cmake
+This will first package the source distribution, which is then used to build a
+binary Wheel package for your platform. While building the Wheel, py-build-cmake
 will invoke CMake to build your extension modules, and include them in the
-wheel.  
+Wheel.  
 The resulting packages can be found in the `dist` folder.
 
-You could upload these packages to PyPI, as explained in
+You could now upload these packages to PyPI, as explained in
 https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives.
+For a real-world project, it is recommended to use trusted publishing as part of
+a CI workflow, which is more secure and less error prone than manually
+uploading the files. This is not covered by this tutorial, but you can find
+more details in the [FAQ](https://tttapa.github.io/py-build-cmake/FAQ.html#how-to-upload-my-package-to-pypi).
 
-On Linux, you might want to use [auditwheel](https://github.com/pypa/auditwheel)
-to make your package compatible with a larger range of systems.
+On Linux, you'll want to use [auditwheel](https://github.com/pypa/auditwheel)
+to make sure that your package is compatible with a larger range of systems.
 
 ### Installing the package locally
 
@@ -308,7 +306,7 @@ or enable the [`editable.build_hook`](https://tttapa.github.io/py-build-cmake/Co
 setting to automatically re-run `cmake --build` when your package is first
 imported:
 ```sh
-pip install -ve . -C override=editable.build_hook=true
+pip install -ve . --no-build-isolation -C override=editable.build_hook=true
 ```
 
 ### Running the tests

@@ -6,6 +6,5 @@ minimal-{{version}}/pyproject.toml
 minimal-{{version}}/src-python/minimal/__init__.py
 minimal-{{version}}/src-python/minimal/add_module.py
 minimal-{{version}}/src-python/minimal/py.typed
-minimal-{{version}}/src/CMakeLists.txt
 minimal-{{version}}/src/_add_module.pyi
 minimal-{{version}}/src/add_module.c
