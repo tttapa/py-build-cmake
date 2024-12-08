@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
-project(minimal-program-dev)
+project(minimal-program)
 
-# You can add development-specific options here, such as warnings, tests,
-# coverage, etc.
+# Add the executable to compile
+add_executable(minimal_program "src/minimal_program.cpp")
 
-add_subdirectory(src)
+# Install the executable
+install(TARGETS minimal_program
+        EXCLUDE_FROM_ALL
+        COMPONENT python_binaries
+        RUNTIME DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME}-${PY_BUILD_CMAKE_PACKAGE_VERSION}.data/scripts
+        LIBRARY DESTINATION ${PY_BUILD_CMAKE_PACKAGE_NAME}-${PY_BUILD_CMAKE_PACKAGE_VERSION}.data/platlib)

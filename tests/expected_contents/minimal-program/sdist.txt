@@ -4,5 +4,4 @@ minimal_program-{{version}}/PKG-INFO
 minimal_program-{{version}}/README.md
 minimal_program-{{version}}/pyproject.toml
 minimal_program-{{version}}/src-python/minimal_program_module/__init__.py
-minimal_program-{{version}}/src/CMakeLists.txt
 minimal_program-{{version}}/src/minimal_program.cpp
