@@ -151,6 +151,7 @@ class MultiConfigOption(ConfigOption):
     def _verify(self, values: ValueReference):
         if values.values is None:
             return
+        assert self.default_index not in values.values
         unknown_keys = set(values.values) - set(self.sub_options)
         msg = ""
         for k in sorted(unknown_keys):
