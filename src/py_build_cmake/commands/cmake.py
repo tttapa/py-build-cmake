@@ -168,6 +168,7 @@ class CMaker:
         # one version of Python, CMake should locate it correctly. Note that
         # we also set Python_FIND_STRATEGY=LOCATION to make sure that CMake
         # does not select a newer version of Python it found elsewhere.
+        yield Option(prefix + "_ROOT", self.get_native_python_prefixes())
         yield Option(prefix + "_ROOT_DIR", self.get_native_python_prefixes())
         # If there are multiple versions of Python installed in the same
         # ROOT_DIR, then CMake could pick up the wrong version (it picks the
