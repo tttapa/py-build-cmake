@@ -27,8 +27,8 @@ Specifies the files that should be included in the source distribution for this 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `include` | Files and folders to include in the source distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
-| `exclude` | Files and folders to exclude from the source distribution. May include the &#x27;\*&#x27; wildcard (but not &#x27;\*\*&#x27; for recursive patterns). | list | `[]` |
+| `include` | Files and folders to include in the source distribution. May include the &#x27;\*&#x27; wildcard or &#x27;\*\*&#x27; for recursive patterns. | list | `[]` |
+| `exclude` | Files and folders to exclude from the source distribution. May include the &#x27;\*&#x27; wildcard or &#x27;\*\*&#x27; for recursive patterns. | list | `[]` |
 
 ## cmake
 Defines how to build the project to package. If omitted, py-build-cmake will produce a pure Python package. 
