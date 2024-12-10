@@ -118,12 +118,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         DirPatternsConfigOption("include",
                                 "Files and folders to include in the source "
                                 "distribution. May include the '*' wildcard "
-                                "(but not '**' for recursive patterns).",
+                                "or '**' for recursive patterns.",
                                 default=DefaultValueValue([])),
         DirPatternsConfigOption("exclude",
                                 "Files and folders to exclude from the source "
                                 "distribution. May include the '*' wildcard "
-                                "(but not '**' for recursive patterns).",
+                                "or '**' for recursive patterns.",
                                 default=DefaultValueValue([])),
     ])  # fmt: skip
 
