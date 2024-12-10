@@ -5,8 +5,8 @@ a modern, [PEP 517](https://www.python.org/dev/peps/pep-0517/) compliant build
 backend for creating Python packages with extensions built using CMake.
 
 - [Installation](Installation.md)
-- [Configuration options](Config.md)
 - [Package structure](Package-structure.md)
+- [Configuration options](Config.md)
 - [Editable Install / Development Mode](Editable-install.md)
 - [Command-line interface](CLI.md)
 - [Debugging](Debug.md)
