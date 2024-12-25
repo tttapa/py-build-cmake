@@ -167,7 +167,8 @@ class CMaker:
         # look in the given directories first. If the ROOT_DIR contains just
         # one version of Python, CMake should locate it correctly. Note that
         # we also set Python_FIND_STRATEGY=LOCATION to make sure that CMake
-        # does not select a newer version of Python it found elsewhere.
+        # does not select a newer version of Python it found elsewhere. See also
+        # https://discourse.cmake.org/t/how-to-force-findpython-to-locate-a-specific-version-of-python-without-specifying-every-last-artifact/13165/5
         yield Option(prefix + "_ROOT", self.get_native_python_prefixes())
         yield Option(prefix + "_ROOT_DIR", self.get_native_python_prefixes())
         # If there are multiple versions of Python installed in the same
