@@ -11,15 +11,15 @@ Python3_add_library(_add_module MODULE "add_module.c" WITH_SOABI)
 install(TARGETS _add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME})
 
 # Install stubs to get autocomplete and type hints
 install(FILES _add_module.pyi
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME})
 
 # Strip and install debug information
 include(Debug.cmake)
 minimal_install_debug_syms(_add_module python_modules_debug
-    ${PY_BUILD_CMAKE_MODULE_NAME} ${PY_BUILD_CMAKE_MODULE_NAME})
+    ${PY_BUILD_CMAKE_IMPORT_NAME} ${PY_BUILD_CMAKE_IMPORT_NAME})

@@ -243,7 +243,7 @@ it in the Python package. To do so, add the following to `CMakeLists.txt`:
 install(FILES $<TARGET_PDB_FILE:_add_module>
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME}
+        DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME}
         OPTIONAL)
 ```
 This will install the PDB file in the same folder as the extension module.

@@ -18,6 +18,6 @@ add_custom_target(init ALL DEPENDS "__init__.py")
 
 # Install the module
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/__init__.py"
-    DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME}
+    DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME}
     COMPONENT python_modules
     EXCLUDE_FROM_ALL)

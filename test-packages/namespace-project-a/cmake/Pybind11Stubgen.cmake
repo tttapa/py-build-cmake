@@ -2,7 +2,7 @@ function(pybind11_stubgen target)
 
     cmake_parse_arguments(STUBGEN "" "PACKAGE;DESTINATION;COMPONENT" "" ${ARGN})
     if (NOT DEFINED STUBGEN_PACKAGE)
-        set(STUBGEN_PACKAGE ${PY_BUILD_CMAKE_MODULE_NAME})
+        set(STUBGEN_PACKAGE ${PY_BUILD_CMAKE_IMPORT_NAME})
     endif()
     if (NOT DEFINED STUBGEN_DESTINATION)
         set(STUBGEN_DESTINATION "")

@@ -103,8 +103,11 @@ class CMaker:
             pbc = "PY_BUILD_CMAKE"
             self.environment = os.environ.copy()
             self.environment[f"{pbc}_VERSION"] = str(__version__)
+            self.environment[f"{pbc}_PROJECT_VERSION"] = self.package_info.version
             self.environment[f"{pbc}_PACKAGE_VERSION"] = self.package_info.version
+            self.environment[f"{pbc}_PROJECT_NAME"] = self.package_info.norm_name
             self.environment[f"{pbc}_PACKAGE_NAME"] = self.package_info.norm_name
+            self.environment[f"{pbc}_IMPORT_NAME"] = self.package_info.module_name
             self.environment[f"{pbc}_MODULE_NAME"] = self.package_info.module_name
             self.environment[f"{pbc}_BINARY_DIR"] = str(self.cmake_settings.build_path)
             if self.install_settings.prefix is not None:
@@ -125,8 +128,11 @@ class CMaker:
         version = sys.version_info
         return [
             Option("PY_BUILD_CMAKE_VERSION", str(__version__)),
+            Option("PY_BUILD_CMAKE_PROJECT_VERSION", self.package_info.version),
             Option("PY_BUILD_CMAKE_PACKAGE_VERSION", self.package_info.version),
+            Option("PY_BUILD_CMAKE_PROJECT_NAME", self.package_info.norm_name),
             Option("PY_BUILD_CMAKE_PACKAGE_NAME", self.package_info.norm_name),
+            Option("PY_BUILD_CMAKE_IMPORT_NAME", self.package_info.module_name),
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
             Option("PY_BUILD_CMAKE_PYTHON_INTERPRETER", executable, "FILEPATH"),
             Option("PY_BUILD_CMAKE_PYTHON_VERSION", platform.python_version()),

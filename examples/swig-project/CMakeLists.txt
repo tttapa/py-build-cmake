@@ -6,10 +6,10 @@ set(Py_LIMITED_API 0x03070000 CACHE STRING
     "CPython stable ABI version. Should match abi3_minimum_cpython_version")
 
 # Make sure that the Python and CMake versions match
-if (DEFINED PY_BUILD_CMAKE_PACKAGE_VERSION)
-    if (NOT "${PY_BUILD_CMAKE_PACKAGE_VERSION}" MATCHES "^${PY_FULL_VERSION}$")
+if (DEFINED PY_BUILD_CMAKE_PROJECT_VERSION)
+    if (NOT "${PY_BUILD_CMAKE_PROJECT_VERSION}" MATCHES "^${PY_FULL_VERSION}$")
         message(FATAL_ERROR "Version number does not match "
-                             "(${PY_BUILD_CMAKE_PACKAGE_VERSION} - ${PY_FULL_VERSION}).")
+                             "(${PY_BUILD_CMAKE_PROJECT_VERSION} - ${PY_FULL_VERSION}).")
     endif()
 endif()
 
@@ -80,8 +80,8 @@ endif()
 install(TARGETS add_module
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME})
 install(FILES $<TARGET_PROPERTY:add_module,SWIG_SUPPORT_FILES>
         EXCLUDE_FROM_ALL
         COMPONENT python_modules
-        DESTINATION ${PY_BUILD_CMAKE_MODULE_NAME})
+        DESTINATION ${PY_BUILD_CMAKE_IMPORT_NAME})
