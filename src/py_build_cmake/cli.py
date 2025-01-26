@@ -5,6 +5,7 @@ from pathlib import Path, PurePosixPath
 import click
 
 from . import __version__
+from .common.platform import determine_build_platform_info
 
 
 def cmake_command(directory, build_path, verbose, dry, cross, local, override):
@@ -19,9 +20,10 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
             "--override": list(override),
         }
         # Read configuration and package metadata
+        plat = determine_build_platform_info()
         cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
         pkg_info = backend.get_pkg_info(cfg, module)
-        cmake_cfgs = backend.get_cmake_config(cfg)
+        cmake_cfgs = backend.get_cmake_config(plat, cfg)
         if not cmake_cfgs:
             msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing)."
             raise ValueError(msg)
@@ -33,12 +35,13 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
             raise ValueError(msg) from e
 
         # Set up all paths
-        build_cfg_name = backend.get_build_config_name(cfg, index)
+        build_cfg_name = backend.get_build_config_name(plat, cfg, index)
         path = build_path or cmake_cfg["build_path"]
         build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 
         # CMake builder
         return backend.get_cmaker(
+            plat,
             src_dir,
             build_dir,
             None,

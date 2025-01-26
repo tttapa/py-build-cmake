@@ -5,7 +5,6 @@ import logging
 import os
 import platform
 import shutil
-import sysconfig
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -30,7 +29,11 @@ from .common import (
     ProblemInModule,
     format_and_rethrow_exception,
     logformat,
-    util,
+)
+from .common.platform import (
+    BuildPlatformInfo,
+    determine_build_platform_info,
+    get_os_name,
 )
 from .config import load as config_load
 from .config.dynamic import find_module, update_dynamic_metadata
@@ -38,7 +41,6 @@ from .export import editable as export_editable
 from .export import metadata as export_metadata
 from .export import util as export_util
 from .export.editable.build_hook import write_build_hook
-from .export.native_tags import get_interpreter_name
 from .export.sdist import SdistBuilder
 from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is_pure
 from .export.wheel import WheelBuilder
@@ -51,6 +53,7 @@ class _BuildBackend:
 
     def __init__(self) -> None:
         self.runner: CommandRunner = CommandRunner()
+        self.plat: BuildPlatformInfo = determine_build_platform_info()
 
     @property
     def verbose(self):
@@ -65,7 +68,9 @@ class _BuildBackend:
 
             src_dir = Path().resolve()
             cfg = self.read_config(src_dir, config_settings, self.verbose)
-            return self.get_requires_build_project(config_settings, cfg, self.runner)
+            return self.get_requires_build_project(
+                self.plat, config_settings, cfg, self.runner
+            )
         except Exception as e:
             format_and_rethrow_exception(e)
 
@@ -177,12 +182,15 @@ class _BuildBackend:
 
     @staticmethod
     def get_requires_build_project(
-        config_settings: dict | None, cfg: Config, runner: CommandRunner
+        plat: BuildPlatformInfo,
+        config_settings: dict | None,
+        cfg: Config,
+        runner: CommandRunner,
     ):
         deps: list[str] = []
         # Check if we need CMake
         if cfg.cmake:
-            check_cmake_program(cfg, deps, runner)
+            check_cmake_program(plat, cfg, deps, runner)
         if cfg.stubgen:
             check_stubgen_program(deps, runner)
         if runner.verbose:
@@ -201,16 +209,18 @@ class _BuildBackend:
         src_dir = Path().resolve()
         cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
         pkg_info = self.get_pkg_info(cfg, module)
-        cmake_cfg = self.get_cmake_config(cfg)
+        cmake_cfg = self.get_cmake_config(self.plat, cfg)
 
         # Set up all paths
-        paths = self.get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg)
+        paths = self.get_default_paths(
+            self.plat, wheel_dir, tmp_build_dir, src_dir, cfg
+        )
 
         # Copy the module's Python source files to the temporary folder
         if not editable:
             export_util.copy_pkg_source_to(paths.staging_dir, module)
         else:
-            paths = export_editable.do_editable_install(cfg, paths, module)
+            paths = export_editable.do_editable_install(self.plat, cfg, paths, module)
 
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
@@ -224,11 +234,12 @@ class _BuildBackend:
 
         # Configure, build and install the CMake project
         for idx, cmkcfg in cmake_cfg.items():
-            build_cfg_name = _BuildBackend.get_build_config_name(cfg, idx)
+            build_cfg_name = self.get_build_config_name(self.plat, cfg, idx)
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
             build_dir = Path(path)
             cmaker = self.get_cmaker(
+                self.plat,
                 paths.source_dir,
                 build_dir,
                 paths.staging_dir,
@@ -242,14 +253,16 @@ class _BuildBackend:
             cmaker.install()
 
             if editable:
-                write_build_hook(cfg, paths.pkg_staging_dir, module, cmaker, idx)
+                write_build_hook(
+                    self.plat, cfg, paths.pkg_staging_dir, module, cmaker, idx
+                )
 
         # Generate .pyi stubs (for the Python files only)
         if cfg.stubgen is not None and not editable:
             self.generate_stubs(paths, module, cfg.stubgen)
 
         # Create wheel
-        return self.create_wheel(paths, cfg, cmake_cfg, pkg_info)
+        return self.create_wheel(self.plat, paths, cfg, cmake_cfg, pkg_info)
 
     @staticmethod
     def get_pkg_info(cfg: Config | ComponentConfig, module: Module | None):
@@ -260,8 +273,10 @@ class _BuildBackend:
         )
 
     @staticmethod
-    def get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg):
-        build_cfg_name = _BuildBackend.get_build_config_name(cfg, 0)
+    def get_default_paths(
+        plat: BuildPlatformInfo, wheel_dir, tmp_build_dir, src_dir, cfg
+    ):
+        build_cfg_name = _BuildBackend.get_build_config_name(plat, cfg, 0)
         build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
         return BuildPaths(
             source_dir=src_dir,
@@ -320,13 +335,17 @@ class _BuildBackend:
 
     @staticmethod
     def create_wheel(
-        paths: BuildPaths, cfg: Config, cmake_cfg, package_info: PackageInfo
+        plat: BuildPlatformInfo,
+        paths: BuildPaths,
+        cfg: Config,
+        cmake_cfg,
+        package_info: PackageInfo,
     ):
         """Create a wheel package from the build directory."""
         whl = WheelBuilder()
         whl.name = package_info.norm_name
         whl.version = package_info.version
-        wheel_cfg = _BuildBackend.get_wheel_config(cfg)
+        wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
         pure = is_pure(wheel_cfg, cmake_cfg)
         tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
         libdir = "purelib" if pure else "platlib"
@@ -358,11 +377,11 @@ class _BuildBackend:
         return tags
 
     @staticmethod
-    def get_cmake_config(cfg: Config) -> dict[int, Any]:
+    def get_cmake_config(plat: BuildPlatformInfo, cfg: Config) -> dict[int, Any]:
         if not cfg.cmake:
             return {}
         if cfg.cross is None:
-            cmake_cfg = cfg.cmake.get(util.get_os_name())
+            cmake_cfg = cfg.cmake.get(get_os_name(plat))
         else:
             cmake_cfg = cfg.cmake.get("cross")
         if not cmake_cfg:
@@ -371,9 +390,9 @@ class _BuildBackend:
         return {int(key): value for key, value in sort_cfg}
 
     @staticmethod
-    def get_wheel_config(cfg: Config):
+    def get_wheel_config(plat: BuildPlatformInfo, cfg: Config):
         if cfg.cross is None:
-            return cfg.wheel[util.get_os_name()]
+            return cfg.wheel[get_os_name(plat)]
         else:
             return cfg.wheel["cross"]
 
@@ -388,7 +407,7 @@ class _BuildBackend:
 
         # Export dist
         extra_files = [pyproject, *cfg.referenced_files]
-        sdist_cfg = cfg.sdist["cross" if cfg.cross else util.get_os_name()]
+        sdist_cfg = cfg.sdist["cross" if cfg.cross else get_os_name(self.plat)]
         sdist_builder = SdistBuilder(
             module,
             pkg_info,
@@ -405,6 +424,7 @@ class _BuildBackend:
 
     @staticmethod
     def get_cmaker(
+        plat: BuildPlatformInfo,
         source_dir: Path,
         build_dir: Path,
         install_dir: Path | None,
@@ -428,12 +448,12 @@ class _BuildBackend:
 
             def python_tag_to_cmake(x: str | None):
                 if x is None:  # If not set, use native interpreter
-                    x = get_interpreter_name()
+                    x = plat.implementation
                 return {
-                    "cp": "Python",
-                    "pp": "PyPy",
-                    "ip": "IronPython",
-                    "jy": "Jython",
+                    "cpython": "Python",
+                    "pypy": "PyPy",
+                    "ironpython": "IronPython",
+                    "jython": "Jython",
                 }.get(x)
 
             cross_opts = {
@@ -447,8 +467,7 @@ class _BuildBackend:
             }
         else:
             cross_compiling = False
-            plat = sysconfig.get_platform()
-            cmake_plat = util.python_sysconfig_platform_to_cmake_platform_win(plat)
+            cmake_plat = plat.cmake_generator_platform
             cross_opts = {
                 "toolchain_file": None,
                 "python_prefix": None,
@@ -476,11 +495,12 @@ class _BuildBackend:
 
         # CMake options
         return CMaker(
+            plat=plat,
             cmake_settings=CMakeSettings(
                 working_dir=source_dir,
                 source_path=Path(cmake_cfg["source_path"]),
                 build_path=build_dir,
-                os=util.get_os_name(),
+                os=get_os_name(plat),
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
                 minimum_required=cmake_cfg["minimum_version"],
@@ -615,11 +635,11 @@ class _BuildBackend:
     # --- Misc helper functions -----------------------------------------------
 
     @staticmethod
-    def get_build_config_name(cfg: Config, index: int):
+    def get_build_config_name(plat: BuildPlatformInfo, cfg: Config, index: int):
         """Get a string representing the Python version, ABI and architecture,
         used to name the build folder so builds for different versions don't
         interfere."""
-        wheel_cfg = _BuildBackend.get_wheel_config(cfg)
+        wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
         pure = is_pure(wheel_cfg, cfg.cmake)
         tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
         name = "-".join(".".join(x) for x in tags.values())

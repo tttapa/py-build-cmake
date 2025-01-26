@@ -1,29 +1,7 @@
 from __future__ import annotations
 
-import platform
 import re
-import sys
-from typing import Sequence, cast
-
-if sys.version_info < (3, 8):
-    OSIdentifier = str
-else:
-    from typing import Literal
-
-    OSIdentifier = Literal["linux", "windows", "mac"]
-
-
-def get_os_name() -> OSIdentifier:
-    """Get the name of the current platform."""
-    osname = {
-        "Linux": "linux",
-        "Windows": "windows",
-        "Darwin": "mac",
-    }.get(platform.system())
-    if not osname:
-        msg = "Unsupported platform"
-        raise ValueError(msg)
-    return cast(OSIdentifier, osname)
+from typing import Sequence
 
 
 def normalize_name_wheel_pep_427(name: str) -> str:
@@ -79,3 +57,12 @@ def archflags_to_platform_tag(archflags: Sequence[str]) -> str | None:
         ("x86_64",): "x86_64",
         ("arm64",): "arm64",
     }.get(tuple(sorted(archflags)))
+
+
+def platform_tag_to_archflags(plat: str) -> tuple[str, ...] | None:
+    """Inverse of archflags_to_platform_tag"""
+    return {
+        "universal2": ("arm64", "x86_64"),
+        "x86_64": ("x86_64",),
+        "arm64": ("arm64",),
+    }.get(plat)

@@ -11,6 +11,7 @@ from .common import (
     PackageInfo,
     format_and_rethrow_exception,
 )
+from .common.platform import BuildPlatformInfo, determine_build_platform_info
 from .config import load as config_load
 from .export import metadata as export_metadata
 
@@ -22,6 +23,7 @@ class _BuildComponentBackend:
 
     def __init__(self) -> None:
         self.runner: CommandRunner = CommandRunner()
+        self.plat: BuildPlatformInfo = determine_build_platform_info()
 
     @property
     def verbose(self):
@@ -41,7 +43,7 @@ class _BuildComponentBackend:
             src_dir = comp_cfg.main_project.resolve()
             cfg = std_backend.read_config(src_dir, config_settings, self.verbose)
             return std_backend.get_requires_build_project(
-                config_settings, cfg, self.runner
+                self.plat, config_settings, cfg, self.runner
             )
         except Exception as e:
             format_and_rethrow_exception(e, component=True)
@@ -118,10 +120,12 @@ class _BuildComponentBackend:
             src_dir, config_settings, self.verbose
         )
         pkg_info = std_backend.get_pkg_info(comp_cfg, module)
-        cmake_cfg = std_backend.get_cmake_config(cfg)
+        cmake_cfg = std_backend.get_cmake_config(self.plat, cfg)
 
         # Set up all paths
-        paths = std_backend.get_default_paths(wheel_dir, tmp_build_dir, src_dir, cfg)
+        paths = std_backend.get_default_paths(
+            self.plat, wheel_dir, tmp_build_dir, src_dir, cfg
+        )
 
         # Create dist-info folder
         distinfo_dir = f"{pkg_info.norm_name}-{pkg_info.version}.dist-info"
@@ -143,11 +147,12 @@ class _BuildComponentBackend:
                 msg += "project."
                 raise ConfigError(msg)
             cmkcfg = cmake_cfg[k]
-            build_cfg_name = std_backend.get_build_config_name(cfg, k)
+            build_cfg_name = std_backend.get_build_config_name(self.plat, cfg, k)
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
             build_dir = Path(path)
             cmaker = self.get_cmaker(
+                self.plat,
                 paths.source_dir,
                 build_dir,
                 paths.staging_dir,
@@ -162,12 +167,13 @@ class _BuildComponentBackend:
             cmaker.install()
 
         # Create wheel
-        return std_backend.create_wheel(paths, cfg, cmake_cfg, pkg_info)
+        return std_backend.create_wheel(self.plat, paths, cfg, cmake_cfg, pkg_info)
 
     # --- CMake builds --------------------------------------------------------
 
     @staticmethod
     def get_cmaker(
+        plat: BuildPlatformInfo,
         source_dir: Path,
         build_dir: Path,
         install_dir: Path | None,
@@ -178,6 +184,7 @@ class _BuildComponentBackend:
         **kwargs,
     ):
         cmaker = std_backend.get_cmaker(
+            plat=plat,
             source_dir=source_dir,
             build_dir=build_dir,
             install_dir=install_dir,

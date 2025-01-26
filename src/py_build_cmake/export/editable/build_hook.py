@@ -6,16 +6,21 @@ from pathlib import Path
 
 from ...commands.cmake import CMaker
 from ...common import Config, Module
-from ...common.util import get_os_name
+from ...common.platform import BuildPlatformInfo, get_os_name
 
 logger = logging.getLogger(__name__)
 
 
 def write_build_hook(
-    cfg: Config, staging_dir: Path, module: Module, cmaker: CMaker, idx: int
+    plat: BuildPlatformInfo,
+    cfg: Config,
+    staging_dir: Path,
+    module: Module,
+    cmaker: CMaker,
+    idx: int,
 ):
     """Write a hook that re-compiles extension modules."""
-    edit_cfg = cfg.editable["cross" if cfg.cross else get_os_name()]
+    edit_cfg = cfg.editable["cross" if cfg.cross else get_os_name(plat)]
     if not edit_cfg.get("build_hook"):
         return
     if edit_cfg.get("mode") != "symlink":
