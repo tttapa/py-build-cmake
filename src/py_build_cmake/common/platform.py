@@ -8,8 +8,11 @@ import sys
 import sysconfig
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping, cast
+from typing import Dict, List, Mapping, cast
 
+import packaging.tags
+
+from ..export.native_tags import get_abi_tag, get_python_tag
 from .util import (
     archflags_to_platform_tag,
     platform_tag_to_archflags,
@@ -17,14 +20,16 @@ from .util import (
     python_sysconfig_platform_to_cmake_platform_win,
 )
 
+logger = logging.getLogger(__name__)
+
 if sys.version_info < (3, 8):
     OSIdentifier = str
+    WheelTags = Dict[str, List[str]]
 else:
     from typing import Literal
 
     OSIdentifier = Literal["linux", "windows", "mac"]
-
-logger = logging.getLogger(__name__)
+    WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
 def _get_python_prefixes():
@@ -36,6 +41,16 @@ def _get_python_prefixes():
     }
 
 
+def _get_specific_platform():
+    """Get the most specific platform for the current interpreter from
+    packaging.tags. On Linux, this will include the glibc version, which is not
+    the case for sysconfig.platform()."""
+    try:
+        return next(packaging.tags.sys_tags()).platform
+    except StopIteration:
+        platform_to_platform_tag(sysconfig.get_platform())
+
+
 @dataclass
 class BuildPlatformInfo:
     executable: Path = field(default_factory=lambda: Path(sys.executable))
@@ -45,6 +60,9 @@ class BuildPlatformInfo:
     python_abiflags: str = field(default_factory=lambda: getattr(sys, "abiflags", ""))
     python_prefixes: dict[str, Path] = field(default_factory=_get_python_prefixes)
     sysconfig_platform: str = field(default_factory=sysconfig.get_platform)
+    specific_platform: str = field(default_factory=_get_specific_platform)
+    python_tag: str = field(default_factory=get_python_tag)
+    abi_tag: str = field(default_factory=get_abi_tag)
     system: str = field(default_factory=platform.system)
     machine: str = field(default_factory=platform.machine)
     archs: tuple[str, ...] | None = None
@@ -75,6 +93,14 @@ class BuildPlatformInfo:
             return self._platform_tag_windows()
         else:
             return platform_to_platform_tag(self.sysconfig_platform)
+
+    def get_native_tags(self, guess=False) -> WheelTags:
+        """Get the PEP 425 tags for the current platform."""
+        return {
+            "pyver": [self.python_tag],
+            "abi": [self.abi_tag],
+            "arch": [self.specific_platform if guess else self.platform_tag],
+        }
 
     def _platform_tag_linux(self):
         return platform_to_platform_tag(self.sysconfig_platform)
@@ -185,10 +211,14 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None):
         r.cmake_generator_platform = python_sysconfig_platform_to_cmake_platform_win(
             r.sysconfig_platform
         )
+        if not r.cmake_generator_platform:
+            msg = "Unknown platform %s. Not setting CMake generator platform."
+            logger.warning(msg, r.sysconfig_platform)
 
     # For macOS, we need to change the platform tag etc. based on the values of
     # MACOSX_DEPLOYMENT_TARGET and ARCHFLAGS.
     elif r.system == "Darwin":
         r.macos_version, r.archs = _determine_macos_version_archs(env)
+        r.specific_platform = r._platform_tag_macos()
 
     return r

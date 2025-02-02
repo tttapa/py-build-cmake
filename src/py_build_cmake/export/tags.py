@@ -4,12 +4,12 @@ import re
 from copy import copy
 from typing import Any
 
-from .native_tags import WheelTags, get_native_tags
+from ..common.platform import BuildPlatformInfo, WheelTags
 
 
-def get_cross_tags(crosscfg: dict[str, Any]) -> WheelTags:
+def get_cross_tags(plat: BuildPlatformInfo, crosscfg: dict[str, Any]) -> WheelTags:
     """Get the PEP 425 tags to use when cross-compiling."""
-    tags = get_native_tags()
+    tags = plat.get_native_tags(guess=False)
     if "implementation" in crosscfg and "version" in crosscfg:
         tags["pyver"] = [crosscfg["implementation"] + crosscfg["version"]]
     if "abi" in crosscfg:
@@ -51,7 +51,7 @@ def convert_pyver_tag(pyver_tag: str, wheel_cfg: dict) -> str:
     return pyver_tag
 
 
-def convert_wheel_tags(tags: dict[str, list[str]], wheel_cfg: dict) -> WheelTags:
+def convert_wheel_tags(tags: WheelTags, wheel_cfg: dict) -> WheelTags:
     """Apply convert_abi_tag to each of the abi tags and override any tags
     that were specified in the config file."""
     tags = copy(tags)

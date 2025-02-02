@@ -31,6 +31,7 @@ from .common import (
 )
 from .common.platform import (
     BuildPlatformInfo,
+    WheelTags,
     determine_build_platform_info,
 )
 from .config import load as config_load
@@ -40,7 +41,7 @@ from .export import metadata as export_metadata
 from .export import util as export_util
 from .export.editable.build_hook import write_build_hook
 from .export.sdist import SdistBuilder
-from .export.tags import convert_wheel_tags, get_cross_tags, get_native_tags, is_pure
+from .export.tags import convert_wheel_tags, get_cross_tags, is_pure
 from .export.wheel import WheelBuilder
 
 logger = logging.getLogger(__name__)
@@ -351,7 +352,7 @@ class _BuildBackend:
         whl.version = package_info.version
         wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
         pure = is_pure(wheel_cfg, cmake_cfg)
-        tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
+        tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cfg.cross)
         libdir = "purelib" if pure else "platlib"
         staging_dir = paths.pkg_staging_dir
         whl_paths = {"prefix": str(staging_dir), libdir: str(staging_dir)}
@@ -363,20 +364,21 @@ class _BuildBackend:
         return str(Path(wheel_path).relative_to(paths.wheel_dir))
 
     @staticmethod
-    def get_wheel_tags(pure: bool, wheel_cfg: dict[str, Any], cross_cfg):
-        plat = wheel_cfg.get("platform_tag", "")
-        guess_plat = "guess" in plat
+    def get_wheel_tags(
+        plat: BuildPlatformInfo, pure: bool, wheel_cfg: dict[str, Any], cross_cfg
+    ) -> WheelTags:
+        guess_plat = "guess" in wheel_cfg.get("platform_tag", "")
         if pure:
-            tags = {"pyver": ["py3"]}
+            tags: WheelTags = {"pyver": ["py3"]}
         elif cross_cfg:
             if guess_plat:
                 msg = "Option `wheel.platform_tag=guess` is not supported when "
                 msg += "cross-compiling. Ignoring."
                 logger.warning(msg)
-            tags = get_cross_tags(cross_cfg)
+            tags = get_cross_tags(plat, cross_cfg)
             tags = convert_wheel_tags(tags, wheel_cfg)
         else:
-            tags = get_native_tags(guess_plat)
+            tags = plat.get_native_tags(guess_plat)
             tags = convert_wheel_tags(tags, wheel_cfg)
         return tags
 
@@ -647,7 +649,7 @@ class _BuildBackend:
         interfere."""
         wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
         pure = is_pure(wheel_cfg, cfg.cmake)
-        tags = _BuildBackend.get_wheel_tags(pure, wheel_cfg, cfg.cross)
+        tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cfg.cross)
         name = "-".join(".".join(x) for x in tags.values())
         if index != 0:
             name += f"-{index}"
