@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-import platform
 import re
-import sys
 import sysconfig
 from dataclasses import dataclass
 from itertools import product
@@ -16,6 +14,7 @@ from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
 from .. import __version__
 from ..common import PackageInfo
+from ..common.platform import BuildPlatformInfo
 from .cmd_runner import CommandRunner
 
 logger = logging.getLogger(__name__)
@@ -78,6 +77,7 @@ class Option:
 class CMaker:
     def __init__(
         self,
+        plat: BuildPlatformInfo,
         cmake_settings: CMakeSettings,
         conf_settings: CMakeConfigureSettings,
         build_settings: CMakeBuildSettings,
@@ -85,6 +85,7 @@ class CMaker:
         package_info: PackageInfo,
         runner: CommandRunner,
     ):
+        self.plat = plat
         self.cmake_settings = cmake_settings
         self.conf_settings = conf_settings
         self.build_settings = build_settings
@@ -124,8 +125,8 @@ class CMaker:
 
     def get_configure_options_package(self) -> list[Option]:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
-        executable = Path(sys.executable).as_posix()
-        version = sys.version_info
+        executable = self.plat.executable.as_posix()
+        version = self.plat.python_version_info
         return [
             Option("PY_BUILD_CMAKE_VERSION", str(__version__)),
             Option("PY_BUILD_CMAKE_PROJECT_VERSION", self.package_info.version),
@@ -135,37 +136,31 @@ class CMaker:
             Option("PY_BUILD_CMAKE_IMPORT_NAME", self.package_info.module_name),
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
             Option("PY_BUILD_CMAKE_PYTHON_INTERPRETER", executable, "FILEPATH"),
-            Option("PY_BUILD_CMAKE_PYTHON_VERSION", platform.python_version()),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION", self.plat.python_version),
             Option("PY_BUILD_CMAKE_PYTHON_VERSION_MAJOR", str(version.major)),
             Option("PY_BUILD_CMAKE_PYTHON_VERSION_MINOR", str(version.minor)),
             Option("PY_BUILD_CMAKE_PYTHON_VERSION_PATCH", str(version.micro)),
             Option("PY_BUILD_CMAKE_PYTHON_RELEASE_LEVEL", str(version.releaselevel)),
-            Option("PY_BUILD_CMAKE_PYTHON_ABIFLAGS", getattr(sys, "abiflags", "")),
+            Option("PY_BUILD_CMAKE_PYTHON_ABIFLAGS", self.plat.python_abiflags),
         ]
 
     def get_native_python_prefixes(self) -> str:
         """Get the prefix paths to locate this (native) Python installation in,
         as a semicolon-separated string."""
-        pfxs = [
-            Path(sys.exec_prefix).as_posix(),
-            Path(sys.prefix).as_posix(),
-            Path(sys.base_exec_prefix).as_posix(),
-            Path(sys.base_prefix).as_posix(),
-        ]
+        pfxs = map(Path.as_posix, self.plat.python_prefixes.values())
         return ";".join(dict.fromkeys(pfxs))  # remove duplicates, preserve order
 
     def get_native_python_abi_tuple(self):
         cmake_version = self.cmake_settings.minimum_required
         has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
         dmu = "dmut" if has_t_flag else "dmu"
-        abiflags = getattr(sys, "abiflags", "")
-        return ";".join("ON" if c in abiflags else "OFF" for c in dmu)
+        return ";".join("ON" if c in self.plat.python_abiflags else "OFF" for c in dmu)
 
     def get_native_python_implementation(self) -> str | None:
         return {
             "cpython": "CPython",
             "pypy": "PyPy",
-        }.get(sys.implementation.name)
+        }.get(self.plat.implementation)
 
     def get_native_python_hints(self, prefix: str) -> Generator[Option]:
         """FindPython hints and artifacts for this (native) Python installation."""
@@ -190,12 +185,13 @@ class CMaker:
         # version variables to guide CMake to the correct version. If the user
         # includes version requirements in their find_package call, though, all
         # bets are off ...
-        version_majmin = f"{sys.version_info.major}.{sys.version_info.minor}"
+        version_info = self.plat.python_version_info
+        version_majmin = f"{version_info.major}.{version_info.minor}"
         yield Option(prefix + "_FIND_VERSION_COUNT", "2")
         yield Option(prefix + "_FIND_VERSION_EXACT", "TRUE")
         yield Option(prefix + "_FIND_VERSION", version_majmin)
-        yield Option(prefix + "_FIND_VERSION_MAJOR", str(sys.version_info.major))
-        yield Option(prefix + "_FIND_VERSION_MINOR", str(sys.version_info.minor))
+        yield Option(prefix + "_FIND_VERSION_MAJOR", str(version_info.major))
+        yield Option(prefix + "_FIND_VERSION_MINOR", str(version_info.minor))
         # Another hint to help CMake find the correct version of Python. Note
         # that py-build-cmake only supports CPython and PyPy. If you're using
         # an exotic Python implementation, you should set these hints manually.
@@ -246,7 +242,7 @@ class CMaker:
         """Flags to help CMake find the right version of Python."""
 
         def get_opts(prefix):
-            executable = Path(sys.executable).as_posix()
+            executable = self.plat.executable.as_posix()
             yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
             yield Option(prefix + "_FIND_REGISTRY", "NEVER")
             yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")

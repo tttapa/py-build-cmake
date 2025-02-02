@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
-import platform
 import shutil
 import tempfile
 from pathlib import Path
@@ -67,7 +66,7 @@ class _BuildBackend:
             self.parse_config_settings(config_settings)
 
             src_dir = Path().resolve()
-            cfg = self.read_config(src_dir, config_settings, self.verbose)
+            cfg = self.read_config(self.plat, src_dir, config_settings, self.verbose)
             return self.get_requires_build_project(
                 self.plat, config_settings, cfg, self.runner
             )
@@ -207,7 +206,9 @@ class _BuildBackend:
 
         # Load metadata from the pyproject.toml file
         src_dir = Path().resolve()
-        cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
+        cfg, module = self.read_all_metadata(
+            self.plat, src_dir, config_settings, self.verbose
+        )
         pkg_info = self.get_pkg_info(cfg, module)
         cmake_cfg = self.get_cmake_config(self.plat, cfg)
 
@@ -274,7 +275,7 @@ class _BuildBackend:
 
     @staticmethod
     def get_default_paths(
-        plat: BuildPlatformInfo, wheel_dir, tmp_build_dir, src_dir, cfg
+        plat: BuildPlatformInfo, wheel_dir, tmp_build_dir, src_dir: Path, cfg
     ):
         build_cfg_name = _BuildBackend.get_build_config_name(plat, cfg, 0)
         build_dir = src_dir / ".py-build-cmake_cache" / build_cfg_name
@@ -288,8 +289,10 @@ class _BuildBackend:
         )
 
     @staticmethod
-    def read_all_metadata(src_dir, config_settings, verbose) -> tuple[Config, Module]:
-        cfg = _BuildBackend.read_config(src_dir, config_settings, verbose)
+    def read_all_metadata(
+        plat: BuildPlatformInfo, src_dir: Path, config_settings, verbose: bool
+    ) -> tuple[Config, Module]:
+        cfg = _BuildBackend.read_config(plat, src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
         modfile = module.full_file
         if cfg.standard_metadata.dynamic:
@@ -327,10 +330,12 @@ class _BuildBackend:
         return cfg, module
 
     @staticmethod
-    def read_config(src_dir, config_settings, verbose):
+    def read_config(
+        plat: BuildPlatformInfo, src_dir: Path, config_settings, verbose: bool
+    ) -> Config:
         """Read the configuration without the dynamic data."""
         return config_load.read_full_config(
-            src_dir / "pyproject.toml", config_settings, verbose
+            plat, src_dir / "pyproject.toml", config_settings, verbose
         )
 
     @staticmethod
@@ -402,7 +407,9 @@ class _BuildBackend:
         # Load metadata
         src_dir = Path().resolve()
         pyproject = src_dir / "pyproject.toml"
-        cfg, module = self.read_all_metadata(src_dir, config_settings, self.verbose)
+        cfg, module = self.read_all_metadata(
+            self.plat, src_dir, config_settings, self.verbose
+        )
         pkg_info = self.get_pkg_info(cfg, module)
 
         # Export dist
@@ -490,7 +497,7 @@ class _BuildBackend:
                 import ninja  # type: ignore[import-not-found]
 
                 make_program = Path(ninja.BIN_DIR) / "ninja"
-                if platform.system() == "Windows":
+                if plat.system == "Windows":
                     make_program = make_program.with_suffix(".exe")
 
         # CMake options

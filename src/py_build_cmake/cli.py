@@ -21,7 +21,7 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
         }
         # Read configuration and package metadata
         plat = determine_build_platform_info()
-        cfg, module = backend.read_all_metadata(src_dir, config_settings, verbose)
+        cfg, module = backend.read_all_metadata(plat, src_dir, config_settings, verbose)
         pkg_info = backend.get_pkg_info(cfg, module)
         cmake_cfgs = backend.get_cmake_config(plat, cfg)
         if not cmake_cfgs:

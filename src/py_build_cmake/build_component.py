@@ -38,10 +38,12 @@ class _BuildComponentBackend:
 
             comp_source_dir = Path().resolve()
             comp_cfg = self.read_all_metadata(
-                comp_source_dir, config_settings, self.verbose
+                self.plat, comp_source_dir, config_settings, self.verbose
             )
             src_dir = comp_cfg.main_project.resolve()
-            cfg = std_backend.read_config(src_dir, config_settings, self.verbose)
+            cfg = std_backend.read_config(
+                self.plat, src_dir, config_settings, self.verbose
+            )
             return std_backend.get_requires_build_project(
                 self.plat, config_settings, cfg, self.runner
             )
@@ -95,9 +97,11 @@ class _BuildComponentBackend:
         self.runner.verbose = std_backend.is_verbose_enabled(config_settings)
 
     @staticmethod
-    def read_all_metadata(src_dir, config_settings, verbose):
+    def read_all_metadata(
+        plat: BuildPlatformInfo, src_dir: Path, config_settings, verbose: bool
+    ):
         return config_load.read_full_component_config(
-            src_dir / "pyproject.toml", config_settings, verbose
+            plat, src_dir / "pyproject.toml", config_settings, verbose
         )
 
     # --- Building wheels -----------------------------------------------------
@@ -111,13 +115,13 @@ class _BuildComponentBackend:
 
         # Load metadata from the current (component) pyproject.toml file
         comp_cfg = self.read_all_metadata(
-            comp_source_dir, config_settings, self.verbose
+            self.plat, comp_source_dir, config_settings, self.verbose
         )
 
         # Load the config from the main pyproject.toml file
         src_dir = comp_cfg.main_project.resolve()
         cfg, module = std_backend.read_all_metadata(
-            src_dir, config_settings, self.verbose
+            self.plat, src_dir, config_settings, self.verbose
         )
         pkg_info = std_backend.get_pkg_info(comp_cfg, module)
         cmake_cfg = std_backend.get_cmake_config(self.plat, cfg)

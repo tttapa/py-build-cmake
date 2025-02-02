@@ -14,6 +14,7 @@ from lark import LarkError
 
 from .. import __version__
 from ..common import ComponentConfig, Config, ConfigError
+from ..common.platform import BuildPlatformInfo
 from .cli_override import CLIOption, parse_cli, parse_file
 from .options.config_path import ConfPath
 from .options.config_reference import ConfigReference
@@ -41,13 +42,14 @@ logger = logging.getLogger(__name__)
 
 
 def read_full_config(
+    plat: BuildPlatformInfo,
     pyproject_path: Path,
     config_settings: dict[str, str | list[str]] | None,
     verbose: bool,
 ) -> Config:
     config_settings = config_settings or {}
     overrides, cli_overrides = parse_config_settings_overrides(config_settings, verbose)
-    cfg = read_config(pyproject_path, overrides, cli_overrides)
+    cfg = read_config(plat, pyproject_path, overrides, cli_overrides)
     if verbose:
         print_config_verbose(cfg)
     return cfg
@@ -141,6 +143,7 @@ def load_extra_config_files(flag_overrides, targetpath, config_files, overrides)
 
 
 def read_config(
+    plat: BuildPlatformInfo,
     pyproject_path: str | Path,
     flag_overrides: dict[str, list[str]],
     cli_overrides: list[CLIOption],
@@ -176,7 +179,7 @@ def read_config(
     for i, o in enumerate(cli_overrides):
         overrides.update(add_cli_override(config_files, o, f"<cli:{i+1}>"))
 
-    return process_config(pyproject_path, config_files, overrides)
+    return process_config(plat, pyproject_path, config_files, overrides)
 
 
 def check_if_local_configs_exist(flag_overrides, pyproject_folder):
@@ -214,6 +217,7 @@ def add_cli_override(
 
 
 def process_config(
+    plat: BuildPlatformInfo,
     pyproject_path: Path | PurePosixPath,
     config_files: dict[str, dict[str, Any]],
     overrides: dict[ConfPath, ConfPath],
@@ -250,7 +254,7 @@ def process_config(
     verify_and_override_config(overrides, root_ref, root_val)
 
     # Tweak the configuration depending on the environment and platform
-    config_quirks(root_val.sub_ref(get_tool_pbc_path()))
+    config_quirks(plat, root_val.sub_ref(get_tool_pbc_path()))
     set_up_os_specific_cross_inheritance(root_ref, root_val)
 
     # Carry out inheritance between options
@@ -422,6 +426,7 @@ def print_config_verbose(cfg: Config):
 
 
 def read_full_component_config(
+    plat: BuildPlatformInfo,
     pyproject_path: Path,
     config_settings: dict[str, str | list[str]] | None,
     verbose: bool,

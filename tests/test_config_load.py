@@ -3,6 +3,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
+from py_build_cmake.common.platform import BuildPlatformInfo
 from py_build_cmake.config.cli_override import parse_file
 from py_build_cmake.config.load import (
     Config,
@@ -14,13 +15,14 @@ from py_build_cmake.config.options.config_path import ConfPath
 
 
 def test_process_config_no_cmake():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "0.0.1"},
         "tool": {"some-other-tool": {}, "py-build-cmake": {}},
     }
     files = {"pyproject.toml": pyproj}
-    cfg: Config = process_config(pyproj_path, files, {}, test=True)
+    cfg: Config = process_config(plat, pyproj_path, files, {}, test=True)
     assert not cfg.cmake
     assert not cfg.cross
     assert not cfg.stubgen
@@ -31,6 +33,7 @@ def test_process_config_no_cmake():
 
 
 def test_process_config_no_cmake_namespace_wrong_editable_mode():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "0.0.1"},
@@ -45,10 +48,11 @@ def test_process_config_no_cmake_namespace_wrong_editable_mode():
     files = {"pyproject.toml": pyproj}
     expected = "^Namespace packages cannot use editable mode 'wrapper'$"
     with pytest.raises(ConfigError, match=expected):
-        process_config(pyproj_path, files, {}, test=True)
+        process_config(plat, pyproj_path, files, {}, test=True)
 
 
 def test_inherit_cross_cmake():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
@@ -98,7 +102,7 @@ def test_inherit_cross_cmake():
         },
     }
     files = {"pyproject.toml": pyproj}
-    conf = process_config(pyproj_path, files, {}, test=True)
+    conf = process_config(plat, pyproj_path, files, {}, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
@@ -244,6 +248,7 @@ def test_inherit_cross_cmake():
 
 
 def test_real_config_no_cross():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
@@ -273,7 +278,7 @@ def test_real_config_no_cross():
         },
     }
     files = {"pyproject.toml": pyproj}
-    conf = process_config(pyproj_path, files, {}, test=True)
+    conf = process_config(plat, pyproj_path, files, {}, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
@@ -381,13 +386,14 @@ def test_real_config_no_cross():
 
 
 def test_real_config_no_cmake():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
         "tool": {"some-other-tool": {}, "py-build-cmake": {}},
     }
     files = {"pyproject.toml": pyproj}
-    conf = process_config(pyproj_path, files, {}, test=True)
+    conf = process_config(plat, pyproj_path, files, {}, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
@@ -411,6 +417,7 @@ def test_real_config_no_cmake():
 
 
 def test_real_config_local_override():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
@@ -425,7 +432,7 @@ def test_real_config_local_override():
             ("pyproject.toml", "tool", "py-build-cmake")
         ),
     }
-    conf = process_config(pyproj_path, files, overrides, test=True)
+    conf = process_config(plat, pyproj_path, files, overrides, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
@@ -449,6 +456,7 @@ def test_real_config_local_override():
 
 
 def test_real_config_local_override_windows():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
@@ -468,7 +476,7 @@ def test_real_config_local_override_windows():
             ("pyproject.toml", "tool", "py-build-cmake")
         ),
     }
-    conf = process_config(pyproj_path, files, overrides, test=True)
+    conf = process_config(plat, pyproj_path, files, overrides, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
@@ -492,6 +500,7 @@ def test_real_config_local_override_windows():
 
 
 def test_real_config_cli_override():
+    plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")
     pyproj = {
         "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
@@ -547,7 +556,7 @@ def test_real_config_cli_override():
     for i, opt in enumerate(parse_file(override_config)):
         overrides.update(add_cli_override(files, opt, f"<cli:{i+1}>"))
 
-    conf = process_config(pyproj_path, files, overrides, test=True)
+    conf = process_config(plat, pyproj_path, files, overrides, test=True)
     assert conf.standard_metadata.name == "foobar"
     assert str(conf.standard_metadata.version) == "1.2.3"
     assert conf.standard_metadata.description == "descr"
