@@ -52,6 +52,20 @@ class BuildPlatformInfo:
     cmake_generator_platform: str | None = None
 
     @property
+    def os_name(self) -> OSIdentifier:
+        """Get the name of the current platform. For use in file names etc.,
+        and consistent with the values in the py-build-cmake configs."""
+        osname = {
+            "Linux": "linux",
+            "Windows": "windows",
+            "Darwin": "mac",
+        }.get(self.system)
+        if not osname:
+            msg = f"Unsupported platform: {self.system}"
+            raise ValueError(msg)
+        return cast(OSIdentifier, osname)
+
+    @property
     def platform_tag(self) -> str:
         if self.system == "Linux":
             return self._platform_tag_linux()
@@ -178,16 +192,3 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None):
         r.macos_version, r.archs = _determine_macos_version_archs(env)
 
     return r
-
-
-def get_os_name(plat: BuildPlatformInfo) -> OSIdentifier:
-    """Get the name of the current platform."""
-    osname = {
-        "Linux": "linux",
-        "Windows": "windows",
-        "Darwin": "mac",
-    }.get(plat.system)
-    if not osname:
-        msg = "Unsupported platform"
-        raise ValueError(msg)
-    return cast(OSIdentifier, osname)

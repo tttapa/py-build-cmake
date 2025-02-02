@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ...commands.cmake import CMaker
 from ...common import Config, Module
-from ...common.platform import BuildPlatformInfo, get_os_name
+from ...common.platform import BuildPlatformInfo
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def write_build_hook(
     idx: int,
 ):
     """Write a hook that re-compiles extension modules."""
-    edit_cfg = cfg.editable["cross" if cfg.cross else get_os_name(plat)]
+    edit_cfg = cfg.editable["cross" if cfg.cross else plat.os_name]
     if not edit_cfg.get("build_hook"):
         return
     if edit_cfg.get("mode") != "symlink":

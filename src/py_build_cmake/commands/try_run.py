@@ -5,7 +5,7 @@ from typing import Any
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
 from ..common import CMAKE_MINIMUM_REQUIRED, Config
-from ..common.platform import BuildPlatformInfo, get_os_name
+from ..common.platform import BuildPlatformInfo
 from .cmd_runner import CommandRunner
 
 
@@ -15,7 +15,7 @@ def check_cmake_program(
     assert cfg.cmake
     # Do we need to perform a native build?
     native = not cfg.cross
-    native_cfg = cfg.cmake.get(get_os_name(plat), {}) if native else {}
+    native_cfg = cfg.cmake.get(plat.os_name, {}) if native else {}
     # Do we need to perform a cross build?
     cross = cfg.cross
     cross_cfg = cfg.cmake.get("cross", {})

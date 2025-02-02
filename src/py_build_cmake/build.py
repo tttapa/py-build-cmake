@@ -32,7 +32,6 @@ from .common import (
 from .common.platform import (
     BuildPlatformInfo,
     determine_build_platform_info,
-    get_os_name,
 )
 from .config import load as config_load
 from .config.dynamic import find_module, update_dynamic_metadata
@@ -386,7 +385,7 @@ class _BuildBackend:
         if not cfg.cmake:
             return {}
         if cfg.cross is None:
-            cmake_cfg = cfg.cmake.get(get_os_name(plat))
+            cmake_cfg = cfg.cmake.get(plat.os_name)
         else:
             cmake_cfg = cfg.cmake.get("cross")
         if not cmake_cfg:
@@ -397,7 +396,7 @@ class _BuildBackend:
     @staticmethod
     def get_wheel_config(plat: BuildPlatformInfo, cfg: Config):
         if cfg.cross is None:
-            return cfg.wheel[get_os_name(plat)]
+            return cfg.wheel[plat.os_name]
         else:
             return cfg.wheel["cross"]
 
@@ -414,7 +413,7 @@ class _BuildBackend:
 
         # Export dist
         extra_files = [pyproject, *cfg.referenced_files]
-        sdist_cfg = cfg.sdist["cross" if cfg.cross else get_os_name(self.plat)]
+        sdist_cfg = cfg.sdist["cross" if cfg.cross else self.plat.os_name]
         sdist_builder = SdistBuilder(
             module,
             pkg_info,
@@ -507,7 +506,7 @@ class _BuildBackend:
                 working_dir=source_dir,
                 source_path=Path(cmake_cfg["source_path"]),
                 build_path=build_dir,
-                os=get_os_name(plat),
+                os=plat.os_name,
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
                 minimum_required=cmake_cfg["minimum_version"],
