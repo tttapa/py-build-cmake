@@ -41,14 +41,19 @@ def _get_python_prefixes():
     }
 
 
-def _get_specific_platform():
+def _get_specific_platform(env: Mapping[str, str] | None = None) -> str:
     """Get the most specific platform for the current interpreter from
     packaging.tags. On Linux, this will include the glibc version, which is not
     the case for sysconfig.platform()."""
+    if env is None:
+        env = os.environ
+    host_plat = env.get("_PYTHON_HOST_PLATFORM")
+    if host_plat:
+        return platform_to_platform_tag(host_plat)
     try:
         return next(packaging.tags.sys_tags()).platform
     except StopIteration:
-        platform_to_platform_tag(sysconfig.get_platform())
+        return platform_to_platform_tag(sysconfig.get_platform())
 
 
 @dataclass
@@ -60,7 +65,7 @@ class BuildPlatformInfo:
     python_abiflags: str = field(default_factory=lambda: getattr(sys, "abiflags", ""))
     python_prefixes: dict[str, Path] = field(default_factory=_get_python_prefixes)
     sysconfig_platform: str = field(default_factory=sysconfig.get_platform)
-    specific_platform: str = field(default_factory=_get_specific_platform)
+    specific_platform_tag: str = field(default_factory=_get_specific_platform)
     python_tag: str = field(default_factory=get_python_tag)
     abi_tag: str = field(default_factory=get_abi_tag)
     system: str = field(default_factory=platform.system)
@@ -104,7 +109,7 @@ class BuildPlatformInfo:
         return {
             "pyver": [self.python_tag],
             "abi": [self.abi_tag],
-            "arch": [self.specific_platform if guess else self.platform_tag],
+            "arch": [self.specific_platform_tag if guess else self.platform_tag],
         }
 
     def _platform_tag_linux(self):
@@ -208,6 +213,7 @@ def _determine_macos_version_archs(
 def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs):
     if env is None:
         env = os.environ
+    kwargs.setdefault("specific_platform_tag", _get_specific_platform(env))
     r = BuildPlatformInfo(**kwargs)
 
     # Determine CMake generator platform (i.e. whether to use Visual Studio to
@@ -224,6 +230,15 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs
     # MACOSX_DEPLOYMENT_TARGET and ARCHFLAGS.
     elif r.system == "Darwin":
         r.macos_version, r.archs = _determine_macos_version_archs(env)
-        r.specific_platform = r._platform_tag_macos()
+        if "_PYTHON_HOST_PLATFORM" in env:
+            host_plat = env["_PYTHON_HOST_PLATFORM"]
+            if host_plat != r._platform_tag_macos():
+                msg = "Computed platform tag (%s) does not match "
+                msg += "environment variable _PYTHON_HOST_PLATFORM (%s). "
+                msg += "Please make sure that the values of the ARCHFLAGS "
+                msg += "and MACOSX_DEPLOYMENT_TARGET variables are consistent "
+                msg += "with _PYTHON_HOST_PLATFORM."
+                logger.warning(msg, r._platform_tag_macos(), host_plat)
+        r.specific_platform_tag = r._platform_tag_macos()
 
     return r
