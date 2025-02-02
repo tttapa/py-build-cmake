@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import platform
 import re
 import shutil
 import sys
@@ -26,12 +27,13 @@ from zipfile import ZipFile
 
 import jinja2
 import nox
-from distlib.util import get_platform
 
 if sys.version_info < (3, 8):
     import distutils.sysconfig as dist_sysconfig
+    from distutils.util import get_platform as sysconfig_get_platform
 else:
     import sysconfig as dist_sysconfig
+    from sysconfig import get_platform as sysconfig_get_platform
 
 version = "0.4.0.dev0"
 project_dir = Path(__file__).resolve().parent
@@ -42,6 +44,12 @@ test_packages = "namespace-project-a", "namespace-project-b"
 test_packages += "bare-c-module", "cmake-preset", "cmake-options"
 
 purity = {"namespace-project-b": True}
+
+
+def get_platform():
+    if platform.system() == "Darwin":
+        return "macosx"
+    return sysconfig_get_platform()
 
 
 def get_contents_subs(ext_suffix: str):
@@ -74,7 +82,8 @@ def check_pkg_contents(
     d = project_dir / "tests" / "expected_contents" / name
     template_env = jinja2.Environment(loader=jinja2.FileSystemLoader(d))
     normname = re.sub(r"[-_.]+", "_", name).lower()
-    plat = "none" if pure else get_platform().replace(".", "_").replace("-", "_")
+    plat = get_platform().replace(".", "_").replace("-", "_")
+    plat = "none" if pure else plat
     subs = get_contents_subs(ext_suffix)
     # Compare sdist contents
     sdist = Path(f"dist-nox/{normname}-{version}.tar.gz")
