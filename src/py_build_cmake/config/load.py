@@ -4,6 +4,7 @@ import contextlib
 import logging
 import os
 from copy import copy
+from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from pprint import pprint
 from typing import Any, Dict, Optional, cast
@@ -51,7 +52,7 @@ def read_full_config(
     overrides, cli_overrides = parse_config_settings_overrides(config_settings, verbose)
     cfg = read_config(plat, pyproject_path, overrides, cli_overrides)
     if verbose:
-        print_config_verbose(cfg)
+        print_config_verbose(plat, cfg)
     return cfg
 
 
@@ -402,8 +403,17 @@ def set_up_os_specific_cross_inheritance(
             root_ref.sub_ref(child).config.inherits = parent
 
 
-def print_config_verbose(cfg: Config):
+def print_config_verbose(plat: BuildPlatformInfo, cfg: Config):
     print("\npy-build-cmake (" + __version__ + ")")
+    print()
+    print("platform")
+    print("================================")
+    for f in fields(plat):
+        print(f.name, end=": ")
+        pprint(getattr(plat, f.name), sort_dicts=False)
+    print("platform_tag", end=": ")
+    pprint(plat.platform_tag)
+    print("================================\n")
     print("options")
     print("================================")
     print("package_name:")
