@@ -114,6 +114,9 @@ class CMaker:
             if self.install_settings.prefix is not None:
                 install_prefix = str(self.install_settings.prefix)
                 self.environment[f"{pbc}_INSTALL_PREFIX"] = install_prefix
+            if not self.cross_compiling() and self.plat.machine == "Darwin":
+                version = self.plat.macos_version_str
+                self.environment["MACOSX_DEPLOYMENT_TARGET"] = version
             if self.conf_settings.environment:
                 for k, v in self.conf_settings.environment.items():
                     templ = Template(v)
@@ -282,11 +285,14 @@ class CMaker:
 
     def get_configure_options_toolchain(self) -> list[str]:
         """Sets CMAKE_TOOLCHAIN_FILE."""
-        return (
-            ["CMAKE_TOOLCHAIN_FILE:FILEPATH=" + str(self.conf_settings.toolchain_file)]
-            if self.conf_settings.toolchain_file
-            else []
-        )
+        opts = []
+        if not self.cross_compiling() and self.plat.machine == "Darwin":
+            version = self.plat.macos_version_str
+            opts += ["CMAKE_OSX_DEPLOYMENT_TARGET:STRING=" + version]
+        if self.conf_settings.toolchain_file:
+            toolchain = str(self.conf_settings.toolchain_file)
+            opts += ["CMAKE_TOOLCHAIN_FILE:FILEPATH=" + toolchain]
+        return opts
 
     def get_configure_options_settings(self) -> list[str]:
         return [k + "=" + v for k, v in self.conf_settings.options.items()]

@@ -70,6 +70,11 @@ class BuildPlatformInfo:
     cmake_generator_platform: str | None = None
 
     @property
+    def macos_version_str(self) -> str:
+        assert self.macos_version is not None
+        return ".".join(map(str, self.macos_version))
+
+    @property
     def os_name(self) -> OSIdentifier:
         """Get the name of the current platform. For use in file names etc.,
         and consistent with the values in the py-build-cmake configs."""
