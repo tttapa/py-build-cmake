@@ -49,7 +49,7 @@ def config_quirks_mac(plat: BuildPlatformInfo, config: ValueReference):
     """Sets CMAKE_OSX_ARCHITECTURES if $ENV{ARCHFLAGS} is set
     on macOS. This ensures compatibility with cibuildwheel. If the interpreter
     architecture is not in the ARCHFLAGS, also enables cross-compilation."""
-    if not plat.archs:
+    if not plat.archs or plat.archs == (plat.machine,):
         return
     if config.is_value_set("cross"):
         logger.warning(
