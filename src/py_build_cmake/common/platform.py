@@ -200,10 +200,10 @@ def _determine_macos_version_archs(
     return macos_version, archs
 
 
-def determine_build_platform_info(env: Mapping[str, str] | None = None):
+def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs):
     if env is None:
         env = os.environ
-    r = BuildPlatformInfo()
+    r = BuildPlatformInfo(**kwargs)
 
     # Determine CMake generator platform (i.e. whether to use Visual Studio to
     # build for x86 or AMD64)
