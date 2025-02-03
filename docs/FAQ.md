@@ -115,48 +115,33 @@ In short: have a look at [py-build-cmake-example: .github/workflows](https://git
 You can use a tool like [cibuildwheel](https://github.com/pypa/cibuildwheel) to
 automate the build process for this large matrix of platform/version
 combinations. Continuous integration providers like GitHub Actions also provide
-job matrix capabilities. For example, the [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example/blob/24c5a0c4f796beedafd2d0a62134087a5be221d4/.github/workflows/wheels.yml#L107-L145)
-project uses the following matrix to build the package for multiple
-architectures and Python versions:
+job matrix capabilities. For example, the [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example)
+project uses the job matrices to build the package for multiple
+architectures and Python versions: https://github.com/tttapa/py-build-cmake-example/blob/main/.github/workflows/wheels.yml
 
 ```yaml
-  cross-build-linux:
-    name: Cross-build wheels for ${{ matrix.host }} - ${{ matrix.python-version }}
+  build-linux:
+    name: Build (${{ matrix.host }})
     needs: [build-sdist]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         host: [x86_64-bionic-linux-gnu, aarch64-rpi3-linux-gnu, armv7-neon-linux-gnueabihf, armv6-rpi-linux-gnueabihf]
-        python-version:
-          - python3.7
-          - python3.8
-          - python3.9
-          - python3.10
-          - python3.11
-          - python3.12
-          - python3.13
-          - pypy3.7-v7.3
-          - pypy3.8-v7.3
-          - pypy3.9-v7.3
-          - pypy3.10-v7.3
-        # PyPy does not provide 32-bit ARM binaries, so we exclude these:
-        exclude:
-          - python-version: pypy3.7-v7.3
-            host: armv7-neon-linux-gnueabihf
-          - python-version: pypy3.8-v7.3
-            host: armv7-neon-linux-gnueabihf
-          - python-version: pypy3.9-v7.3
-            host: armv7-neon-linux-gnueabihf
-          - python-version: pypy3.10-v7.3
-            host: armv7-neon-linux-gnueabihf
-          - python-version: pypy3.7-v7.3
-            host: armv6-rpi-linux-gnueabihf
-          - python-version: pypy3.8-v7.3
-            host: armv6-rpi-linux-gnueabihf
-          - python-version: pypy3.9-v7.3
-            host: armv6-rpi-linux-gnueabihf
-          - python-version: pypy3.10-v7.3
-            host: armv6-rpi-linux-gnueabihf
+```
+```yaml
+  build-macos-windows:
+    name: Build (${{ matrix.cibw-arch }}-${{ matrix.os }})
+    needs: [build-sdist]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - {os: windows-latest, cibw-arch: AMD64, arch: amd64}
+          - {os: windows-latest, cibw-arch: x86, arch: amd64_x86}
+          - {os: windows-latest, cibw-arch: ARM64, arch: amd64_arm64}
+          - {os: macos-latest, cibw-arch: universal2}
+          - {os: macos-latest, cibw-arch: x86_64}
+          - {os: macos-latest, cibw-arch: arm64}
 ```
 
 The same workflow file also contains some steps to test the resulting wheels and
@@ -167,8 +152,8 @@ To build Universal Wheels for macOS (that work on both Intel- and ARM-based
 machines), you can [set the following environment variables](https://github.com/pypa/cibuildwheel/blob/d018570bc4bdc792a1c7ba1e720d118686fa145b/cibuildwheel/macos.py#L250-L252):
 
 ```sh
-export MACOSX_DEPLOYMENT_TARGET='10.14'
-export _PYTHON_HOST_PLATFORM='macosx-10.14-universal2'
+export MACOSX_DEPLOYMENT_TARGET='10.13'
+export _PYTHON_HOST_PLATFORM='macosx-10.13-universal2'
 export ARCHFLAGS='-arch arm64 -arch x86_64'
 ```
 
@@ -177,3 +162,7 @@ This ensures that your package doesn't depend on any libraries (including GLIBC)
 from the build server. You can use the modern GCC cross-compilers from
 <https://github.com/tttapa/python-dev>, which also include pre-built
 cross-compiled versions of Python.
+The [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example) project
+simplifies the process even further by using the [Conan](https://conan.io) package manager
+to automate the installation of the appropriate cross-compilation toolchains and
+cross-compiled Python libraries. See https://github.com/tttapa/py-build-cmake-example/blob/main/scripts/ci/build-linux-cross.sh for details.
