@@ -217,6 +217,27 @@ def add_cli_override(
     return overrides
 
 
+def check_pyproject(config_files: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    pyproject = config_files["pyproject.toml"]
+    assert pyproject is not None
+    # Make sure that project section exists
+    project = pyproject.get("project")
+    if project is None:
+        msg = "Missing [project] section in pyproject.toml"
+        raise ConfigError(msg)
+    # Check the package/module name and normalize it
+    f = "name"
+    if f in project:
+        oldname = project[f]
+        normname = normalize_name(oldname)
+        if oldname != normname:
+            logger.info("Name normalized from %s to %s", oldname, normname)
+        project[f] = normname
+    # Initialize the tool section
+    pyproject.setdefault("tool", {}).setdefault("py-build-cmake", {})
+    return pyproject
+
+
 def process_config(
     plat: BuildPlatformInfo,
     pyproject_path: Path | PurePosixPath,
@@ -224,21 +245,9 @@ def process_config(
     overrides: dict[ConfPath, ConfPath],
     test: bool = False,
 ) -> Config:
-    pyproject = config_files["pyproject.toml"]
-    assert pyproject is not None
-    # Check the package/module name and normalize it
-    f = "name"
-    if f in pyproject["project"]:
-        oldname = pyproject["project"][f]
-        normname = normalize_name(oldname)
-        if oldname != normname:
-            logger.info("Name normalized from %s to %s", oldname, normname)
-        pyproject["project"][f] = normname
-
-    # Initialize the tool section
-    pyproject.setdefault("tool", {}).setdefault("py-build-cmake", {})
 
     # Parse the [project] section for metadata
+    pyproject = check_pyproject(config_files)
     try:
         Metadata = pyproject_metadata.StandardMetadata
         meta = Metadata.from_pyproject(pyproject, pyproject_path.parent)
