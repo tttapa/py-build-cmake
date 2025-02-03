@@ -1,0 +1,77 @@
+# https://github.com/tttapa/py-build-cmake/issues/41
+# https://github.com/joshlk/py-build-cmake/blob/8633f23c367c43e37b479a1994c4b4f650a2aad2/.github/workflows/macos_build.yml
+
+name: macOS pyenv
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  macos_build:
+    runs-on: macos-15
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install PyEnv and Python
+      run: |
+        set -x
+        curl -fsSL https://pyenv.run | bash
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init - bash)"
+        pyenv install 3.12.5
+        pyenv global 3.12.5
+        pip install --upgrade pip build distlib
+    - name: Get System Details
+      run: |
+        # Activate pyenv
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init - bash)"
+        pyenv global 3.12.5
+
+        # Print info
+        echo "System info:"
+        cat /System/Library/CoreServices/SystemVersion.plist
+        sw_vers
+        python --version
+        pip --version
+        python -m build --version
+
+        # Python info
+        echo "Python info:"
+        python -c "import sysconfig
+        print(sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET'))
+        import distlib.util
+        print(distlib.util.get_platform())
+        import packaging.tags
+        print(list(packaging.tags.mac_platforms()))
+        import platform
+        print(platform.mac_ver())"
+
+        # Save platform compatibility_tags to a file
+        python -c "import pip._internal.utils.compatibility_tags; print(pip._internal.utils.compatibility_tags.get_supported())" > pip_platform_tags.txt
+    - name: Upload pip_platform_tags.txt
+      uses: actions/upload-artifact@v4
+      with:
+        name: pip_platform_tags.txt
+        path: pip_platform_tags.txt
+    - name: Build project and try to install
+      run: |
+        # Activate pyenv
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init - bash)"
+        pyenv global 3.12.5
+
+        # Build py-build-cmake
+        python -m build
+        export PIP_FIND_LINKS="$PWD/dist"
+
+        # Build and install project
+        cd examples/nanobind-project
+        python -m build
+        echo "Build name"
+        echo $(ls -l dist/*.whl)
+        python -m pip install dist/*.whl
