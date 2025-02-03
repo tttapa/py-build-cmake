@@ -35,7 +35,7 @@ else:
     import sysconfig as dist_sysconfig
     from sysconfig import get_platform as sysconfig_get_platform
 
-version = "0.4.0a0"
+version = "0.4.0a1.dev0"
 project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project"
