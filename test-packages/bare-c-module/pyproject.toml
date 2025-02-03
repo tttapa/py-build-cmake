@@ -1,5 +1,5 @@
 [project]
-name = "bare_c_module"
+name = "bare-c-module"
 version = "0.4.0a1.dev0"
 description = "Single extension module, without any folders or __init__.py"
 readme = "README.md"

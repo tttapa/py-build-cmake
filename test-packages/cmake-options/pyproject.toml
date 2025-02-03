@@ -1,5 +1,5 @@
 [project]
-name = "cmake_options"
+name = "cmake-options"
 version = "0.4.0a1.dev0"
 description = "Checks parsing and escaping of CMake options"
 readme = "README.md"
