@@ -143,6 +143,12 @@ class _BuildBackend:
         env_verbose = os.environ.get("PY_BUILD_CMAKE_VERBOSE")
         if env_verbose is not None:
             return truthy(env_verbose)
+        run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
+        with contextlib.suppress(ValueError):
+            if run_attempt and int(run_attempt) > 1:
+                msg = "GITHUB_RUN_ATTEMPT is greater than one, setting verbose=1"
+                logger.info(msg)
+                return True
         return False
 
     @staticmethod
