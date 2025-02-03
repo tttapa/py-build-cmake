@@ -235,6 +235,9 @@ def process_config(
             logger.info("Name normalized from %s to %s", oldname, normname)
         pyproject["project"][f] = normname
 
+    # Initialize the tool section
+    pyproject.setdefault("tool", {}).setdefault("py-build-cmake", {})
+
     # Parse the [project] section for metadata
     try:
         Metadata = pyproject_metadata.StandardMetadata
