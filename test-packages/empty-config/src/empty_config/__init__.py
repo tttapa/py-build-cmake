@@ -2,7 +2,7 @@
 Empty config
 """
 
-__version__ = "0.4.0a1.dev0"
+__version__ = "0.4.0"
 
 
 def add(a, b):
