@@ -1,0 +1,5 @@
+empty_config-{{version}}/LICENSE
+empty_config-{{version}}/PKG-INFO
+empty_config-{{version}}/README.md
+empty_config-{{version}}/pyproject.toml
+empty_config-{{version}}/src/empty_config/__init__.py

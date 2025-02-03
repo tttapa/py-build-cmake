@@ -40,10 +40,10 @@ project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project"
 examples += "swig-project", "minimal"
-test_packages = "namespace-project-a", "namespace-project-b"
+test_packages = "empty-config", "namespace-project-a", "namespace-project-b"
 test_packages += "bare-c-module", "cmake-preset", "cmake-options"
 
-purity = {"namespace-project-b": True}
+purity = {"empty-config": True, "namespace-project-b": True}
 
 
 def get_platform():
