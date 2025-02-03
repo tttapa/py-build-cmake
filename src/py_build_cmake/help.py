@@ -84,23 +84,23 @@ def _md_escape(descr: str):
 
 
 def _should_use_colors():
-    # Check if output is a terminal
-    if not sys.stdout.isatty():
-        return False
     # Check the NO_COLOR environment variable
     if "NO_COLOR" in os.environ:
-        return False
-    # Check the TERM environment variable
-    term = os.environ.get("TERM", "")
-    if term == "dumb":
         return False
     # Check CLICOLOR and CLICOLOR_FORCE
     clicolor = os.environ.get("CLICOLOR", "1")
     clicolor_force = os.environ.get("CLICOLOR_FORCE", "0")
+    if clicolor_force != "0":
+        return True
     if clicolor == "0":
         return False
-    if clicolor_force == "1":
-        return True
+    # Check if output is a terminal
+    if not sys.stdout.isatty():
+        return False
+    # Check the TERM environment variable
+    term = os.environ.get("TERM", "")
+    if term == "dumb":  # noqa: SIM103
+        return False
     # Default to enabling colors
     return True
 
