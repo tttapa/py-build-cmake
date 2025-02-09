@@ -18,6 +18,6 @@ zip_files = [
 ]
 
 for f in tar_files:
-    print(*sorted(tar_open(f).getnames()), sep="\n", end="\n\n")
+    print(*sorted(tar_open(f).getnames()), sep="\n", end="\n\n")  # noqa: SIM115
 for f in zip_files:
     print(*sorted(ZipFile(f).namelist()), sep="\n", end="\n\n")
