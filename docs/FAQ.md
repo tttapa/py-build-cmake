@@ -166,3 +166,28 @@ The [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example) p
 simplifies the process even further by using the [Conan](https://conan.io) package manager
 to automate the installation of the appropriate cross-compilation toolchains and
 cross-compiled Python libraries. See https://github.com/tttapa/py-build-cmake-example/blob/main/scripts/ci/build-linux-cross.sh for details.
+
+## How to set the minimum supported macOS version
+
+py-build-cmake respects the standard `MACOSX_DEPLOYMENT_TARGET` environment
+variable, and uses its value to determine the appropriate Wheel platform tag.
+It also passes the value on to CMake, which will in turn pass it on to the
+compiler, determining the compatibility of the generated binaries. If
+`MACOSX_DEPLOYMENT_TARGET` is not set, py-build-cmake uses the value from
+`sysconfig.get_config_var("MACOSX_DEPLOYMENT_TARGET")`.
+
+Note that the variable needs to be set in the environment used when invoking
+py-build-cmake. Setting `MACOSX_DEPLOYMENT_TARGET` or `CMAKE_OSX_DEPLOYMENT_TARGET`
+using the options in the `[tool.py-build-cmake.cmake]` section of `pyproject.toml`
+is not supported. py-build-cmake ignores any `MACOSX_DEPLOYMENT_TARGET`
+values in the config, and overwrites them with the value from its own
+environment or `sysconfig`.
+
+If you're using [cibuildwheel](https://github.com/pypa/cibuildwheel), you can
+specify the value of `MACOSX_DEPLOYMENT_TARGET` in your `pyproject.toml` file
+as follows:
+
+```toml
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "11.0"
+```
