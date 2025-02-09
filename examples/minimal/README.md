@@ -120,7 +120,7 @@ for more information about specific options. More information about the
 
 ```toml
 [build-system]
-requires = ["py-build-cmake~=0.4.1.dev0"]
+requires = ["py-build-cmake~=0.4.1"]
 build-backend = "py_build_cmake.build"
 ```
 
