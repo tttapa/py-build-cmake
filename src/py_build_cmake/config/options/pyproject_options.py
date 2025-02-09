@@ -91,8 +91,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     editable.insert_multiple([
         EnumConfigOption("mode",
                          "Mechanism to use for editable installations. "
-                         "Either write a wrapper __init__.py file, install an "
-                         "import hook, or install symlinks to the original "
+                         "Either write a wrapper `__init__.py` file, install "
+                         "an import hook, or install symlinks to the original "
                          "files.",
                          default=DefaultValueValue("symlink"),
                          options=["wrapper", "hook", "symlink"]),
@@ -534,7 +534,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          allow_abs=True,
                          is_folder=False),
         StringConfigOption("generator_platform",
-                           "The value for CMAKE_GENERATOR_PLATFORM. Only "
+                           "The value for `CMAKE_GENERATOR_PLATFORM`. Only "
                            "applies to the Visual Studio generator on "
                            "Windows. See https://cmake.org/cmake/help/"
                            "latest/variable/CMAKE_GENERATOR_PLATFORM.html "

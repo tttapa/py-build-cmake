@@ -19,7 +19,7 @@ Defines how to perform an editable install (PEP 660). See https://tttapa.github.
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `mode` | Mechanism to use for editable installations. Either write a wrapper \_\_init\_\_.py file, install an import hook, or install symlinks to the original files. | `'wrapper'` \| `'hook'` \| `'symlink'` | `'symlink'` |
+| `mode` | Mechanism to use for editable installations. Either write a wrapper `__init__.py` file, install an import hook, or install symlinks to the original files. | `'wrapper'` \| `'hook'` \| `'symlink'` | `'symlink'` |
 | `build_hook` | Automatically re-build any changed files and C extension modules when the package is first imported by Python. It is recommended to use a fast generator like Ninja. Currently, the only mode that supports build hooks is `symlink`. | bool | `false` |
 
 ## sdist
@@ -121,7 +121,7 @@ Causes py-build-cmake to cross-compile the project. See https://tttapa.github.io
 | `library` | Python library file (.so on Linux, .lib on Windows). Used to set the `Python3_LIBRARY` CMake artifact, see https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | `include_dir` | Python include directory (containing Python.h). Used to set the `Python3_INCLUDE_DIR` CMake artifact, see https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification.<br/>Absolute or relative to current configuration file. | path | `none` |
 | `toolchain_file` | CMake toolchain file to use. See https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html for more information.<br/>Absolute or relative to current configuration file. | filepath | `none` |
-| `generator_platform` | The value for CMAKE\_GENERATOR\_PLATFORM. Only applies to the Visual Studio generator on Windows. See https://cmake.org/cmake/help/latest/variable/CMAKE\_GENERATOR\_PLATFORM.html for details.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
+| `generator_platform` | The value for `CMAKE_GENERATOR_PLATFORM`. Only applies to the Visual Studio generator on Windows. See https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html for details.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
 | `editable` | Override editable options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | `sdist` | Override sdist options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | `cmake` | Override CMake options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |

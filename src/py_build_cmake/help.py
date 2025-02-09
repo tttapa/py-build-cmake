@@ -73,11 +73,10 @@ def _get_full_description(vv: ConfigOption):
 def _md_escape(descr: str):
     descr = html.escape(descr)
     descr = descr.replace("*", "\\*")
-    descr = descr.replace("_", "\\_")
 
     def unescape(m: re.Match):
         m0 = m.group(0)
-        return html.unescape(m0.replace("\\_", "_").replace("\\*", "*"))
+        return html.unescape(m0.replace("\\*", "*"))
 
     descr = re.sub(r"`.*`", unescape, descr)
     return descr.replace("\n", "<br/>")
