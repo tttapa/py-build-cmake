@@ -7,7 +7,6 @@ import sysconfig
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
-from string import Template
 from typing import Generator
 
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
@@ -15,6 +14,7 @@ from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 from .. import __version__
 from ..common import PackageInfo
 from ..common.platform import BuildPlatformInfo
+from ..config.environment import substitute_environment_options
 from .cmd_runner import CommandRunner
 
 logger = logging.getLogger(__name__)
@@ -145,9 +145,9 @@ class CMaker:
                 version = self.plat.macos_version_str
                 self.environment["MACOSX_DEPLOYMENT_TARGET"] = version
             if self.conf_settings.environment:
-                for k, v in self.conf_settings.environment.items():
-                    templ = Template(v)
-                    self.environment[k] = templ.substitute(self.environment)
+                substitute_environment_options(
+                    self.environment, self.conf_settings.environment
+                )
         return self.environment
 
     def cross_compiling(self) -> bool:

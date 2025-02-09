@@ -9,6 +9,10 @@ from .value_reference import OverrideActionEnum, ValueReference
 
 
 class DictOfStrConfigOption(ConfigOption):
+    def __init__(self, *args, finalize_to_str: bool = True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.finalize_to_str = finalize_to_str
+
     def get_typename(self, md: bool = False) -> str:
         return "dict"
 
@@ -55,6 +59,8 @@ class DictOfStrConfigOption(ConfigOption):
         return valdict
 
     def finalize(self, values: ValueReference) -> dict[str, str] | None:
+        if not self.finalize_to_str:
+            return values.values
         if values.values is None:
             return None
         options: dict[str, str] = {}

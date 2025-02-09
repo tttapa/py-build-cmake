@@ -1,4 +1,3 @@
-import os
 from pathlib import PurePosixPath
 
 import pytest
@@ -12,6 +11,7 @@ from py_build_cmake.config.load import (
     process_config,
 )
 from py_build_cmake.config.options.config_path import ConfPath
+from py_build_cmake.config.options.string import StringOption
 
 
 def test_process_config_no_cmake():
@@ -144,8 +144,8 @@ def test_inherit_cross_cmake():
                 "install_components": ["all_install"],
                 "minimum_version": "3.15",
                 "env": {
-                    "foo": "bar",
-                    "crosscompiling": "true",
+                    "foo": StringOption(value="bar"),
+                    "crosscompiling": StringOption(value="true"),
                 },
             },
         },
@@ -168,7 +168,7 @@ def test_inherit_cross_cmake():
                 "install_args": [],
                 "install_components": ["linux_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             },
         },
         "windows": {
@@ -190,7 +190,7 @@ def test_inherit_cross_cmake():
                 "install_args": [],
                 "install_components": ["all_install", "win_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             }
         },
         "mac": {
@@ -212,7 +212,7 @@ def test_inherit_cross_cmake():
                 "install_args": [],
                 "install_components": ["all_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             }
         },
     }
@@ -317,7 +317,7 @@ def test_real_config_no_cross():
                 "install_args": [],
                 "install_components": ["linux_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             }
         },
         "windows": {
@@ -339,7 +339,7 @@ def test_real_config_no_cross():
                 "install_args": [],
                 "install_components": ["win_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             }
         },
         "mac": {
@@ -361,7 +361,7 @@ def test_real_config_no_cross():
                 "install_args": [],
                 "install_components": [""],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             },
         },
     }
@@ -600,7 +600,10 @@ def test_real_config_cli_override():
                 "install_args": [],
                 "install_components": ["linux_install"],
                 "minimum_version": "3.15",
-                "env": {"PATH": "$HOME/opt" + os.pathsep + "/usr/bin", "foo": "bar"},
+                "env": {
+                    "PATH": StringOption(value="/usr/bin", prepend_path="$HOME/opt"),
+                    "foo": StringOption(value="bar"),
+                },
             }
         },
         "windows": {
@@ -622,7 +625,7 @@ def test_real_config_cli_override():
                 "install_args": [],
                 "install_components": ["win_install"],
                 "minimum_version": "3.15",
-                "env": {"foo": "bar"},
+                "env": {"foo": StringOption(value="bar")},
             }
         },
         "mac": {

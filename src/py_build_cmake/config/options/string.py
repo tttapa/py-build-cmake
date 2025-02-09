@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 from ...common import ConfigError
 from .config_option import ConfigOption
@@ -119,6 +119,17 @@ class StringOption:
             empty = False
             final = StringOption._join_path(self.prepend_path, final)
         return None if (empty and self.clear) else final
+
+    def __repr__(self):
+        attrs = {
+            f.name: getattr(self, f.name)
+            for f in fields(self)
+            if getattr(self, f.name) is not None
+        }
+        if not attrs["clear"]:
+            del attrs["clear"]
+        attr_str = ", ".join(f"{key}={value!r}" for key, value in attrs.items())
+        return f"{self.__class__.__name__}({attr_str})"
 
 
 class StringConfigOption(ConfigOption):

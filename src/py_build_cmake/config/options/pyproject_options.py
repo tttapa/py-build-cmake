@@ -251,10 +251,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         DictOfStrConfigOption("env",
                               "Environment variables to set when running "
                               "CMake. Supports variable expansion using "
-                              "`${VAR}` (but not `$VAR`).",
+                              "`${VAR}`. Use a double dollar sign `$$` to "
+                              "insert a literal `$`.",
                               "env = { \"CMAKE_PREFIX_PATH\" "
                               "= \"${HOME}/.local\" }",
-                              default=DefaultValueValue({})),
+                              default=DefaultValueValue({}),
+                              finalize_to_str=False),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.wheel]
