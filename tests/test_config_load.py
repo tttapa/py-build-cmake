@@ -532,6 +532,11 @@ def test_real_config_cli_override():
                         "install_components": ["win_install"],
                     }
                 },
+                "mac": {
+                    "wheel": {
+                        "python_tag": ["py2", "py3"],
+                    }
+                },
             },
         },
     }
@@ -655,7 +660,7 @@ def test_real_config_cli_override():
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
-            "python_tag": ["auto"],
+            "python_tag": ["py2", "py3"],
             "python_abi": "none",
             "abi3_minimum_cpython_version": 32,
         },
