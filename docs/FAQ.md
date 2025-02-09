@@ -119,6 +119,7 @@ job matrix capabilities. For example, the [py-build-cmake-example](https://githu
 project uses the job matrices to build the package for multiple
 architectures and Python versions: https://github.com/tttapa/py-build-cmake-example/blob/main/.github/workflows/wheels.yml
 
+{% raw %}
 ```yaml
   build-linux:
     name: Build (${{ matrix.host }})
@@ -143,6 +144,7 @@ architectures and Python versions: https://github.com/tttapa/py-build-cmake-exam
           - {os: macos-latest, cibw-arch: x86_64}
           - {os: macos-latest, cibw-arch: arm64}
 ```
+{% endraw %}
 
 The same workflow file also contains some steps to test the resulting wheels and
 upload them to to PyPI. It's a good idea to check that the package version
