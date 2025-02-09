@@ -43,7 +43,7 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `generator` | CMake generator to use, passed to the configuration step, as `-G <?>`. If Ninja is used, and if it is not available in the system PATH, it will be installed automatically as a build dependency.<br/>For example: `generator = "Ninja Multi-Config"` | string | `none` |
 | `source_path` | Folder containing CMakeLists.txt.<br/>Relative to project directory. | path | `'.'` |
 | `build_path` | CMake build and cache folder. The placeholder `{build_config}` can be used to insert the name of the Python version and ABI, operating system, and architecture. This ensures that separate build directories are used for different host systems and Python versions/implementations.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache/{build_config}'` |
-| `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>For example: `options = {"WITH_FEATURE_X" = true}` | dict (CMake) | `{}` |
+| `options` | Extra options passed to the configuration step, as `-D<option>=<value>`.<br/>Note that setting `CMAKE_OSX_DEPLOYMENT_TARGET` here is not supported, see https://tttapa.github.io/py-build-cmake/FAQ.html#how-to-set-the-minimum-supported-macos-version.<br/>For example: `options = {"WITH_FEATURE_X" = true}` | dict (CMake) | `{}` |
 | `args` | Extra arguments passed to the configuration step.<br/>For example: `args = ["--debug-find", "-Wdev"]` | list+ | `[]` |
 | `find_python` | Specify hints for CMake&#x27;s FindPython module.<br/>For example: `find_python = false` | bool | `true` |
 | `find_python3` | Specify hints for CMake&#x27;s FindPython3 module.<br/>For example: `find_python3 = false` | bool | `true` |
@@ -52,7 +52,7 @@ Defines how to build the project to package. If omitted, py-build-cmake will pro
 | `install_config` | Configuration types passed to the install step, as `--config <?>`. You can specify either a single string, or a list of strings. If a multi-config generator is used, all configurations in this list will be included in the package.<br/>For example: `install_config = ["Debug", "Release"]` | list | `config` |
 | `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list+ | `[]` |
 | `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`.<br/>Use an empty string to specify the default component. | list | `['']` |
-| `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}` (but not `$VAR`).<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
+| `env` | Environment variables to set when running CMake. Supports variable expansion using `${VAR}`. Use a double dollar sign `$$` to insert a literal `$`.<br/>Note that setting `MACOSX_DEPLOYMENT_TARGET` here is not supported, see https://tttapa.github.io/py-build-cmake/FAQ.html#how-to-set-the-minimum-supported-macos-version.<br/>For example: `env = { "CMAKE_PREFIX_PATH" = "${HOME}/.local" }` | dict | `{}` |
 
 ## wheel
 Defines how to create the Wheel package. 
@@ -78,7 +78,7 @@ If specified, mypy&#x27;s stubgen utility will be used to generate typed stubs f
 | `args` | List of extra arguments passed to stubgen. | list+ | `[]` |
 
 ## linux
-Override options for Linux. 
+Specific options for Linux. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
@@ -88,7 +88,7 @@ Override options for Linux.
 | `wheel` | Linux-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## windows
-Override options for Windows. 
+Specific options for Windows. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
@@ -98,14 +98,14 @@ Override options for Windows.
 | `wheel` | Windows-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## mac
-Override options for Mac. 
+Specific options for macOS. 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `editable` | Mac-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
-| `sdist` | Mac-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
-| `cmake` | Mac-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
-| `wheel` | Mac-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
+| `editable` | macOS-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
+| `sdist` | macOS-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
+| `cmake` | macOS-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | macOS-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
 ## cross
 Causes py-build-cmake to cross-compile the project. See https://tttapa.github.io/py-build-cmake/Cross-compilation.html for more information. 

@@ -194,7 +194,11 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          must_exist=False),
         CMakeOptConfigOption("options",
                              "Extra options passed to the configuration step, "
-                             "as `-D<option>=<value>`.",
+                             "as `-D<option>=<value>`.\n"
+                             "Note that setting `CMAKE_OSX_DEPLOYMENT_TARGET` "
+                             "here is not supported, see "
+                             "https://tttapa.github.io/py-build-cmake/FAQ.html"
+                             "#how-to-set-the-minimum-supported-macos-version.",
                              "options = {\"WITH_FEATURE_X\" = true}",
                              default=DefaultValueValue({})),
         ListOfStrConfigOption("args",
@@ -252,7 +256,11 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "Environment variables to set when running "
                               "CMake. Supports variable expansion using "
                               "`${VAR}`. Use a double dollar sign `$$` to "
-                              "insert a literal `$`.",
+                              "insert a literal `$`.\n"
+                              "Note that setting `MACOSX_DEPLOYMENT_TARGET` "
+                              "here is not supported, see "
+                              "https://tttapa.github.io/py-build-cmake/FAQ.html"
+                              "#how-to-set-the-minimum-supported-macos-version.",
                               "env = { \"CMAKE_PREFIX_PATH\" "
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({}),
@@ -413,29 +421,32 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     ])  # fmt: skip
 
     # [tool.py-build-cmake.{linux,windows,mac}]
-    for system in ["Linux", "Windows", "Mac"]:
-        name = system.lower()
+    for system, system_name in (
+        ("linux", "Linux"),
+        ("windows", "Windows"),
+        ("mac", "macOS"),
+    ):
         opt = pbc.insert(
-            ConfigOption(name,
-                         f"Override options for {system}.",
+            ConfigOption(system,
+                         f"Specific options for {system_name}.",
                          create_if_inheritance_target_exists=True,
                          default=DefaultValueValue({}),
             ))  # fmt: skip
         opt.insert_multiple([
             ConfigOption("editable",
-                         f"{system}-specific editable options.",
+                         f"{system_name}-specific editable options.",
                          inherit_from=editable_pth,
                          create_if_inheritance_target_exists=True),
             ConfigOption("sdist",
-                         f"{system}-specific sdist options.",
+                         f"{system_name}-specific sdist options.",
                          inherit_from=sdist_pth,
                          create_if_inheritance_target_exists=True),
             MultiConfigOption("cmake",
-                         f"{system}-specific CMake options.",
+                         f"{system_name}-specific CMake options.",
                          inherit_from=cmake_pth,
                          create_if_inheritance_target_exists=True),
             ConfigOption("wheel",
-                         f"{system}-specific Wheel options.",
+                         f"{system_name}-specific Wheel options.",
                          inherit_from=wheel_pth,
                          create_if_inheritance_target_exists=True),
         ])  # fmt: skip
