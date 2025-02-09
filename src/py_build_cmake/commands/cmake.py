@@ -74,6 +74,18 @@ class Option:
     description: str = ""
 
 
+_MACOSX_DEPL_TGT_MSG = (
+    "Please set the appropriate value using the MACOSX_DEPLOYMENT_TARGET "
+    "environment variable when invoking py-build-cmake. This ensures that the "
+    "appropriate Wheel platform tag is used, and that the version is correctly "
+    "passed to CMake using the CMAKE_OSX_DEPLOYMENT_TARGET variable.\n"
+    "If you're using cibuildwheel, you can add the following option to your "
+    "pyproject.toml file:\n\n"
+    "    [tool.cibuildwheel.macos.environment]\n"
+    '    MACOSX_DEPLOYMENT_TARGET = "11.0"\n'
+)
+
+
 class CMaker:
     def __init__(
         self,
@@ -93,6 +105,21 @@ class CMaker:
         self.package_info = package_info
         self.runner = runner
         self.environment: dict[str, str] | None = None
+
+        env = self.conf_settings.environment
+        if env.pop("MACOSX_DEPLOYMENT_TARGET", None) is not None:
+            msg = "Setting MACOSX_DEPLOYMENT_TARGET in "
+            msg += "[tools.py-build-cmake.cmake.env] is not "
+            msg += "supported. Its value will be ignored.\n"
+            msg += _MACOSX_DEPL_TGT_MSG
+            logger.warning(msg)
+        opts = self.conf_settings.options
+        if opts.pop("CMAKE_OSX_DEPLOYMENT_TARGET", None) is not None:
+            msg = "Setting CMAKE_OSX_DEPLOYMENT_TARGET in "
+            msg += "[tools.py-build-cmake.cmake.options] is not "
+            msg += "supported. Its value will be ignored.\n"
+            msg += _MACOSX_DEPL_TGT_MSG
+            logger.warning(msg)
 
     def run(self, *args, **kwargs):
         return self.runner.run(*args, **kwargs)
