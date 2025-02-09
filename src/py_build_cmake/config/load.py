@@ -3,10 +3,11 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import pprint
+import sys
 from copy import copy
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
-from pprint import pprint
 from typing import Any, Dict, Optional, cast
 
 import pyproject_metadata
@@ -41,6 +42,11 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+if sys.version_info < (3, 8):
+    pp = pprint.pprint
+else:
+    pp = pprint.pp
+
 
 def read_full_config(
     plat: BuildPlatformInfo,
@@ -61,7 +67,7 @@ def parse_config_settings_overrides(
 ):
     if verbose:
         print("Configuration settings:")
-        pprint(config_settings)
+        pp(config_settings)
 
     def listify(x: str | list[str]):
         return x if isinstance(x, list) else [x]
@@ -79,9 +85,9 @@ def parse_config_settings_overrides(
     file_overrides = {key: get_as_list("--" + key) + get_as_list(key) for key in keys}
     if verbose:
         print("Configuration settings for local and cross-compilation file overrides:")
-        pprint(file_overrides)
+        pp(file_overrides)
         print("Configuration settings command-line overrides:")
-        pprint(cli_overrides)
+        pp(cli_overrides)
     parsed_cli_overrides = []
     for o in cli_overrides:
         try:
@@ -422,28 +428,28 @@ def print_config_verbose(plat: BuildPlatformInfo, cfg: Config):
     print("================================")
     for f in fields(plat):
         print(f.name, end=": ")
-        pprint(getattr(plat, f.name), sort_dicts=False)
+        pp(getattr(plat, f.name))
     print("platform_tag", end=": ")
-    pprint(plat.platform_tag)
+    pp(plat.platform_tag)
     print("================================\n")
     print("options")
     print("================================")
     print("package_name:")
     print(repr(cfg.package_name))
     print("module:")
-    pprint(cfg.module)
+    pp(cfg.module)
     print("editable:")
-    pprint(cfg.editable)
+    pp(cfg.editable)
     print("sdist:")
-    pprint(cfg.sdist)
+    pp(cfg.sdist)
     print("cmake:")
-    pprint(cfg.cmake)
+    pp(cfg.cmake)
     print("wheel:")
-    pprint(cfg.wheel)
+    pp(cfg.wheel)
     print("cross:")
-    pprint(cfg.cross)
+    pp(cfg.cross)
     print("stubgen:")
-    pprint(cfg.stubgen)
+    pp(cfg.stubgen)
     print("================================\n")
 
 
@@ -558,5 +564,5 @@ def print_component_config_verbose(cfg: ComponentConfig):
     print("main_project:")
     print(repr(cfg.main_project.as_posix()))
     print("component:")
-    pprint(cfg.component)
+    pp(cfg.component)
     print("================================\n")
