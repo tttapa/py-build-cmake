@@ -1,31 +1,15 @@
-<small>[Index](index.html)</small>
-
 # Cross-compilation
 
-Cross-compiling Python extension modules is supported out of the box through
-[CMake toolchain files](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html).
+Cross-compilation is useful for building packages for platforms such as
+Raspberry Pi or Windows on ARM. You may also want to cross-compile your
+packages by default to ensure compatibility with a wide range of systems and to
+avoid accidental dependencies on libraries from your build environment.
 
+When using py-build-cmake, cross-compiling Python extension modules is supported
+out-of-the-box through [CMake toolchain files](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html).
 When building packages using a tool like [`cibuildwheel`](https://github.com/pypa/cibuildwheel),
 cross-compilation will also be enabled automatically whenever appropriate
 (e.g. when building ARM64 packages on an Intel Mac).
-
-> Table of contents  
-> <span class="mono">¶</span>&emsp;[Terminology](#terminology)  
-> <span class="mono">¶</span>&emsp;[Simple example](#simple-example)  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Caveats](#caveats)</small>  
-> <span class="mono">¶</span>&emsp;[Complete cross-compilation workflow](#complete-cross-compilation-workflow)  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Set up the environment](#set-up-the-environment)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Download a cross-compilation toolchain for your _host_ system](#download-a-cross-compilation-toolchain-for-your-host-system)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Download Python for your _host_ system](#download-python-for-your-host-system)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Inspect and customize the toolchain files and py-build-cmake configuration](#inspect-and-customize-the-toolchain-files-and-py-build-cmake-configuration)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Cross-compile the pybind11-project example package using py-build-cmake](#cross-compile-the-pybind11-project-example-package-using-py-build-cmake)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Automated Bash scripts](#automated-bash-scripts)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[A closer look at the CMake toolchain files](#a-closer-look-at-the-cmake-toolchain-files)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Cross-compilation of dependencies](#cross-compilation-of-dependencies)</small>  
-> <span class="mono">¶</span>&emsp;[Automatic cross-compilation](#automatic-cross-compilation)  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Windows](#windows)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[macOS](#macos)</small>  
-> &emsp;<small><span class="mono">¶</span>&emsp;[Linux](#linux)</small>  
 
 ## Terminology
 
@@ -66,7 +50,7 @@ should provide as well).
 The format for the values in this file is the same as the format used for the
 tags in wheel filenames, for example `pkg-1.2.3-cp312-cp312-linux_aarch64.whl`.
 For details about platform compatibility tags, see the PyPA specification:
-https://packaging.python.org/en/latest/specifications/platform-compatibility-tags.
+<https://packaging.python.org/en/latest/specifications/platform-compatibility-tags>.
 
 ### Caveats
 
@@ -115,7 +99,7 @@ headers, so that the resulting package is compatible with a wide range of
 Linux distributions. The toolchains in your system's package manager are usually
 not compatible with older systems.
 
-You can find ready-to-use toolchains with good compatibility at https://github.com/tttapa/toolchains.
+You can find ready-to-use toolchains with good compatibility at <https://github.com/tttapa/toolchains>.
 
 ```sh
 # Create a directory to save the cross-compilation toolchains into
@@ -132,7 +116,7 @@ wget "$url/x-tools-aarch64-rpi3-linux-gnu-gcc14.tar.xz" -O- | tar xJ -C toolchai
 CMake needs to be able to locate the Python header files, and in some cases the
 Python shared library before you can build your package.
 
-You can download these from https://github.com/tttapa/python-dev.
+You can download these from <https://github.com/tttapa/python-dev>.
 
 ```sh
 # The toolchain is read-only by default, make it writable to add Python to it
@@ -144,7 +128,7 @@ wget "$url/python-dev-aarch64-rpi3-linux-gnu.tar.xz" -O- | tar xJ -C toolchains
 
 ### Inspect and customize the toolchain files and py-build-cmake configuration
 
-The Python installations from https://github.com/tttapa/python-dev already
+The Python installations from <https://github.com/tttapa/python-dev> already
 include the necessary CMake toolchain files and `py-build-cmake` configuration
 files. Inspect them and customize to your specific setup if necessary.
 (No changes necessary when just following this guide using the example projects).

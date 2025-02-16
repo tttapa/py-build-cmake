@@ -18,8 +18,8 @@
 #
 # The resulting Python Wheel packages can be found in the dist directory.
 #
-# See https://tttapa.github.io/py-build-cmake/Cross-compilation.html for more
-# information about cross-compilation.
+# See https://tttapa.github.io/py-build-cmake/usage/cross-compilation.html for
+# more information about cross-compilation.
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 

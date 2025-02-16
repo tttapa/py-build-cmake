@@ -37,7 +37,7 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: end-of-file-fixer
-        exclude: '(^tests/expected_contents/.*\.txt$)|(^docs/(Components|Config)\.md$)'
+        exclude: '(^tests/expected_contents/.*\.txt$)|(^docs/reference/(components|config)\.md$)|(^docs/_extra/)'
       - id: fix-byte-order-marker
       - id: mixed-line-ending
       - id: name-tests-test
@@ -45,4 +45,4 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-        exclude: '^docs/(Components|Config)\.md$'
+        exclude: '^docs/reference/(components|config)\.md$'

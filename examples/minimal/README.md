@@ -35,7 +35,7 @@ install the package ([§ Building and installing](#building-and-installing)).
 ## Package structure
 
 We'll quickly describe the purpose of all files in this example package.
-More general information about Python packages can be found at https://packaging.python.org/.
+More general information about Python packages can be found at <https://packaging.python.org/>.
 
 ```text
 minimal
@@ -114,9 +114,9 @@ Unit tests for testing the extension module using [pytest](https://github.com/py
 ## Configuration
 
 We'll now go over the contents of the pyproject.toml file in a bit more
-detail. Keep in mind that you can always consult the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html)
+detail. Keep in mind that you can always consult the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/reference/config.html)
 for more information about specific options. More information about the
-`pyproject.toml` format can be found at https://packaging.python.org/en/latest/specifications/declaring-project-metadata/.
+`pyproject.toml` format can be found at <https://packaging.python.org/en/latest/specifications/declaring-project-metadata/>.
 
 ```toml
 [build-system]
@@ -161,7 +161,7 @@ dynamic = ["version", "description"]
 
 The `project` section contains all metadata of the package. Its format is
 defined by [PEP 621](https://www.python.org/dev/peps/pep-0621/), see
-https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+<https://packaging.python.org/en/latest/specifications/declaring-project-metadata/>
 for the full documentation. This metadata will be displayed on PyPI when you
 publish your package.
 
@@ -219,7 +219,7 @@ The `minimum_version` option specifies which version of CMake is required to
 build this project. If this version (or newer) is not found in the system PATH,
 it is automatically added as a build requirement and installed by the build
 frontend (e.g. pip) before building.  
-There are many other options: take a moment to look at the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#cmake)
+There are many other options: take a moment to look at the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/reference/config.html#cmake)
 for an overview and more detailed explanations.
 
 ```toml
@@ -227,7 +227,7 @@ for an overview and more detailed explanations.
 ```
 This section enables stub file generation for Python source files using mypy's
 [`stubgen`](https://mypy.readthedocs.io/en/stable/stubgen.html) tool. Refer to
-the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/Config.html#stubgen)
+the [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake/reference/config.html#stubgen)
 for information about the optional options in this section.
 
 ```toml
@@ -235,7 +235,7 @@ for information about the optional options in this section.
 testpaths = ["tests"]
 ```
 You can also add configuration options for other Python tools, for example, for
-`pytest`. See https://docs.pytest.org/en/7.4.x/reference/customize.html#pyproject-toml for
+`pytest`. See <https://docs.pytest.org/en/7.4.x/reference/customize.html#pyproject-toml> for
 details.
 
 ---
@@ -264,11 +264,11 @@ Wheel.
 The resulting packages can be found in the `dist` folder.
 
 You could now upload these packages to PyPI, as explained in
-https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives.
+<https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives>.
 For a real-world project, it is recommended to use trusted publishing as part of
 a CI workflow, which is more secure and less error prone than manually
 uploading the files. This is not covered by this tutorial, but you can find
-more details in the [FAQ](https://tttapa.github.io/py-build-cmake/FAQ.html#how-to-upload-my-package-to-pypi).
+more details in the [FAQ](https://tttapa.github.io/py-build-cmake/usage/faq.html#how-to-upload-my-package-to-pypi).
 
 On Linux, you'll want to use [auditwheel](https://github.com/pypa/auditwheel)
 to make sure that your package is compatible with a larger range of systems.
@@ -286,7 +286,7 @@ By default, pip builds packages in a temporary virtual environment, where it
 first installs all build dependencies. This can be slow, and might not be
 desirable during development. You can use the `--no-build-isolation` flag to
 disable this behavior.
-See https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-no-build-isolation
+See <https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-no-build-isolation>
 for more information.
 
 ### Installing the package in editable mode
@@ -302,7 +302,7 @@ You can again combine it with the `-v` and/or `--no-build-isolation` flags.
 By default, editable mode only affects the Python source files in your package.
 If you modify the C code for any extension modules or other files generated by
 CMake, you'll either have to run `pip install` to build and install them again,
-or enable the [`editable.build_hook`](https://tttapa.github.io/py-build-cmake/Config.html#editable)
+or enable the [`editable.build_hook`](https://tttapa.github.io/py-build-cmake/reference/config.html#editable)
 setting to automatically re-run `cmake --build` when your package is first
 imported:
 ```sh
@@ -336,7 +336,7 @@ to prevent checking it in to version control.
 
 You may find the following resources useful:
 
- - [Frequently asked questions](https://tttapa.github.io/py-build-cmake/FAQ.html)
+ - [Frequently asked questions](https://tttapa.github.io/py-build-cmake/usage/faq.html)
  - [Documentation index](https://tttapa.github.io/py-build-cmake)
  - [More py-build-cmake example projects](https://github.com/tttapa/py-build-cmake/tree/main/examples)
  - [Official PyPA Python Packaging User Guide](https://packaging.python.org/en/latest/)

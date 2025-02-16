@@ -19,6 +19,8 @@ def _print_wrapped(text: str, indent, width: int | None = None):
     of the terminal, or 80 columns as a fallback."""
     if width is None:
         width = shutil.get_terminal_size((80, 24)).columns
+    text = text.replace("{docs_url}", "https://tttapa.github.io/py-build-cmake")
+    text = text.replace("{docs_ext}", "html")
     wrapper = textwrap.TextWrapper(
         width=width, initial_indent=indent, subsequent_indent=indent
     )
@@ -71,15 +73,19 @@ def _get_full_description(vv: ConfigOption):
 
 
 def _md_escape(descr: str):
-    descr = html.escape(descr)
-    descr = descr.replace("*", "\\*")
-
     def unescape(m: re.Match):
         m0 = m.group(0)
         return html.unescape(m0.replace("\\*", "*"))
 
-    descr = re.sub(r"`.*`", unescape, descr)
-    return descr.replace("\n", "<br/>")
+    descr = html.escape(descr).replace("*", "\\*")
+    return (
+        re.sub(r"`.*`", unescape, descr)
+        .replace("\n", "<br/>")
+        .replace("{docs_url}", "project:..")
+        .replace("{docs_ext}", "md")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+    )
 
 
 def _should_use_colors():

@@ -83,8 +83,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     editable = pbc.insert(
         ConfigOption("editable",
                      "Defines how to perform an editable install (PEP 660). "
-                     "See https://tttapa.github.io/py-build-cmake/"
-                     "Editable-install.html for more information.",
+                     "See <{docs_url}/usage/editable-install.{docs_ext}> for "
+                     "more information.",
                      default=DefaultValueValue({}),
         ))  # fmt: skip
     editable_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/editable")
@@ -197,8 +197,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                              "as `-D<option>=<value>`.\n"
                              "Note that setting `CMAKE_OSX_DEPLOYMENT_TARGET` "
                              "here is not supported, see "
-                             "https://tttapa.github.io/py-build-cmake/FAQ.html"
-                             "#how-to-set-the-minimum-supported-macos-version.",
+                             "<{docs_url}/usage/faq.{docs_ext}#how-to-set-the-"
+                             "minimum-supported-macos-version>.",
                              "options = {\"WITH_FEATURE_X\" = true}",
                              default=DefaultValueValue({})),
         ListOfStrConfigOption("args",
@@ -259,8 +259,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "insert a literal `$`.\n"
                               "Note that setting `MACOSX_DEPLOYMENT_TARGET` "
                               "here is not supported, see "
-                              "https://tttapa.github.io/py-build-cmake/FAQ.html"
-                              "#how-to-set-the-minimum-supported-macos-version.",
+                             "<{docs_url}/usage/faq.{docs_ext}#how-to-set-the-"
+                             "minimum-supported-macos-version>.",
                               "env = { \"CMAKE_PREFIX_PATH\" "
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({}),
@@ -292,8 +292,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "modules, you want to set this to `auto`.\n"
                               "For details about platform compatibility tags, "
                               "see the PyPA specification: "
-                              "https://packaging.python.org/en/latest/"
-                              "specifications/platform-compatibility-tags",
+                              "<https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags>",
                               "python_tag = ['py2', 'py3']",
                               convert_str_to_singleton=True,
                               default=DefaultValueValue("auto")),
@@ -312,8 +312,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "to `abi3` (see also `abi3_minimum_cpython_version` "
                          "below).\n"
                          "For details about platform compatibility tags, see "
-                         "the PyPA specification: https://packaging.python.org/"
-                         "en/latest/specifications/platform-compatibility-tags",
+                         "the PyPA specification: <https://packaging.python.org/"
+                         "en/latest/specifications/platform-compatibility-tags>",
                          "python_abi = 'none'",
                          default=DefaultValueValue("auto"),
                          options=["auto", "none", "abi3"]),
@@ -349,8 +349,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "See also: cross.abi.\n"
                               "For details about platform compatibility tags, "
                               "see the PyPA specification: "
-                              "https://packaging.python.org/en/latest/"
-                              "specifications/platform-compatibility-tags",
+                              "<https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags>",
                               "abi_tag = 'pypy310_pp73'",
                               convert_str_to_singleton=True,
                               default=NoDefaultValue()),
@@ -369,14 +369,14 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "There are no checks in place to ensure that the "
                               "platform tag applies to all files in the Wheel. "
                               "If possible, you should use a tool such as "
-                              "auditwheel (https://github.com/pypa/auditwheel) or "
-                              "delocate (https://github.com/matthew-brett/delocate) "
+                              "auditwheel (<https://github.com/pypa/auditwheel>) or "
+                              "delocate (<https://github.com/matthew-brett/delocate>) "
                               "to select the tag and to verify/fix the resulting "
                               "package.\n"
                               "For details about platform compatibility tags, "
                               "see the PyPA specification: "
-                              "https://packaging.python.org/en/latest/"
-                              "specifications/platform-compatibility-tags",
+                              "<https://packaging.python.org/en/latest/"
+                              "specifications/platform-compatibility-tags>",
                               "platform_tag = 'manylinux_2_35_x86_64'",
                               convert_str_to_singleton=True,
                               default=NoDefaultValue()),
@@ -391,9 +391,9 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                             "line, or in a local override.\n"
                            "For details about Wheel build tags, "
                            "see the PyPA specification: "
-                           "https://packaging.python.org/en/latest/"
+                           "<https://packaging.python.org/en/latest/"
                            "specifications/binary-distribution-format/"
-                           "#file-name-convention",
+                           "#file-name-convention>",
                            "build_tag = '1'",
                            default=NoDefaultValue()),
     ])  # fmt: skip
@@ -407,10 +407,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     stubgen.insert_multiple([
         ListOfStrConfigOption("packages",
                               "List of packages to generate stubs for, passed "
-                              "to stubgen as -p <?>."),
+                              "to stubgen as `-p <?>`."),
         ListOfStrConfigOption("modules",
                               "List of modules to generate stubs for, passed "
-                              "to stubgen as -m <?>."),
+                              "to stubgen as `-m <?>`."),
         ListOfStrConfigOption("files",
                               "List of files to generate stubs for, passed to "
                               "stubgen without any flags."),
@@ -455,8 +455,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     cross = pbc.insert(
         ConfigOption("cross",
                      "Causes py-build-cmake to cross-compile the project. See "
-                     "https://tttapa.github.io/py-build-cmake/"
-                     "Cross-compilation.html for more information.",
+                     "<{docs_url}/usage/cross-compilation.{docs_ext}> for more "
+                     "information.",
         ))  # fmt: skip
     cross.insert_multiple([
         EnumConfigOption("os",
@@ -465,22 +465,22 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         StringConfigOption("implementation",
                            "Identifier for the Python implementation.\n"
                            "For details about platform compatibility tags, see "
-                           "the PyPA specification: https://packaging.python.org/"
-                           "en/latest/specifications/platform-compatibility-tags",
+                           "the PyPA specification: <https://packaging.python.org/"
+                           "en/latest/specifications/platform-compatibility-tags>",
                            "implementation = 'cp' # CPython",
                            default=NoDefaultValue("same as current interpreter")),
         StringConfigOption("version",
                            "Python version, major and minor, without dots.\n"
                            "For details about platform compatibility tags, see "
-                           "the PyPA specification: https://packaging.python.org/"
-                           "en/latest/specifications/platform-compatibility-tags",
+                           "the PyPA specification: <https://packaging.python.org/"
+                           "en/latest/specifications/platform-compatibility-tags>",
                            "version = '310' # 3.10",
                            default=NoDefaultValue("same as current interpreter")),
         StringConfigOption("abi",
                            "Python ABI.\n"
                            "For details about platform compatibility tags, see "
-                           "the PyPA specification: https://packaging.python.org/"
-                           "en/latest/specifications/platform-compatibility-tags",
+                           "the PyPA specification: <https://packaging.python.org/"
+                           "en/latest/specifications/platform-compatibility-tags>",
                            "abi = 'cp310'",
                            default=NoDefaultValue("same as current interpreter")),
         StringConfigOption("arch",
@@ -488,15 +488,15 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "and architecture (no dots or dashes, only "
                            "underscores, all lowercase).\n"
                            "For details about platform compatibility tags, see "
-                           "the PyPA specification: https://packaging.python.org/"
-                           "en/latest/specifications/platform-compatibility-tags",
+                           "the PyPA specification: <https://packaging.python.org/"
+                           "en/latest/specifications/platform-compatibility-tags>",
                            "arch = 'linux_x86_64'",
                            default=NoDefaultValue("same as current interpreter")),
         PathConfigOption("prefix",
                          "Root path of the Python installation. "
                          "Used to set the `Python3_ROOT_DIR` CMake hint, "
-                         "see https://cmake.org/cmake/help/latest/module/"
-                         "FindPython3.html#hints.",
+                         "see <https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#hints>.",
                          base_path=RelativeToCurrentConfig(project_path),
                          allow_abs=True,
                          is_folder=True,
@@ -505,8 +505,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         PathConfigOption("library",
                          "Python library file (.so on Linux, .lib on Windows). "
                          "Used to set the `Python3_LIBRARY` CMake artifact, "
-                         "see https://cmake.org/cmake/help/latest/module/"
-                         "FindPython3.html#artifacts-specification.",
+                         "see <https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#artifacts-specification>.",
                          base_path=RelativeToCurrentConfig(project_path),
                          allow_abs=True,
                          is_folder=False,
@@ -516,8 +516,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "Python include directory (containing Python.h). "
                          "Used to set the `Python3_INCLUDE_DIR` CMake "
                          "artifact, "
-                         "see https://cmake.org/cmake/help/latest/module/"
-                         "FindPython3.html#artifacts-specification.",
+                         "see <https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#artifacts-specification>.",
                          base_path=RelativeToCurrentConfig(project_path),
                          allow_abs=True,
                          is_folder=True,
@@ -525,8 +525,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          default=None),
         PathConfigOption("toolchain_file",
                          "CMake toolchain file to use. See "
-                         "https://cmake.org/cmake/help/book/mastering-cmake"
-                         "/chapter/Cross%20Compiling%20With%20CMake.html for "
+                         "<https://cmake.org/cmake/help/book/mastering-cmake"
+                         "/chapter/Cross%20Compiling%20With%20CMake.html> for "
                          "more information.",
                          default=None,
                          base_path=RelativeToCurrentConfig(project_path),
@@ -536,8 +536,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         StringConfigOption("generator_platform",
                            "The value for `CMAKE_GENERATOR_PLATFORM`. Only "
                            "applies to the Visual Studio generator on "
-                           "Windows. See https://cmake.org/cmake/help/"
-                           "latest/variable/CMAKE_GENERATOR_PLATFORM.html "
+                           "Windows. See <https://cmake.org/cmake/help/"
+                           "latest/variable/CMAKE_GENERATOR_PLATFORM.html> "
                            "for details.",
                            "generator_platform = 'ARM64'",
                            default=None),

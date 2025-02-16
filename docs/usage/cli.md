@@ -1,6 +1,5 @@
-<small>[Index](index.html)</small>
 
-# py-build-cmake command line interface
+# Command line interface
 
 A command-line utility is provided for configuring, building and installing the
 CMake project manually. Use the `--help` flag or run the command without

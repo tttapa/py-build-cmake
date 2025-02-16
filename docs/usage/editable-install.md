@@ -1,5 +1,3 @@
-<small>[Index](index.html)</small>
-
 # Editable Install / Development Mode
 
 During development, you often want changes to the Python source files to
@@ -31,7 +29,7 @@ mode = "hook"
 >           if you modify any C/C++/Fortran source files.  
 >           To automatically rebuild C extension modules, set
 >           `editable.mode = "symlink"` and `editable.build_hook = true` in the
->           [configuration](Config.html).
+>           [configuration](project:../reference/config.md).
 >           See the [Build hooks](#build-hooks) section below for details.
 
 ```toml
@@ -113,7 +111,7 @@ source files live, and a directory in Python's `site-packages` directory where
 the C extension modules and other generated files are installed. To be able to
 locate these generated files, `hook` mode inserts a “path finder” hook into
 `sys.meta_path`. For more information, see
-https://docs.python.org/3/reference/import.html#the-meta-path.
+<https://docs.python.org/3/reference/import.html#the-meta-path>.
 
 The advantage of `hook` mode is that does not install a “fake” `__init__.py`
 wrapper file that might confuse some tools. The disadvantage is that the
@@ -226,7 +224,9 @@ Note that any binaries installed into `my_package-1.2.3.data/scripts` will not
 be in the path, since they are installed in the `.py-build-cmake_cache/editable`
 folder, not in `site-packages/bin` or `site-packages/Scripts`.
 
-# Build hooks
+---
+
+## Build hooks
 
 During development, py-build-cmake can be configured to automatically recompile
 any C extension modules that changed. This is done by setting the

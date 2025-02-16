@@ -1,0 +1,20 @@
+.bd-main .bd-content .bd-article-container {
+    max-width: 80em;
+}
+
+.bd-page-width {
+    max-width: 108rem;
+}
+
+.toctree-wrapper li.toctree-l1 {
+    margin-top: 0.3em;
+    margin-top: 0.6em;
+}
+
+.toctree-wrapper li.toctree-l1>a {
+    text-decoration: none;
+}
+
+ul.navbar-icon-links {
+    justify-content: center;
+}

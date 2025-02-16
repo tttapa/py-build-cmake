@@ -1,5 +1,3 @@
-<small>[Index](index.html)</small>
-
 # Debugging
 
 You'll most likely end up in a situation where you'd like to debug your C++
@@ -143,13 +141,13 @@ explained above.
 
 Now open `src/add_module.cpp` and add a breakpoint in the `add` function:
 
-![Breakpoint in the add function](images/breakpoint.png)
+![Breakpoint in the add function](../images/breakpoint.png)
 
 If you now press <kbd>F5</kbd> to launch the debugger, the execution will be
 paused when the Python script calls the `add` function, and you can debug the
 program as usual:
 
-![Execution paused in the add function](images/debug.png)
+![Execution paused in the add function](../images/debug.png)
 
 ## Distributing debug information separately
 
@@ -186,7 +184,7 @@ endfunction()
 
 To package the file in a separate Python package, you can add it to a separate
 CMake installation component, and then package it using the py-build-cmake
-`build_component` backend. See [this page](Components.html) for more
+`build_component` backend. See <project:../reference/components.md> for more
 information.
 
 ---
@@ -200,7 +198,7 @@ but there are some differences you need to keep in mind.
 
 When installing Python, be sure to install the debug symbols.
 
-![Python installation Windows debugging symbols](images/python-install-windows-debug-symbols.png)
+![Python installation Windows debugging symbols](../images/python-install-windows-debug-symbols.png)
 
 ### Different Python ABIs
 

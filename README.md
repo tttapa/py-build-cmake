@@ -1,10 +1,13 @@
+<h1 align="center"><img src="https://tttapa.github.io/py-build-cmake/_static/py-build-cmake-logo.svg" alt="py-build-cmake" width="64"/> <br>py-build-cmake</h1>
+<div align="center">
+
 [![Python Wheel](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml/badge.svg)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml)
 [![Documentation](https://img.shields.io/badge/Documentation-main-blue)](https://tttapa.github.io/py-build-cmake)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/py-build-cmake?label=PyPI)](https://pypi.org/project/py-build-cmake)
 
-# py-build-cmake
+</div>
 
-Modern, [PEP 517](https://www.python.org/dev/peps/pep-0517/) compliant build
+A modern, [PEP 517](https://www.python.org/dev/peps/pep-0517/) compliant build
 backend for creating Python packages with extensions built using CMake.
 
 ## Features
@@ -32,12 +35,12 @@ pip install py-build-cmake
 
 ## Documentation
 
-The documentation can be found on <https://tttapa.github.io/py-build-cmake>.
+The documentation can be found on **<https://tttapa.github.io/py-build-cmake>**.
 
 The format of the configuration file is explained in
-[Config.md](https://tttapa.github.io/py-build-cmake/Config.html).
+[Config.md](https://tttapa.github.io/py-build-cmake/reference/config.html).
 
-Alternatively, use the [command-line interface](https://tttapa.github.io/py-build-cmake/CLI.html)
+Alternatively, use the [command-line interface](https://tttapa.github.io/py-build-cmake/usage/cli.html)
 to get the documentation for all supported options:
 ```sh
 py-build-cmake config format

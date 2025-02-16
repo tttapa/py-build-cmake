@@ -277,95 +277,23 @@ def format(md, component):
 
     else:
         pr_tx("List of py-build-cmake pyproject.toml options:")
-        pr_md("# py-build-cmake configuration options\n")
+        pr_md("# Configuration options (pyproject.toml)\n")
         pr_md(
-            "These options go in the `[tool.py-build-cmake]` section of "
-            "the `pyproject.toml` configuration file.\n"
+            "The main configuration file for py-build-cmake is the standard "
+            "`pyproject.toml` file in the root of your project. "
+            "All py-build-cmake-specific options live in the "
+            "`[tool.py-build-cmake]` section of the configuration file. "
+            "Different subsections control different aspects of the build and "
+            "packaging process, such as `[tool.py-build-cmake.sdist]` for "
+            "source distributions, `[tool.py-build-cmake.cmake]` for CMake and "
+            "other build-related options, and `[tool.py-build-cmake.wheel]` "
+            "for properties of binary Wheel packages. Detailed descriptions of "
+            "all available sections and options can be found below.\n"
         )
         opts = get_options(PurePosixPath("/"))
         root_ref = ConfigReference(ConfPath.from_string("/"), opts)
         help_print(root_ref.sub_ref(help_pth).config)
-        pr_md("# Local overrides\n")
-        pr_md(
-            "Additionally, two extra configuration files can be placed in "
-            "the same directory as `pyproject.toml` to override some "
-            "options for your specific use case:\n\n"
-            "- `py-build-cmake.local.toml`: the options in this file "
-            "override the values in the `tool.py-build-cmake` section of "
-            "`pyproject.toml`.<br/>This is useful if you need specific "
-            "arguments or CMake options to compile the package on your "
-            "system.\n"
-            "- `py-build-cmake.cross.toml`: the options in this file "
-            "override the values in the `tool.py-build-cmake.cross` section "
-            "of `pyproject.toml`.<br/>Useful for cross-compiling the "
-            "package without having to edit the main configuration file.\n\n"
-            "It is recommended to exclude these files from version control, "
-            "e.g. by adding them to your `.gitignore`.\n\n"
-        )
-        pr_md("# Command-line overrides\n")
-        pr_md(
-            "Instead of using the `py-build-cmake.local.toml` and "
-            "`py-build-cmake.cross.toml` files, you can also include "
-            "additional config files using command-line options:\n\n"
-            "- `--local`: specifies a toml file that overrides the "
-            "`tool.py-build-cmake` section of `pyproject.toml`, "
-            "similar to `py-build-cmake.local.toml`\n"
-            "- `--cross`: specifies a toml file that overrides the "
-            "`tool.py-build-cmake.cross` section of `pyproject.toml`, "
-            "similar to `py-build-cmake.cross.toml`\n\n"
-            "These command-line overrides are applied after the "
-            "`py-build-cmake.local.toml` and `py-build-cmake.cross.toml` "
-            "files in the project folder (if any).\n\n"
-            "When using PyPA build, these flags can be specified using "
-            "the `-C` or `--config-setting` flag: \n"
-            "```sh\n"
-            "python -m build . -C--cross=/path/to/my-cross-config.toml\n"
-            "```\n"
-            "The same flag may appear multiple times. The order for the same "
-            "flag is preserved, but all `--cross` flags are applied after all "
-            "`--local` flags. For example: \n"
-            "```sh\n"
-            "python -m build . -C--local=conf-A.toml -C--local=conf-B.toml\n"
-            "```\n"
-            "For PyPA pip, you can use the `-C` or `--config-settings` flags "
-            "instead.\n\n"
-            "Finally, you can also specify overrides for specific "
-            "configuration options on the command-line, for example:\n"
-            "```sh\n"
-            "python -m build . \\\n"
-            '   -C override=cmake.options.CMAKE_PREFIX_PATH+="/opt/some-package" \\\n'
-            '   -C override=cmake.env.PATH=+(path)"/opt/some-package/bin"\n'
-            "```\n"
-            "The format consists of the configuration option keys (separated) "
-            "by periods, followed by an operator (such as `+=`, see below), "
-            "followed by the value.\n\n"
-            "The following operators are supported:\n"
-            "- `=`: Sets the configuration option regardless of its previous "
-            "value.\n"
-            "- `+=`: Appends the given value to the previous value.\n"
-            "- `=+`: Prepends the given value to the previous value.\n"
-            "- `=-`: Removes the given value from the previous value.\n"
-            "- `=!`: Clears the configuration option if set.\n"
-            "- `+=(path)`: Appends the given value to the previous value, "
-            "joining them with the system's path separator (`:` on Unix, `;` "
-            "on Windows).\n"
-            "- `=+(path)`: Prepends the given value to the previous value, "
-            "joining them with the system's path separator.\n\n"
-            "Values can be specified using a TOML-like syntax, using square "
-            "brackets for lists, and curly braces with equal signs for "
-            "dictionaries. Simple strings can be specified without quotes, "
-            "but quotes are required when including special characters. "
-            "Note the escaping of quotes to prevent the shell from stripping "
-            "them out.\n"
-            "```sh\n"
-            "python -m build . \\\n"
-            '   -C "override=cmake.options.CMAKE_PREFIX_PATH='
-            '[\\"/opt/some-package\\", \\"/another\\"]" \\\n'
-            '   -C "override=cmake.env={MY_PATH = \\"/opt/some-package\\" }" \\\n'
-            '   -C "override=cmake.find_python=true"\n'
-            "```\n\n"
-        )
-        pr_md("# Combining lists\n")
+        pr_md("---\n\n## Combining lists\n")
         pr_md(
             "Many options are specified as lists of strings. When one of "
             "these options inherits from or is overridden by another option, "

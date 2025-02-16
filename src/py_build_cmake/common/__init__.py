@@ -191,7 +191,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
             f"\t\t{e}\n"
             "\n"
             f"\t   Please run `py-build-cmake config format{comp_arg}` or see "
-            "https://tttapa.github.io/py-build-cmake/Config.html for help.\n"
+            "https://tttapa.github.io/py-build-cmake/reference/config.html for help.\n"
         )
         raise FormattedErrorMessage(msg) from e
     if isinstance(e, CalledProcessError):

@@ -1,5 +1,3 @@
-<small>[Index](index.html)</small>
-
 # Frequently asked questions
 
 ## Doesn't my project need a `setup.py` or `setup.cfg` file?
@@ -41,58 +39,21 @@ For more information about `setup.py` and Python packaging in general, see:
 
 ## The build fails. How can I find out what's going on?
 
-You can enable py-build-cmake's verbose mode to make it print information about
-the configuration, the exact subprocesses it invokes, the configure and build
-environments, and so on.
-
-When using a tool like PyPA `build` or `pip`, you can use the `-C` flag to pass
-the `verbose` option:
+To enable py-build-cmake's verbose mode, pass the `verbose` configuration setting,
+or set the `PY_BUILD_CMAKE_VERBOSE` environment variable:
 ```sh
-python -m build . -C verbose
+python -m build . -C verbose                # Option (1)
+PY_BUILD_CMAKE_VERBOSE=1 python -m build .  # Option (2)
 ```
 
-If you cannot easily change the command line options directly, you
-can set the environment variable `PY_BUILD_CMAKE_VERBOSE`:
-```sh
-PY_BUILD_CMAKE_VERBOSE=1 pip install . -v # Linux/macOS
-```
-```sh
-$Env:PY_BUILD_CMAKE_VERBOSE=1 # Windows
-pip install . -v
-Remove-Item Env:PY_BUILD_CMAKE_VERBOSE
-```
-Also note the `-v` flag to get pip to print the build output.
-
-For [cibuildwheel](https://github.com/pypa/cibuildwheel), you can add the
-following options to `pyproject.toml` to see all output from the build:
-```toml
-[tool.cibuildwheel]
-build-verbosity = 1
-environment = { PY_BUILD_CMAKE_VERBOSE="1" }
-```
-
-When inspecting the output, be aware that output of subprocesses is often much
-higher up than the final error message or backtrace. For example, if you get an
-error saying that the invocation of CMake failed, you'll have to scroll up to
-see the actual CMake and compiler output.
+Please see <project:troubleshooting.md#verbose-output-and-detailed-information-about-the-configuration-and-build-process> for more details.
 
 ## How can I perform a clean rebuild?
 
-To fully reconfigure and rebuild a project (e.g. after changing the CMake
-generator, or after modifying environment variables like `CFLAGS` that affect
-the initialization of CMake cache variables), simply remove py-build-cmake's
-cache directory:
-```sh
-rm -r .py-build-cmake_cache
-```
-Often times, it is enough to simply delete the `CMakeCache.txt` file, without
-performing a full rebuild:
-```sh
-# For a specific version and architecture (use tab completion):
-rm .py-build-cmake_cache/cp311-cp311-linux_x86_64/CMakeCache.txt
-# All versions and architectures:
-rm .py-build-cmake_cache/*/CMakeCache.txt
-```
+To remove all (temporary) build files and editable installations, simply remove
+the hidden `.py-build-cmake_cache` directory in the root of your project.
+
+Please see <project:troubleshooting.md#performing-a-clean-rebuild> for more details.
 
 ## How to upload my package to PyPI?
 
@@ -103,10 +64,10 @@ each combination of Python version and platform you wish to support
 For the actual upload of the packages to PyPI, it is highly recommended to use
 trusted publishing:
 
-- https://docs.pypi.org/trusted-publishers
+- <https://docs.pypi.org/trusted-publishers>
 - [pypa/gh-action-pypi-publish (GitHub Actions)](https://github.com/pypa/gh-action-pypi-publish)
 - [Python Packaging User Guide: Uploading the distribution archives](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)
-- https://twine.readthedocs.io/en/latest
+- <https://twine.readthedocs.io/en/latest>
 
 ## How to build my package for many Python versions, operating systems, and architectures?
 
@@ -117,9 +78,8 @@ automate the build process for this large matrix of platform/version
 combinations. Continuous integration providers like GitHub Actions also provide
 job matrix capabilities. For example, the [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example)
 project uses the job matrices to build the package for multiple
-architectures and Python versions: https://github.com/tttapa/py-build-cmake-example/blob/main/.github/workflows/wheels.yml
+architectures and Python versions: <https://github.com/tttapa/py-build-cmake-example/blob/main/.github/workflows/wheels.yml>
 
-{% raw %}
 ```yaml
   build-linux:
     name: Build (${{ matrix.host }})
@@ -144,7 +104,6 @@ architectures and Python versions: https://github.com/tttapa/py-build-cmake-exam
           - {os: macos-latest, cibw-arch: x86_64}
           - {os: macos-latest, cibw-arch: arm64}
 ```
-{% endraw %}
 
 The same workflow file also contains some steps to test the resulting wheels and
 upload them to to PyPI. It's a good idea to check that the package version
@@ -159,7 +118,7 @@ export _PYTHON_HOST_PLATFORM='macosx-10.13-universal2'
 export ARCHFLAGS='-arch arm64 -arch x86_64'
 ```
 
-To build packages for multiple architectures on Linux, I recommend [cross-compilation](./Cross-compilation.html).
+To build packages for multiple architectures on Linux, I recommend [cross-compilation](project:./cross-compilation.md).
 This ensures that your package doesn't depend on any libraries (including GLIBC)
 from the build server. You can use the modern GCC cross-compilers from
 <https://github.com/tttapa/python-dev>, which also include pre-built
@@ -167,7 +126,7 @@ cross-compiled versions of Python.
 The [py-build-cmake-example](https://github.com/tttapa/py-build-cmake-example) project
 simplifies the process even further by using the [Conan](https://conan.io) package manager
 to automate the installation of the appropriate cross-compilation toolchains and
-cross-compiled Python libraries. See https://github.com/tttapa/py-build-cmake-example/blob/main/scripts/ci/build-linux-cross.sh for details.
+cross-compiled Python libraries. See <https://github.com/tttapa/py-build-cmake-example/blob/main/scripts/ci/build-linux-cross.sh> for details.
 
 ## How to set the minimum supported macOS version
 
