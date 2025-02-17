@@ -33,12 +33,12 @@ def write_build_hook(
     pkg_hook = staging_dir / fname
     pkg_hook.mkdir(parents=True, exist_ok=True)
     cwd = cmaker.get_working_dir()
-    env = cmaker.conf_settings.environment or {}
+    env = cmaker.prepare_environment()
+    env = {k: v for k, v in env.items() if k in cmaker.conf_settings.environment}
     cmd = list(cmaker.get_build_commands()) + list(cmaker.get_install_commands())
     content = f"""\
         import sys, inspect, os
         from importlib.machinery import PathFinder
-        from string import Template
         import subprocess
 
         class BuilderPathFinder(PathFinder):
@@ -53,9 +53,7 @@ def write_build_hook(
                 return None
             def prepare_environment(self):
                 env = os.environ.copy()
-                for k, v in self.env.items():
-                    templ = Template(v)
-                    env[k] = templ.substitute(env)
+                env.update(self.env)
                 env["PY_BUILD_CMAKE_BUILD_HOOK"] = self.name
                 return env
             def build(self):
