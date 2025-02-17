@@ -69,6 +69,9 @@ trusted publishing:
 - [Python Packaging User Guide: Uploading the distribution archives](https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives)
 - <https://twine.readthedocs.io/en/latest>
 
+The <https://github.com/tttapa/py-build-cmake-example> project includes a GitHub
+Actions workflow run that uses trusted publishing to upload the packages to PyPI.
+
 ## How to build my package for many Python versions, operating systems, and architectures?
 
 In short: have a look at [py-build-cmake-example: .github/workflows](https://github.com/tttapa/py-build-cmake-example/tree/main/.github/workflows).

@@ -21,9 +21,9 @@ def test_add_positive():
 > **Note**: While useful as an example, I don't recommend writing extension
 > modules by hand.  
 > Instead, consider using a library such as [pybind11](https://github.com/pybind/pybind11)
-> or [nanobind](https://github.com/wjakob/nanobind) to generate Python bindings
-> for your C or C++ code. Examples using py-build-cmake with pybind11 or
-> nanobind can be found in [examples](../README.md).
+> or [nanobind](https://github.com/wjakob/nanobind), or a tool like [SWIG](https://github.com/swig/swig)
+> to generate Python bindings for your C or C++ code. Examples using
+> py-build-cmake with pybind11, nanobind or SWIG can be found in [examples](../README.md).
 
 The remainder of this tutorial first goes over the directory structure of the
 package and the necessary files ([§ Package structure](#package-structure)),
@@ -242,41 +242,11 @@ details.
 
 ## Building and installing
 
-### Building sdists and Wheels
-
-To distribute or publish your project, you'll need to create source and binary
-distributions. The easiest way to do this is using
-[PyPA build](https://github.com/pypa/build).
-
-```sh
-pip install build
-```
-Then go to the root folder of your project (the one containing the
-pyproject.toml file), and start the build:
-
-```sh
-python -m build .
-```
-This will first package the source distribution, which is then used to build a
-binary Wheel package for your platform. While building the Wheel, py-build-cmake
-will invoke CMake to build your extension modules, and include them in the
-Wheel.  
-The resulting packages can be found in the `dist` folder.
-
-You could now upload these packages to PyPI, as explained in
-<https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives>.
-For a real-world project, it is recommended to use trusted publishing as part of
-a CI workflow, which is more secure and less error prone than manually
-uploading the files. This is not covered by this tutorial, but you can find
-more details in the [FAQ](https://tttapa.github.io/py-build-cmake/usage/faq.html#how-to-upload-my-package-to-pypi).
-
-On Linux, you'll want to use [auditwheel](https://github.com/pypa/auditwheel)
-to make sure that your package is compatible with a larger range of systems.
-
 ### Installing the package locally
 
-You can use pip to easily install your package locally. Again in the project
-root directory, run:
+You can use pip to easily build and install your package locally. In the project
+root directory (the one containing the pyproject.toml file), run the following
+command:
 ```sh
 pip install .
 ```
@@ -285,15 +255,16 @@ You can use the `-v` flag to display the full output of the build process
 By default, pip builds packages in a temporary virtual environment, where it
 first installs all build dependencies. This can be slow, and might not be
 desirable during development. You can use the `--no-build-isolation` flag to
-disable this behavior.
+disable this behavior (this requires you to install any build requirements
+yourself).
 See <https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-no-build-isolation>
 for more information.
 
 ### Installing the package in editable mode
 
 While developing your package, you probably don't want to reinstall it every
-time you make a change to one of the Python files. For this reason, packages
-can be installed in editable mode, so changes are effective immediately.
+time you make a change to one of the source files. For this reason, packages
+can be installed in editable mode, so changes take effect immediately.
 ```sh
 pip install -e .
 ```
@@ -330,14 +301,50 @@ delete this folder.
 There's no harm in just deleting it, and you should add it to your .gitignore
 to prevent checking it in to version control.
 
+### Building sdists and Wheels for distribution
+
+To distribute or publish your project, you'll need to create source and binary
+distributions. The easiest way to do this is by using [cibuildwheel](https://github.com/pypa/cibuildwheel)
+in a continuous integration workflow. For building packages locally during
+development, you can use the [PyPA build](https://github.com/pypa/build) tool.
+
+```sh
+pip install build
+```
+Go to the root folder of your project, and start the build:
+
+```sh
+python -m build .
+```
+This will first package the source distribution, which is then used to build a
+binary Wheel package for your platform in an isolated environment. While
+building the Wheel, py-build-cmake will invoke CMake to build your extension
+modules, and include them in the Wheel.  
+The resulting packages can be found in the `dist` folder.
+
+You could now share these packages with others or upload them to PyPI, the
+Python Package Index, as explained in <https://packaging.python.org/en/latest/tutorials/packaging-projects/#uploading-the-distribution-archives>.
+For a real-world project, it is highly recommended to use trusted publishing as
+part of a CI workflow, which is more secure and less error prone than manually
+uploading the files. This is not covered by this tutorial, but you can find
+more details in the [FAQ](https://tttapa.github.io/py-build-cmake/usage/faq.html#how-to-upload-my-package-to-pypi),
+and an example GitHub Actions workflow with trusted publishing is available as
+part of the <https://github.com/tttapa/py-build-cmake-example> project.
+
+On Linux, you'll want to use [auditwheel](https://github.com/pypa/auditwheel)
+to make sure that your package is compatible with a wide range of systems and
+that the extension modules have no accidental dependencies on system-specific
+libraries.
+
 ---
 
 ## Where to go next
 
 You may find the following resources useful:
 
+ - [py-build-cmake documentation](https://tttapa.github.io/py-build-cmake)
  - [Frequently asked questions](https://tttapa.github.io/py-build-cmake/usage/faq.html)
- - [Documentation index](https://tttapa.github.io/py-build-cmake)
- - [More py-build-cmake example projects](https://github.com/tttapa/py-build-cmake/tree/main/examples)
+ - [More py-build-cmake examples](https://tttapa.github.io/py-build-cmake/examples)
+ - [Extensive tttapa/py-build-cmake-example project](https://github.com/tttapa/py-build-cmake-example)
  - [Official PyPA Python Packaging User Guide](https://packaging.python.org/en/latest/)
  - [cibuildwheel documentation](https://cibuildwheel.readthedocs.io/en/stable/)
