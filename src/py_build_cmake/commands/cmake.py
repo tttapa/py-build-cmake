@@ -49,6 +49,7 @@ class CMakeConfigureSettings:
     python_sabi_library: Path | None
     python_include_dir: Path | None
     python_interpreter_id: str | None
+    python_soabi: str | None
 
 
 @dataclass
@@ -258,6 +259,7 @@ class CMaker:
         """FindPython hints and artifacts to set when cross-compiling."""
         if self.conf_settings.python_prefix:
             pfx = self.conf_settings.python_prefix.as_posix()
+            yield Option(prefix + "_ROOT", pfx, "PATH")
             yield Option(prefix + "_ROOT_DIR", pfx, "PATH")
         if self.conf_settings.python_library:
             lib = self.conf_settings.python_library.as_posix()
@@ -271,6 +273,9 @@ class CMaker:
         if self.conf_settings.python_interpreter_id:
             id = self.conf_settings.python_interpreter_id
             yield Option(prefix + "_INTERPRETER_ID", id, "STRING")
+        if self.conf_settings.python_soabi is not None:
+            soabi = self.conf_settings.python_soabi
+            yield Option(prefix + "_SOABI", soabi, "STRING")
 
     def get_configure_options_python(self) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
