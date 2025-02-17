@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 
 from ...common.platform import BuildPlatformInfo
 from ..options.value_reference import ValueReference
 from .macos import config_quirks_mac
+from .pyodide import config_quirks_pyodide
 from .windows import config_quirks_win
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,8 @@ def config_quirks_pypy(plat: BuildPlatformInfo, config: ValueReference):
 
 
 def config_quirks(plat: BuildPlatformInfo, config: ValueReference):
+    if "PYODIDE" in os.environ:
+        config_quirks_pyodide(plat, config)
     dispatch = {
         "Windows": config_quirks_win,
         "Darwin": config_quirks_mac,
