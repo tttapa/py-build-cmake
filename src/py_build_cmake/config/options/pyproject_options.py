@@ -494,7 +494,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            default=NoDefaultValue("same as current interpreter")),
         PathConfigOption("prefix",
                          "Root path of the Python installation. "
-                         "Used to set the `Python3_ROOT_DIR` CMake hint, "
+                         "Used to set the `Python3_ROOT_DIR` and "
+                         "`Python3_ROOT` CMake hints, "
                          "see <https://cmake.org/cmake/help/latest/module/"
                          "FindPython3.html#hints>.",
                          base_path=RelativeToCurrentConfig(project_path),
@@ -523,6 +524,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          is_folder=True,
                          must_exist=True,
                          default=None),
+        StringConfigOption("soabi",
+                           "Used to set the `Python3_SOABI` CMake variable, "
+                           "see <https://cmake.org/cmake/help/latest/module/"
+                           "FindPython3.html#artifacts-specification>.",
+                           "soabi = 'cpython-310-x86_64-linux-gnu'",
+                           default=None),
         PathConfigOption("toolchain_file",
                          "CMake toolchain file to use. See "
                          "<https://cmake.org/cmake/help/book/mastering-cmake"

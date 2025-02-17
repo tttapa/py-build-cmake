@@ -478,6 +478,7 @@ class _BuildBackend:
                 "python_interpreter_id": python_tag_to_cmake(
                     cross_cfg.get("implementation")
                 ),
+                "python_soabi": cross_cfg.get("soabi"),
             }
         else:
             cross_compiling = False
@@ -488,6 +489,7 @@ class _BuildBackend:
                 "python_library": None,
                 "python_include_dir": None,
                 "python_interpreter_id": None,
+                "python_soabi": None,
             }
 
         # Add some CMake configure options
