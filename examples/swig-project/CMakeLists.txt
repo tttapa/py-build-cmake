@@ -43,9 +43,9 @@ set(UseSWIG_MODULE_VERSION 2)
 include(UseSWIG)
 
 # Create a SWIG module with Python bindings for add_module.cpp
-set_source_files_properties("src/add_module.i" PROPERTIES CPLUSPLUS ON)
+set_source_files_properties("src/ext/add_module.i" PROPERTIES CPLUSPLUS ON)
 swig_add_library(add_module TYPE MODULE LANGUAGE python
-    SOURCES "src/add_module.i" "src/add_module.cpp")
+    SOURCES "src/ext/add_module.i" "src/ext/add_module.cpp")
 set_target_properties(add_module PROPERTIES
     SWIG_USE_TARGET_INCLUDE_DIRECTORIES TRUE
     SWIG_COMPILE_OPTIONS "-Wall")

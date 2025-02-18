@@ -5,9 +5,9 @@ nanobind_project-{{version}}/README.md
 nanobind_project-{{version}}/cmake/QueryPythonForNanobind.cmake
 nanobind_project-{{version}}/cmake/nanobindGuessPythonExtSuffix.cmake
 nanobind_project-{{version}}/pyproject.toml
-nanobind_project-{{version}}/python-src/nanobind_project/__init__.py
-nanobind_project-{{version}}/python-src/nanobind_project/add.py
-nanobind_project-{{version}}/python-src/nanobind_project/add_module.py
-nanobind_project-{{version}}/python-src/nanobind_project/py.typed
-nanobind_project-{{version}}/python-src/nanobind_project/sub_package/__init__.py
-nanobind_project-{{version}}/src/add_module.cpp
+nanobind_project-{{version}}/src/nanobind_project/__init__.py
+nanobind_project-{{version}}/src/nanobind_project/add.py
+nanobind_project-{{version}}/src/nanobind_project/add_module.py
+nanobind_project-{{version}}/src/nanobind_project/py.typed
+nanobind_project-{{version}}/src/nanobind_project/sub_package/__init__.py
+nanobind_project-{{version}}/src/ext/add_module.cpp

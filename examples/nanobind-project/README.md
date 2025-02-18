@@ -1,6 +1,6 @@
 # Example project using py-build-cmake and nanobind
 
-This is an example package with a C++ extension using
+This is an example package with a C++ extension module using
 [nanobind](https://github.com/wjakob/nanobind). When building for CPython 3.12
 or later, the stable ABI is used, which means that you don't need one wheel for
 each version of CPython.

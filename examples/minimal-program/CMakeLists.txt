@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(minimal-program)
 
 # Add the executable to compile
-add_executable(minimal_program "src/minimal_program.cpp")
+add_executable(minimal_program "src/program/minimal_program.cpp")
 
 # Install the executable
 install(TARGETS minimal_program

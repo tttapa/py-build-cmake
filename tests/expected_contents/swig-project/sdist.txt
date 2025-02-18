@@ -4,8 +4,8 @@ swig_project-{{version}}/PKG-INFO
 swig_project-{{version}}/README.md
 swig_project-{{version}}/cmake/QueryPythonForSWIG.cmake
 swig_project-{{version}}/pyproject.toml
-swig_project-{{version}}/python-src/swig_project/__init__.py
-swig_project-{{version}}/python-src/swig_project/add.py
-swig_project-{{version}}/python-src/swig_project/sub_package/__init__.py
-swig_project-{{version}}/src/add_module.cpp
-swig_project-{{version}}/src/add_module.i
+swig_project-{{version}}/src/swig_project/__init__.py
+swig_project-{{version}}/src/swig_project/add.py
+swig_project-{{version}}/src/swig_project/sub_package/__init__.py
+swig_project-{{version}}/src/ext/add_module.cpp
+swig_project-{{version}}/src/ext/add_module.i

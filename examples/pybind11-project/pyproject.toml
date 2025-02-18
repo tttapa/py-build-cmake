@@ -40,10 +40,10 @@ build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
 name = "pybind11_project" # Import name
-directory = "python-src"
+directory = "src"
 
 [tool.py-build-cmake.sdist]
-include = ["CMakeLists.txt", "cmake/*.cmake", "src/*.cpp", "src/*.hpp"]
+include = ["CMakeLists.txt", "cmake/*.cmake", "src/ext"]
 exclude = []
 
 [tool.py-build-cmake.cmake]

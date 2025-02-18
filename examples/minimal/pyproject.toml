@@ -29,10 +29,11 @@ requires = ["py-build-cmake~=0.4.2"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
-directory = "src-python"
+name = "minimal"
+directory = "src"
 
 [tool.py-build-cmake.sdist]
-include = ["CMakeLists.txt", "src/*"]
+include = ["CMakeLists.txt", "src/ext"]
 
 [tool.py-build-cmake.cmake]
 minimum_version = "3.17"

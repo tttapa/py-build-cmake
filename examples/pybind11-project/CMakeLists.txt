@@ -23,7 +23,7 @@ include(cmake/QueryPythonForPybind11.cmake)
 find_pybind11_python_first()
 
 # Compile the example Python module
-pybind11_add_module(_add_module MODULE "src/add_module.cpp")
+pybind11_add_module(_add_module MODULE "src/ext/add_module.cpp")
 set_target_properties(_add_module PROPERTIES
     DEBUG_POSTFIX "${CMAKE_DEBUG_POSTFIX}${PYTHON_MODULE_DEBUG_POSTFIX}")
 target_compile_definitions(_add_module PRIVATE

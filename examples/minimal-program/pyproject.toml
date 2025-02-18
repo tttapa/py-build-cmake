@@ -30,10 +30,10 @@ build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
 name = "minimal_program_module"
-directory = "src-python"
+directory = "src"
 
 [tool.py-build-cmake.sdist]
-include = ["CMakeLists.txt", "src/*"]
+include = ["CMakeLists.txt", "src/program"]
 
 [tool.py-build-cmake.cmake]
 minimum_version = "3.15"

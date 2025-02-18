@@ -3,8 +3,8 @@ minimal-{{version}}/LICENSE
 minimal-{{version}}/PKG-INFO
 minimal-{{version}}/README.md
 minimal-{{version}}/pyproject.toml
-minimal-{{version}}/src-python/minimal/__init__.py
-minimal-{{version}}/src-python/minimal/add_module.py
-minimal-{{version}}/src-python/minimal/py.typed
-minimal-{{version}}/src/_add_module.pyi
-minimal-{{version}}/src/add_module.c
+minimal-{{version}}/src/minimal/__init__.py
+minimal-{{version}}/src/minimal/add_module.py
+minimal-{{version}}/src/minimal/py.typed
+minimal-{{version}}/src/ext/_add_module.pyi
+minimal-{{version}}/src/ext/add_module.c
