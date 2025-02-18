@@ -210,6 +210,40 @@ jobs:
         name: ${{ matrix.project }}-${{ matrix.os }}-whl
         path: dist/*.whl
 
+  pyodide:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [pybind11-project, nanobind-project, swig-project]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      name: Install Python
+      with:
+        python-version: '3.12'
+    # https://github.com/pyodide/pyodide-build/issues/100
+    - name: Patch name
+      run: |
+        sed -i 's/^name = "py-build-cmake"/name = "py-build-cmak"/' pyproject.toml
+        sed -i 's/"py-build-cmake~/"py-build-cmak~/g' examples/${{ matrix.project }}/pyproject.toml
+    - name: Build py-build-cmak
+      run: |
+        python3.12 -m pip install -U build
+        python3.12 -m build -w -o pbc-dist
+    - name: Build Wheels
+      uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b
+      with:
+        package-dir: examples/${{ matrix.project }}
+        output-dir: dist
+      env:
+        CIBW_PLATFORM: pyodide
+        CIBW_ENVIRONMENT: 'PIP_FIND_LINKS=${{ github.workspace }}/pbc-dist PY_BUILD_CMAKE_VERBOSE=1'
+    - name: Upload Wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.project }}-pyodide-whl
+        path: dist/*.whl
+
   check-release:
     if: ${{ github.event.action == 'released' || github.event.action == 'prereleased' }}
     needs: [test, test-windows, test-macos, cibw]
