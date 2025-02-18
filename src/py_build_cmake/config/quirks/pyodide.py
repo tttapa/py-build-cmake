@@ -70,6 +70,12 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
         strip_opt = CMakeOption.create(False)
         cross_cfg["cmake"][all]["options"]["CMAKE_STRIP"] = strip_opt
 
+    # nanobind relies on Python_INTERPRETER_ID to determine whether to enable
+    # the stable ABI.
+    python_id = CMakeOption.create("Python", "STRING")
+    cross_cfg["cmake"][all]["options"]["Python_INTERPRETER_ID"] = python_id
+    cross_cfg["cmake"][all]["options"]["Python3_INTERPRETER_ID"] = python_id
+
     # Enable cross-compilation
     config.set_value("cross", cross_cfg)
 
