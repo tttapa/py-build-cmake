@@ -436,3 +436,33 @@ Since `cibuildwheel` does not support cross-compilation on Linux,
 By default, `cibuildwheel` will try to build your package in an emulated ARM64
 container. This can be very slow, so it is recommended to use explicit
 cross-compilation as described [above](#complete-cross-compilation-workflow).
+
+### Pyodide
+
+Cross-compilation for Pyodide is enabled if the `PYODIDE` environment variable
+is set, and if the configuration does not yet contain a
+`[tool.py-build-cmake.cross]` entry. Support is very much experimental, and the
+implementation has only been tested with `cibuildwheel` on Linux:
+
+```sh
+cibuildwheel --platform pyodide
+```
+
+Details can be found in `src/py_build_cmake/config/quirks/pyodide.py`.
+
+```{note}
+Current releases of `pyodide-build` have a bug that causes py-build-cmake to be
+ignored when installing build dependencies, because its name contains `cmake`:
+<https://github.com/pyodide/pyodide-build/issues/100>.
+Since py-build-cmake is not installed in the build environment, the process
+fails with the error
+`pyproject_hooks._impl.BackendUnavailable: Cannot import 'py_build_cmake.build'`.
+
+A temporary workaround is to rename the py-build-cmake package to e.g.
+`py-build-cmak` (change the `project.name` option in its pyproject.toml), build
+this renamed version of py-build-cmake locally, add its Wheel directory to
+the `PIP_FIND_LINKS` path, and then build your own package with a build
+dependency on `py-build-cmak` instead of `py-build-cmake`.
+Refer to `.github/workflows/wheel.yml` to see how this is done for
+py-build-cmake's CI tests.
+```
