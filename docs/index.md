@@ -38,7 +38,7 @@ different Wheel packages.
 
 :::{grid-item-card} {fas}`cogs` First-class cross-compilation
 Build for a wide range of platforms, including Raspberry Pi, Windows on ARM,
-Intel and ARM64 macOS.
+Apple Silicon, and [Pyodide](https://github.com/pyodide/pyodide).
 :::
 
 :::{grid-item-card} {fas}`archive` Reproducible builds
