@@ -34,6 +34,7 @@ from .common.platform import (
     WheelTags,
     determine_build_platform_info,
 )
+from .common.util import python_tag_to_cmake
 from .config import load as config_load
 from .config.dynamic import find_module, update_dynamic_metadata
 from .export import editable as export_editable
@@ -479,16 +480,6 @@ class _BuildBackend:
                 assert isinstance(x, (Path, str))
                 return Path(x)
 
-            def python_tag_to_cmake(x: str | None):
-                if x is None:  # If not set, use native interpreter
-                    x = plat.implementation
-                return {
-                    "cpython": "Python",
-                    "pypy": "PyPy",
-                    "ironpython": "IronPython",
-                    "jython": "Jython",
-                }.get(x)
-
             cross_opts = {
                 "toolchain_file": cvt_path(cross_cfg.get("toolchain_file")),
                 "python_prefix": cvt_path(cross_cfg.get("prefix")),
@@ -496,7 +487,7 @@ class _BuildBackend:
                 "python_sabi_library": cvt_path(cross_cfg.get("sabi_library")),
                 "python_include_dir": cvt_path(cross_cfg.get("include_dir")),
                 "python_interpreter_id": python_tag_to_cmake(
-                    cross_cfg.get("implementation")
+                    cross_cfg.get("implementation") or plat.implementation
                 ),
                 "python_soabi": cross_cfg.get("soabi"),
             }

@@ -66,3 +66,22 @@ def platform_tag_to_archflags(plat: str) -> tuple[str, ...] | None:
         "x86_64": ("x86_64",),
         "arm64": ("arm64",),
     }.get(plat)
+
+
+def python_tag_to_cmake(x: str):
+    """Convert a Python tag (e.g. 'pp') or a sys.implementation name (e.g.
+    'pypy') to the corresponding value of CMake's Python_INTERPRETER_ID."""
+    return {
+        "py": "Python",
+        "cp": "Python",
+        "python": "Python",
+        "pp": "PyPy",
+        "pypy": "PyPy",
+        "ip": "IronPython",
+        "ironpython": "IronPython",
+        "jy": "Jython",
+        "jython": "Jython",
+    }.get(x)
+    # CMake also supports the values "Anaconda" and "ActivePython", but Anaconda
+    # and ActiveState Python interpreters just report "cpython" as their
+    # sys.implementation, and they use the same Wheel tags as CPython.
