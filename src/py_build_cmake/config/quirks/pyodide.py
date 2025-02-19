@@ -9,7 +9,6 @@ from typing import Any
 from ...common import ConfigError
 from ...common.platform import BuildPlatformInfo
 from ...config.options.config_option import MultiConfigOption
-from ..options.cmake_opt import CMakeOption
 from ..options.string import StringOption
 from ..options.value_reference import ValueReference
 
@@ -53,34 +52,26 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     setuptools_ext = StringOption.create(ext_suffix)
     cross_cfg["cmake"][all]["env"]["SETUPTOOLS_EXT_SUFFIX"] = setuptools_ext
 
-    # Set Emscripten toolchain file
-    toolchain = os.getenv("CMAKE_TOOLCHAIN_FILE")
-    if toolchain:
-        cross_cfg["toolchain_file"] = toolchain
-    else:
-        logger.warning(
-            "CMAKE_TOOLCHAIN_FILE environment variable not set. This may "
-            "cause issues when building for WASM outside of the Emscripten SDK."
-        )
-
-    # By default, CMake locates the build system's strip program, which won't
-    # work for Emscripten. By setting strip to False here, we prevent pybind11
-    # from trying to use it.
-    if "STRIP" not in os.environ:
-        strip_opt = CMakeOption.create(False)
-        cross_cfg["cmake"][all]["options"]["CMAKE_STRIP"] = strip_opt
-
-    # nanobind relies on Python_INTERPRETER_ID to determine whether to enable
-    # the stable ABI.
-    python_id = CMakeOption.create("Python", "STRING")
-    cross_cfg["cmake"][all]["options"]["Python_INTERPRETER_ID"] = python_id
-    cross_cfg["cmake"][all]["options"]["Python3_INTERPRETER_ID"] = python_id
+    # Check Emscripten toolchain file
+    # TODO: this is a hack. CMake older than 3.21 does not support setting the
+    #       default toolchain file through an environment variable, so in that
+    #       case we do need to set it on the command line. However, this breaks
+    #       the use of Conan toolchain files that may be specified by the user,
+    #       so we need an escape hatch to disable this.
+    if not os.getenv("_PY_BUILD_CMAKE_PYODIDE_NO_TOOLCHAIN_FILE"):
+        if "CMAKE_TOOLCHAIN_FILE" not in os.environ:
+            logger.warning(
+                "CMAKE_TOOLCHAIN_FILE environment variable not set. This may "
+                "cause issues when building for WASM outside of the Emscripten SDK."
+            )
+        else:
+            cross_cfg["toolchain_file"] = os.getenv("CMAKE_TOOLCHAIN_FILE")
 
     # Enable cross-compilation
     config.set_value("cross", cross_cfg)
 
 
-def _determine_pyodide_python_version(plat):
+def _determine_pyodide_python_version(plat: BuildPlatformInfo) -> tuple[str, ...]:
     py_version = os.getenv("PYVERSION")
     if not py_version:
         py_version = plat.python_version
@@ -89,14 +80,14 @@ def _determine_pyodide_python_version(plat):
             "Using native interpreter version instead: %s.",
             py_version,
         )
-    py_version = py_version.split(".")
-    if len(py_version) < 2:
+    py_version_tup = tuple(py_version.split("."))
+    if len(py_version_tup) < 2:
         msg = "Invalid value for Pyodide PYVERSION"
         raise ConfigError(msg)
-    return py_version
+    return py_version_tup
 
 
-def _determine_pyodide_host_platform():
+def _determine_pyodide_host_platform() -> str:
     host_plat = os.getenv("_PYTHON_HOST_PLATFORM")
     if not host_plat:
         msg = "Pyodide _PYTHON_HOST_PLATFORM environment variable missing"
@@ -107,7 +98,7 @@ def _determine_pyodide_host_platform():
     return host_plat
 
 
-def _determine_pyodide_soabi():
+def _determine_pyodide_soabi() -> tuple[str, str | None]:
     ext_suffix: str = (
         os.getenv("SETUPTOOLS_EXT_SUFFIX")
         or sysconfig.get_config_var("EXT_SUFFIX")
