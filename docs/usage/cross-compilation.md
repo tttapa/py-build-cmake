@@ -9,7 +9,7 @@ When using py-build-cmake, cross-compiling Python extension modules is supported
 out-of-the-box through [CMake toolchain files](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html).
 When building packages using a tool like [`cibuildwheel`](https://github.com/pypa/cibuildwheel),
 cross-compilation will also be enabled automatically whenever appropriate
-(e.g. when building ARM64 packages on an Intel Mac).
+(e.g. when building ARM64 packages on an Intel Mac, or when building for Pyodide).
 
 ## Terminology
 
@@ -449,6 +449,9 @@ cibuildwheel --platform pyodide
 ```
 
 Details can be found in `src/py_build_cmake/config/quirks/pyodide.py`.
+
+Pyodide-specific options can be added in the `[tool.py-build-cmake.pyodide]`
+section of `pyproject.toml`.
 
 ```{note}
 Current releases of `pyodide-build` have a bug that causes py-build-cmake to be

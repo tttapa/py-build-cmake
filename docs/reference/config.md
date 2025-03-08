@@ -105,6 +105,16 @@ Specific options for macOS.
 | `cmake` | macOS-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 | `wheel` | macOS-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
+## pyodide
+Specific options for Pyodide. 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| `editable` | Pyodide-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
+| `sdist` | Pyodide-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
+| `cmake` | Pyodide-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| `wheel` | Pyodide-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
+
 ## cross
 Causes py-build-cmake to cross-compile the project. See <project:../usage/cross-compilation.md> for more information. 
 
@@ -115,9 +125,10 @@ Causes py-build-cmake to cross-compile the project. See <project:../usage/cross-
 | `version` | Python version, major and minor, without dots.<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `version = '310' # 3.10` | string | `same as current interpreter` |
 | `abi` | Python ABI.<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `abi = 'cp310'` | string | `same as current interpreter` |
 | `arch` | Platform tag, consisting of the operating system and architecture (no dots or dashes, only underscores, all lowercase).<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `arch = 'linux_x86_64'` | string | `same as current interpreter` |
-| `prefix` | Root path of the Python installation. Used to set the `Python3_ROOT_DIR` CMake hint, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>.<br/>Absolute or relative to current configuration file. | path | `none` |
+| `prefix` | Root path of the Python installation. Used to set the `Python3_ROOT_DIR` and `Python3_ROOT` CMake hints, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>.<br/>Absolute or relative to current configuration file. | path | `none` |
 | `library` | Python library file (.so on Linux, .lib on Windows). Used to set the `Python3_LIBRARY` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | `include_dir` | Python include directory (containing Python.h). Used to set the `Python3_INCLUDE_DIR` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | path | `none` |
+| `soabi` | Used to set the `Python3_SOABI` CMake variable, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>For example: `soabi = 'cpython-310-x86_64-linux-gnu'` | string | `none` |
 | `toolchain_file` | CMake toolchain file to use. See <https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html> for more information.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | `generator_platform` | The value for `CMAKE_GENERATOR_PLATFORM`. Only applies to the Visual Studio generator on Windows. See <https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html> for details.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
 | `editable` | Override editable options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
