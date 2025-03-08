@@ -296,7 +296,7 @@ def process_config(
     # Store the editable configuration
     cfg.editable = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "editable"))))
-        for os in ("linux", "windows", "mac", "cross")
+        for os in ("linux", "windows", "mac", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
     }
 
@@ -309,14 +309,14 @@ def process_config(
 
     cfg.sdist = {
         os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
-        for os in ("linux", "windows", "mac", "cross")
+        for os in ("linux", "windows", "mac", "pyodide", "cross")
         if pbc_value_ref.is_value_set(os)
     }
 
     # Store the CMake configuration
     cfg.cmake = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "cmake"))))
-        for os in ("linux", "windows", "mac", "cross")
+        for os in ("linux", "windows", "mac", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
     }
     cfg.cmake = cfg.cmake or None
@@ -324,7 +324,7 @@ def process_config(
     # Store the Wheel configuration
     cfg.wheel = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "wheel"))))
-        for os in ("linux", "windows", "mac", "cross")
+        for os in ("linux", "windows", "mac", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "wheel")))
     }
 
@@ -415,7 +415,7 @@ def set_up_os_specific_cross_inheritance(
         cross_os = cast(Optional[str], root_val.get_value(os_path))
 
     if cross_os is not None:
-        for s in ("cmake", "sdist", "editable"):
+        for s in ("editable", "sdist", "cmake", "wheel"):
             parent = get_tool_pbc_path().join(cross_os).join(s)
             child = get_cross_path().join(s)
             root_ref.sub_ref(child).config.inherits = parent

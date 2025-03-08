@@ -116,12 +116,14 @@ def test_inherit_cross_cmake():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "symlink"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "cross": {"include_patterns": [], "exclude_patterns": []},
         "linux": {"include_patterns": [], "exclude_patterns": []},
         "windows": {"include_patterns": [], "exclude_patterns": []},
         "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake == {
         "cross": {
@@ -215,6 +217,28 @@ def test_inherit_cross_cmake():
                 "env": {"foo": StringOption(value="bar")},
             }
         },
+        "pyodide": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": ["all_install"],
+                "minimum_version": "3.15",
+                "env": {"foo": StringOption(value="bar")},
+            }
+        },
     }
     assert conf.wheel == {
         "cross": {
@@ -233,6 +257,11 @@ def test_inherit_cross_cmake():
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "pyodide": {
             "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
@@ -291,11 +320,13 @@ def test_real_config_no_cross():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "symlink"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
         "windows": {"include_patterns": [], "exclude_patterns": []},
         "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake == {
         "linux": {
@@ -364,6 +395,28 @@ def test_real_config_no_cross():
                 "env": {"foo": StringOption(value="bar")},
             },
         },
+        "pyodide": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": [""],
+                "minimum_version": "3.15",
+                "env": {"foo": StringOption(value="bar")},
+            },
+        },
     }
     assert conf.wheel == {
         "linux": {
@@ -377,6 +430,11 @@ def test_real_config_no_cross():
             "abi3_minimum_cpython_version": 32,
         },
         "mac": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "pyodide": {
             "python_tag": ["auto"],
             "python_abi": "auto",
             "abi3_minimum_cpython_version": 32,
@@ -406,11 +464,13 @@ def test_real_config_no_cmake():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "symlink"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
         "windows": {"include_patterns": [], "exclude_patterns": []},
         "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake is None
     assert conf.cross is None
@@ -445,11 +505,13 @@ def test_real_config_local_override():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "symlink"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": ["somefile*"], "exclude_patterns": []},
         "windows": {"include_patterns": ["somefile*"], "exclude_patterns": []},
         "mac": {"include_patterns": ["somefile*"], "exclude_patterns": []},
+        "pyodide": {"include_patterns": ["somefile*"], "exclude_patterns": []},
     }
     assert conf.cmake is None
     assert conf.cross is None
@@ -489,11 +551,13 @@ def test_real_config_local_override_windows():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "hook"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
         "windows": {"include_patterns": ["somefile*"], "exclude_patterns": []},
         "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake is None
     assert conf.cross is None
@@ -574,11 +638,13 @@ def test_real_config_cli_override():
         "linux": {"build_hook": False, "mode": "symlink"},
         "windows": {"build_hook": False, "mode": "symlink"},
         "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
     }
     assert conf.sdist == {
         "linux": {"include_patterns": [], "exclude_patterns": []},
         "windows": {"include_patterns": [], "exclude_patterns": []},
         "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
     }
     assert conf.cmake == {
         "linux": {
@@ -650,6 +716,28 @@ def test_real_config_cli_override():
                 "env": {},
             },
         },
+        "pyodide": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "generator": "Ninja",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": False,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": ["-c", "-d"],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": [""],
+                "minimum_version": "3.15",
+                "env": {"foo": StringOption(value="bar")},
+            }
+        },
     }
     assert conf.wheel == {
         "linux": {
@@ -665,6 +753,11 @@ def test_real_config_cli_override():
         "mac": {
             "python_tag": ["py2", "py3"],
             "python_abi": "none",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "pyodide": {
+            "python_tag": ["auto"],
+            "python_abi": "abi3",
             "abi3_minimum_cpython_version": 32,
         },
     }

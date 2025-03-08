@@ -28,7 +28,7 @@ if sys.version_info < (3, 8):
 else:
     from typing import Literal
 
-    OSIdentifier = Literal["linux", "windows", "mac"]
+    OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
     WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
@@ -70,6 +70,7 @@ class BuildPlatformInfo:
     abi_tag: str = field(default_factory=get_abi_tag)
     system: str = field(default_factory=platform.system)
     machine: str = field(default_factory=platform.machine)
+    pyodide: bool = field(default_factory=lambda: os.getenv("PYODIDE") == "1")
     archs: tuple[str, ...] | None = None
     macos_version: tuple[int, int] | None = None
     cmake_generator_platform: str | None = None
@@ -83,6 +84,8 @@ class BuildPlatformInfo:
     def os_name(self) -> OSIdentifier:
         """Get the name of the current platform. For use in file names etc.,
         and consistent with the values in the py-build-cmake configs."""
+        if self.pyodide:
+            return "pyodide"
         osname = {
             "Linux": "linux",
             "Windows": "windows",
@@ -154,7 +157,7 @@ def _check_version_mac(target: str | None) -> tuple[int, int] | None:
 
 
 def _determine_macos_version_archs(
-    env: Mapping[str, str]
+    env: Mapping[str, str],
 ) -> tuple[tuple[int, int], tuple[str, ...]]:
     # Check for ARCHFLAGS on macOS
     archflags = env.get("ARCHFLAGS")
