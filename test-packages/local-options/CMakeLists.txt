@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.17...3.31)
 project(local-options)
 
 if (NOT DEFINED CACHE{OPTION_A} OR NOT OPTION_A STREQUAL "foo-bar-local-toml")
