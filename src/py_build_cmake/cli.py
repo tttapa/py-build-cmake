@@ -248,7 +248,7 @@ def format(md, component):
             "build_component backend:"
         )
         pr_md(
-            "# py-build-cmake component build backend\n"
+            "# Component build backend configuration options\n\n"
             "The `py_build_cmake.build_component` build backend allows "
             "building packages containing additional binaries that are not "
             "included with the main distribution.\n"

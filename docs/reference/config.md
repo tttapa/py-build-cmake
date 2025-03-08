@@ -105,6 +105,16 @@ Specific options for macOS.
 | <a id="mac.cmake"></a> `cmake` | macOS-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 | <a id="mac.wheel"></a> `wheel` | macOS-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
+## pyodide
+Specific options for Pyodide. 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| <a id="pyodide.editable"></a> `editable` | Pyodide-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
+| <a id="pyodide.sdist"></a> `sdist` | Pyodide-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
+| <a id="pyodide.cmake"></a> `cmake` | Pyodide-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| <a id="pyodide.wheel"></a> `wheel` | Pyodide-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
+
 ## cross
 Causes py-build-cmake to cross-compile the project. See <project:../usage/cross-compilation.md> for more information. 
 
@@ -115,10 +125,11 @@ Causes py-build-cmake to cross-compile the project. See <project:../usage/cross-
 | <a id="cross.version"></a> `version` | Python version, major and minor, without dots.<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `version = '310' # 3.10` | string | `same as current interpreter` |
 | <a id="cross.abi"></a> `abi` | Python ABI.<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `abi = 'cp310'` | string | `same as current interpreter` |
 | <a id="cross.arch"></a> `arch` | Platform tag, consisting of the operating system and architecture (no dots or dashes, only underscores, all lowercase).<br/>For details about platform compatibility tags, see the PyPA specification: <https://packaging.python.org/en/latest/specifications/platform-compatibility-tags><br/>For example: `arch = 'linux_x86_64'` | string | `same as current interpreter` |
-| <a id="cross.prefix"></a> `prefix` | Root path of the Python installation. Used to set the `Python3_ROOT_DIR` CMake hint, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>.<br/>Absolute or relative to current configuration file. | path | `none` |
+| <a id="cross.prefix"></a> `prefix` | Root path of the Python installation. Used to set the `Python3_ROOT_DIR` and `Python3_ROOT` CMake hints, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#hints>.<br/>Absolute or relative to current configuration file. | path | `none` |
 | <a id="cross.library"></a> `library` | Python library file (.so on Linux, .lib on Windows). Used to set the `Python3_LIBRARY` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | <a id="cross.sabi_library"></a> `sabi_library` | Python library file (.so on Linux, .lib on Windows) for the stable ABI. Used to set the `Python3_SABI_LIBRARY` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | <a id="cross.include_dir"></a> `include_dir` | Python include directory (containing Python.h). Used to set the `Python3_INCLUDE_DIR` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | path | `none` |
+| <a id="cross.soabi"></a> `soabi` | Used to set the `Python3_SOABI` CMake variable, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>For example: `soabi = 'cpython-310-x86_64-linux-gnu'` | string | `none` |
 | <a id="cross.toolchain_file"></a> `toolchain_file` | CMake toolchain file to use. See <https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html> for more information.<br/>Absolute or relative to current configuration file. | filepath | `none` |
 | <a id="cross.generator_platform"></a> `generator_platform` | The value for `CMAKE_GENERATOR_PLATFORM`. Only applies to the Visual Studio generator on Windows. See <https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html> for details.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
 | <a id="cross.editable"></a> `editable` | Override editable options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
