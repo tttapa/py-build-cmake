@@ -432,6 +432,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         ("linux", "Linux"),
         ("windows", "Windows"),
         ("mac", "macOS"),
+        ("pyodide", "Pyodide"),
     ):
         opt = pbc.insert(
             ConfigOption(system,

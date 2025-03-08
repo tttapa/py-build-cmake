@@ -25,7 +25,7 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     assert not config.is_value_set("cross")
     all = MultiConfigOption.default_index
     cross_cfg: dict[str, Any] = {
-        # "os": "pyodide",  # TODO: add an override section to the config
+        "os": "pyodide",
         "cmake": {all: {"env": {}, "options": {}}},
     }
 
