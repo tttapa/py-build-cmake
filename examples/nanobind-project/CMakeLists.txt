@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.26...3.31)
 project(nanobind-project VERSION 0.4.3)
 set(PY_VERSION_SUFFIX ".dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})

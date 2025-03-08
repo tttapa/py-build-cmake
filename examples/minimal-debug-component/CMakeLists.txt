@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.17...3.31)
 project(minimal-debug-component)
 
 # Find the Python development files
