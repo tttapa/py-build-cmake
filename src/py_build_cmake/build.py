@@ -315,7 +315,7 @@ class _BuildBackend:
             msg = (
                 "\n"
                 "\n"
-                f"\t\u274C Error importing {modfile} for reading metadata:\n"
+                f"\t\u274c Error importing {modfile} for reading metadata:\n"
                 "\n"
                 f"\t\t{e.msg}\n"
                 "\n"
@@ -326,7 +326,7 @@ class _BuildBackend:
             msg = (
                 "\n"
                 "\n"
-                f"\t\u274C Error reading metadata from {modfile}:"
+                f"\t\u274c Error reading metadata from {modfile}:"
                 "\n"
                 "\n"
                 f"\t\t{e}\n"
@@ -568,8 +568,13 @@ class _BuildBackend:
         # Add search path argument if not already specified in cfg['args']
         if "args" not in cfg or "--search-path" not in cfg["args"]:
             args += ["--search-path", str(paths.staging_dir)]
+        # Set the mypy/stubgen environment variables
         env = os.environ.copy()
         env.setdefault("MYPY_CACHE_DIR", str(paths.temp_dir))
+        mypy_path = str(paths.staging_dir)
+        old_path = env.get("MYPYPATH")
+        mypy_path = mypy_path + os.pathsep + old_path if old_path else mypy_path
+        env["MYPYPATH"] = mypy_path
         # Call mypy stubgen in a subprocess
         self.runner.run(args, cwd=paths.staging_dir, check=True, env=env)
         # Copy the stubs to the staging folder (careful not to overwrite
