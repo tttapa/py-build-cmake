@@ -125,11 +125,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
-        os: ['macos-13', 'macos-latest']
-        exclude:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
+        os: ['macos-latest']
+        include:
           - python-version: '3.7'
-            os: 'macos-latest'
+            os: 'macos-13'
+          - python-version: '3.13'
+            os: 'macos-13'
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -154,11 +156,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
-        os: ['macos-13', 'macos-latest']
-        exclude:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
+        os: ['macos-latest']
+        include:
           - python-version: '3.7'
-            os: 'macos-latest'
+            os: 'macos-13'
+          - python-version: '3.13'
+            os: 'macos-13'
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
