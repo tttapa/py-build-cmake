@@ -191,15 +191,16 @@ jobs:
         name: py_build_cmake-whl-python3.11
         path: dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b
+      uses: pypa/cibuildwheel@d04cacbc9866d432033b1d09142936e6a0e2121a
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
       env:
+        CIBW_ENABLE: 'pypy cpython-freethreading'
         CIBW_ARCHS_LINUX: 'x86_64 i686'
         CIBW_ARCHS_WINDOWS: 'AMD64 x86 ARM64'
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
-        CIBW_BUILD: 'cp311-* pp39-*'
+        CIBW_BUILD: 'cp311-* pp39-* cp313t-*'
         CIBW_ENVIRONMENT: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1'
         CIBW_ENVIRONMENT_MACOS: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1 MACOSX_DEPLOYMENT_TARGET="10.15"'
         CIBW_ENVIRONMENT_LINUX: 'PIP_FIND_LINKS=/project/dist PY_BUILD_CMAKE_VERBOSE=1'
