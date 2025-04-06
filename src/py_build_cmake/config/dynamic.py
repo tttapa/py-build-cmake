@@ -79,16 +79,18 @@ def get_docstring_and_version_via_ast(mod_filename: Path):
     for child in node.body:
         # Only use the version from the given module if it's a simple
         # string assignment to __version__
-        if (
-            isinstance(child, ast.Assign)
-            and any(
-                isinstance(target, ast.Name) and target.id == "__version__"
-                for target in child.targets
-            )
-            and isinstance(child.value, ast.Str)
+        if isinstance(child, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__version__"
+            for target in child.targets
         ):
-            version = child.value.s
-            break
+            v_node = child.value
+            if sys.version_info >= (3, 8):
+                if isinstance(v_node, ast.Constant) and isinstance(v_node.value, str):
+                    version = v_node.value
+                    break
+            elif isinstance(v_node, ast.Str):
+                version = v_node.s
+                break
     return ast.get_docstring(node), version
 
 
