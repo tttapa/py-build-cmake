@@ -12,7 +12,13 @@ from typing import Dict, List, Mapping, cast
 
 import packaging.tags
 
-from ..export.native_tags import get_abi_tag, get_python_tag
+from ..export.native_tags import (
+    get_abi_flags as tags_get_abi_flags,
+)
+from ..export.native_tags import (
+    get_abi_tag,
+    get_python_tag,
+)
 from .util import (
     archflags_to_platform_tag,
     platform_tag_to_archflags,
@@ -56,13 +62,19 @@ def _get_specific_platform(env: Mapping[str, str] | None = None) -> str:
         return platform_to_platform_tag(sysconfig.get_platform())
 
 
+def _get_abi_flags():
+    if hasattr(sys, "abiflags"):
+        return sys.abiflags
+    return tags_get_abi_flags()
+
+
 @dataclass
 class BuildPlatformInfo:
     executable: Path = field(default_factory=lambda: Path(sys.executable))
     implementation: str = sys.implementation.name
     python_version: str = field(default_factory=platform.python_version)
     python_version_info = sys.version_info
-    python_abiflags: str = field(default_factory=lambda: getattr(sys, "abiflags", ""))
+    python_abiflags: str = field(default_factory=_get_abi_flags)
     python_prefixes: dict[str, Path] = field(default_factory=_get_python_prefixes)
     sysconfig_platform: str = field(default_factory=sysconfig.get_platform)
     specific_platform_tag: str = field(default_factory=_get_specific_platform)
@@ -154,7 +166,7 @@ def _check_version_mac(target: str | None) -> tuple[int, int] | None:
 
 
 def _determine_macos_version_archs(
-    env: Mapping[str, str]
+    env: Mapping[str, str],
 ) -> tuple[tuple[int, int], tuple[str, ...]]:
     # Check for ARCHFLAGS on macOS
     archflags = env.get("ARCHFLAGS")

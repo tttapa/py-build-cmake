@@ -20,6 +20,7 @@ import platform
 import re
 import shutil
 import sys
+import sysconfig
 from difflib import unified_diff
 from pathlib import Path
 from tarfile import open as open_tar
@@ -132,17 +133,18 @@ def get_ext_suffix(name: str):
     ext_suffix = dist_sysconfig.get_config_var("EXT_SUFFIX")
     assert isinstance(ext_suffix, str)
     simple = name in ["minimal", "bare-c-module"]
+    free_threading = bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
     if simple and ext_suffix.endswith(".pyd") and py_v < (3, 8):
         ext_suffix = ".pyd"  # what a mess ...
     elif name == "nanobind-project":
         if py_v < (3, 8):
             ext_suffix = None  # skip
-        elif impl.name == "cpython" and py_v >= (3, 12):
+        elif impl.name == "cpython" and py_v >= (3, 12) and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix
     elif name == "swig-project":  # noqa: SIM102
-        if impl.name == "cpython" and py_v >= (3, 7):
+        if impl.name == "cpython" and py_v >= (3, 7) and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix

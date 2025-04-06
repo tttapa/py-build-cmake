@@ -35,10 +35,8 @@ def get_cpython_interpreter() -> str:
     return f"cp{get_interpreter_version()}"
 
 
-def get_cpython_abi() -> str:
+def get_abi_flags() -> str:
     """
-    Get the ABI string for CPython, e.g. cp37m.
-
     https://github.com/pypa/packaging/blob/917612f5774571a99902b5fe04d06099b9e8b667/packaging/tags.py#L135
     https://github.com/pypa/packaging/blob/e624d8edfaa28865de7b5a7da8bd59fd410e5331/src/packaging/tags.py#L164-L165
     """
@@ -58,7 +56,14 @@ def get_cpython_abi() -> str:
         with_pymalloc = sysconfig.get_config_var("WITH_PYMALLOC")
         if with_pymalloc or with_pymalloc is None:
             pymalloc = "m"
-    return f"{get_cpython_interpreter()}{threading}{debug}{pymalloc}"
+    return f"{threading}{debug}{pymalloc}"  # tdm
+
+
+def get_cpython_abi() -> str:
+    """
+    Get the ABI string for CPython, e.g. cp37m.
+    """
+    return f"{get_cpython_interpreter()}{get_abi_flags()}"
 
 
 def get_generic_interpreter() -> str:
