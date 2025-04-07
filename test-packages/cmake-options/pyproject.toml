@@ -1,6 +1,6 @@
 [project]
 name = "cmake-options"
-version = "0.4.3.dev0"
+version = "0.4.3"
 description = "Checks parsing and escaping of CMake options"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -12,7 +12,7 @@ urls = { "Documentation" = "https://tttapa.github.io/" }
 dependencies = []
 
 [build-system]
-requires = ["py-build-cmake~=0.4.3.dev0"]
+requires = ["py-build-cmake~=0.4.3"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.sdist]
