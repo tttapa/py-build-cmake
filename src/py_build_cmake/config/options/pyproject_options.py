@@ -7,7 +7,13 @@ from .bool import BoolConfigOption
 from .cmake_opt import CMakeOptConfigOption
 from .config_option import ConfigOption, MultiConfigOption, UncheckedConfigOption
 from .config_path import ConfPath
-from .default import DefaultValueValue, NoDefaultValue, RefDefaultValue, RequiredValue
+from .default import (
+    DefaultValueEnvVar,
+    DefaultValueValue,
+    NoDefaultValue,
+    RefDefaultValue,
+    RequiredValue,
+)
 from .dict import DictOfStrConfigOption
 from .dir_pattern import DirPatternsConfigOption
 from .enum import EnumConfigOption
@@ -174,7 +180,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "`-G <?>`. If Ninja is used, and if it is not "
                            "available in the system PATH, it will be installed "
                            "automatically as a build dependency.",
-                           "generator = \"Ninja Multi-Config\""),
+                           "generator = \"Ninja Multi-Config\"",
+                           default=DefaultValueEnvVar("CMAKE_GENERATOR", test)),
         PathConfigOption("source_path",
                          "Folder containing CMakeLists.txt.",
                          default=DefaultValueValue("."),

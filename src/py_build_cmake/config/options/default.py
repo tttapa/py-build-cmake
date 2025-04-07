@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
@@ -90,6 +91,26 @@ class DefaultValueValue(DefaultValue):
         if isinstance(self.value, bool):
             return str(self.value).lower()
         return repr(self.value)
+
+
+class DefaultValueEnvVar(DefaultValue):
+    def __init__(self, key: str, disable: bool) -> None:
+        self.key = key
+        self.disable = disable
+
+    def get_default(
+        self,
+        defaulter: ConfigDefaulter,
+    ) -> DefaultValueWrapper | None:
+        if self.disable:
+            return None
+        value = os.getenv(self.key)
+        if value is None:
+            return None
+        return DefaultValueWrapper(value)
+
+    def get_name(self) -> str:
+        return f"ENV{{{self.key}}}"
 
 
 class NoDefaultValue(DefaultValue):
