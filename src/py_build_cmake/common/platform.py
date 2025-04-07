@@ -244,7 +244,7 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs
         r.macos_version, r.archs = _determine_macos_version_archs(env)
         if "_PYTHON_HOST_PLATFORM" in env:
             host_plat = env["_PYTHON_HOST_PLATFORM"]
-            if host_plat != r._platform_tag_macos():
+            if platform_to_platform_tag(host_plat) != r._platform_tag_macos():
                 msg = "Computed platform tag (%s) does not match "
                 msg += "environment variable _PYTHON_HOST_PLATFORM (%s). "
                 msg += "Please make sure that the values of the ARCHFLAGS "
