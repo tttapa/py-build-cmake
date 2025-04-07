@@ -474,6 +474,7 @@ class _BuildBackend:
                 "toolchain_file": cvt_path(cross_cfg.get("toolchain_file")),
                 "python_prefix": cvt_path(cross_cfg.get("prefix")),
                 "python_library": cvt_path(cross_cfg.get("library")),
+                "python_sabi_library": cvt_path(cross_cfg.get("sabi_library")),
                 "python_include_dir": cvt_path(cross_cfg.get("include_dir")),
                 "python_interpreter_id": python_tag_to_cmake(
                     cross_cfg.get("implementation")
@@ -486,6 +487,7 @@ class _BuildBackend:
                 "toolchain_file": None,
                 "python_prefix": None,
                 "python_library": None,
+                "python_sabi_library": None,
                 "python_include_dir": None,
                 "python_interpreter_id": None,
             }

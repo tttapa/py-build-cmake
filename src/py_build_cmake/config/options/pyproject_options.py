@@ -512,6 +512,17 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          is_folder=False,
                          must_exist=True,
                          default=None),
+        PathConfigOption("sabi_library",
+                         "Python library file (.so on Linux, .lib on Windows) "
+                         "for the stable ABI. Used to set the "
+                         "`Python3_SABI_LIBRARY` CMake artifact, "
+                         "see <https://cmake.org/cmake/help/latest/module/"
+                         "FindPython3.html#artifacts-specification>.",
+                         base_path=RelativeToCurrentConfig(project_path),
+                         allow_abs=True,
+                         is_folder=False,
+                         must_exist=True,
+                         default=None),
         PathConfigOption("include_dir",
                          "Python include directory (containing Python.h). "
                          "Used to set the `Python3_INCLUDE_DIR` CMake "

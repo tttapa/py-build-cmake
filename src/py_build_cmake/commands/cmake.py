@@ -46,6 +46,7 @@ class CMakeConfigureSettings:
     toolchain_file: Path | None
     python_prefix: Path | None
     python_library: Path | None
+    python_sabi_library: Path | None
     python_include_dir: Path | None
     python_interpreter_id: str | None
 
@@ -261,6 +262,9 @@ class CMaker:
         if self.conf_settings.python_library:
             lib = self.conf_settings.python_library.as_posix()
             yield Option(prefix + "_LIBRARY", lib, "FILEPATH")
+        if self.conf_settings.python_sabi_library:
+            lib = self.conf_settings.python_sabi_library.as_posix()
+            yield Option(prefix + "_SABI_LIBRARY", lib, "FILEPATH")
         if self.conf_settings.python_include_dir:
             inc = self.conf_settings.python_include_dir.as_posix()
             yield Option(prefix + "_INCLUDE_DIR", inc, "PATH")

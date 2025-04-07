@@ -20,27 +20,47 @@ logger = logging.getLogger(__name__)
 
 
 def get_python_lib(
-    plat: BuildPlatformInfo, library_dirs: str | list[str] | None
+    plat: BuildPlatformInfo, library_dirs: str | list[str] | None, stable: bool
 ) -> Path | None:
     """Return the path the the first python<major><minor>.lib or
     python<major>.lib file in any of the library_dirs.
-    Returns None if no such file exists."""
+    Returns None if no such file exists.
+    It only looks for libraries with the same ABI as specified by plat.abiflags.
+    """
     if library_dirs is None:
         return None
     if isinstance(library_dirs, str):
         library_dirs = [library_dirs]
 
     def possible_locations():
+        # TODO: can we always assume that cibw uses a native interpreter with
+        #       the same ABI as the target when cross-compiling?
         v = plat.python_version_info
-        py3xlib = lambda d: Path(d) / f"python{v.major}{v.minor}.lib"
-        py3lib = lambda d: Path(d) / f"python{v.major}.lib"
+        x = "" if stable else v.minor
+        t = "t" if "t" in plat.python_abiflags else ""
+        d = "_d" if "d" in plat.python_abiflags else ""
+        py3xlib = lambda p: Path(p) / f"python{v.major}{x}{t}{d}.lib"
         yield from map(py3xlib, library_dirs)
-        yield from map(py3lib, library_dirs)
 
     try:
         return next(filter(Path.exists, possible_locations()))
     except StopIteration:
         return None
+
+
+def configure_python_artifacts(
+    plat: BuildPlatformInfo, library_dirs, cross_cfg: dict, stable: bool
+):
+    python_lib = get_python_lib(plat, library_dirs, stable)
+    lib_key = "sabi_library" if stable else "library"
+    if python_lib is not None:
+        cross_cfg[lib_key] = str(python_lib)
+        python_root = python_lib.parent.parent
+        if (python_root / "include").exists():
+            cross_cfg.setdefault("root", str(python_root))
+    else:
+        msg = "Python %s was not found in DIST_EXTRA_CONFIG.build_ext.library_dirs: %s."
+        logger.warning(msg, lib_key, repr(library_dirs))
 
 
 def cross_compile_win(
@@ -71,15 +91,8 @@ def cross_compile_win(
         "cmake": {all: {"options": options}},
         "generator_platform": cmake_plat,
     }
-    python_lib = get_python_lib(plat, library_dirs)
-    if python_lib is not None:
-        cross_cfg["library"] = str(python_lib)
-        python_root = python_lib.parent.parent
-        if (python_root / "include").exists():
-            cross_cfg["root"] = str(python_root)
-    else:
-        msg = "Python library was not found in DIST_EXTRA_CONFIG.build_ext.library_dirs: %s."
-        logger.warning(msg, repr(library_dirs))
+    configure_python_artifacts(plat, library_dirs, cross_cfg, stable=False)
+    configure_python_artifacts(plat, library_dirs, cross_cfg, stable=True)
     config.set_value("cross", cross_cfg)
 
 
