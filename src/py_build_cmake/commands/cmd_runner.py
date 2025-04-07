@@ -8,17 +8,24 @@ from subprocess import run as sp_run
 
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
+from .env import filter_environment_for_logging
+
 
 class CommandRunner:
     def __init__(self, verbose: bool = False, dry: bool = False):
         self.verbose = verbose
         self.dry = dry
+        self.verbose_env = False
 
     def run(self, *args, **kwargs):
         """Wrapper around subprocess.run that optionally prints the command."""
         if self.verbose:
+            log_kwargs = kwargs
+            if "env" in log_kwargs and not self.verbose_env:
+                log_kwargs = log_kwargs.copy()
+                log_kwargs["env"] = filter_environment_for_logging(log_kwargs["env"])
             pprint([*args])
-            pprint(kwargs)
+            pprint(log_kwargs, width=200)
             print(flush=True)
         elif self.dry:
             from shlex import join

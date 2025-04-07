@@ -26,6 +26,7 @@ by py-build-cmake during the build process.
 | Variable | Description |
 |:---------|:------------|
 | `PY_BUILD_CMAKE_VERBOSE` | Enables verbose mode: prints more information about the py-build-cmake configuration, options passed to CMake, etc. Equivalent to passing the `--verbose` config option. |
+| `PY_BUILD_CMAKE_VERBOSE_ENV` | Enables printing of all environment variables in verbose mode. By default, most environment variables are censored to avoid accidentally leaking secrets, e.g. in a CI/CD log. Equivalent to passing the `--verbose-env` config option. |
 | `PY_BUILD_CMAKE_LOGLEVEL` | Sets the level of the root logger. Can be used to silence all notifications or warnings. See <https://docs.python.org/3/library/logging.html#levels> for a list of valid levels. Equivalent to passing the `--loglevel` config option. |
 | `GITHUB_RUN_ATTEMPT` | If this value is greater than one, automatically enables verbose mode. Explicitly set `PY_BUILD_CMAKE_VERBOSE` to `false` to disable this behavior. |
 | `NO_COLOR` | Disables color output of the command line interface. |

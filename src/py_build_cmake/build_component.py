@@ -95,6 +95,7 @@ class _BuildComponentBackend:
         except ValueError as e:
             logger.error("Invalid log level specified", exc_info=e)
         self.runner.verbose = std_backend.is_verbose_enabled(config_settings)
+        self.runner.verbose_env = std_backend.is_verbose_env_enabled(config_settings)
 
     @staticmethod
     def read_all_metadata(

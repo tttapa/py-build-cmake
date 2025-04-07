@@ -130,8 +130,11 @@ class _BuildBackend:
     # --- Parsing config options and metadata ---------------------------------
 
     @staticmethod
+    def is_truthy_or_empty_string(x: str) -> bool:
+        return x.lower() in ("", "1", "true", "yes", "y", "on")
+
+    @staticmethod
     def is_verbose_enabled(config_settings: dict | None):
-        truthy = lambda x: x.lower() in ("", "1", "true", "yes", "y")
         if config_settings is not None:
             verbose_keys = {"verbose", "--verbose", "V", "-V"}
             verbose_opts = {
@@ -139,16 +142,31 @@ class _BuildBackend:
             }
             if verbose_opts:
                 last_val = next(reversed(list(verbose_opts.values())))
-                return truthy(last_val)
+                return _BuildBackend.is_truthy_or_empty_string(last_val)
         env_verbose = os.environ.get("PY_BUILD_CMAKE_VERBOSE")
         if env_verbose is not None:
-            return truthy(env_verbose)
+            return _BuildBackend.is_truthy_or_empty_string(env_verbose)
         run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
         with contextlib.suppress(ValueError):
             if run_attempt and int(run_attempt) > 1:
                 msg = "GITHUB_RUN_ATTEMPT is greater than one, setting verbose=1"
                 logger.info(msg)
                 return True
+        return False
+
+    @staticmethod
+    def is_verbose_env_enabled(config_settings: dict | None):
+        if config_settings is not None:
+            verbose_keys = {"verbose-env", "--verbose-env"}
+            verbose_opts = {
+                k: v for k, v in config_settings.items() if k in verbose_keys
+            }
+            if verbose_opts:
+                last_val = next(reversed(list(verbose_opts.values())))
+                return _BuildBackend.is_truthy_or_empty_string(last_val)
+        env_verbose = os.environ.get("PY_BUILD_CMAKE_VERBOSE_ENV")
+        if env_verbose is not None:
+            return _BuildBackend.is_truthy_or_empty_string(env_verbose)
         return False
 
     @staticmethod
@@ -184,6 +202,7 @@ class _BuildBackend:
         except ValueError as e:
             logger.error("Invalid log level specified", exc_info=e)
         self.runner.verbose = self.is_verbose_enabled(config_settings)
+        self.runner.verbose_env = self.is_verbose_env_enabled(config_settings)
 
     @staticmethod
     def get_requires_build_project(
