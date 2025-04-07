@@ -13,9 +13,9 @@ Options for a separately packaged component.
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `none` |
-| `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list+ | `none` |
-| `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list+ | `none` |
-| `install_only` | Do not build the project, only install it.<br/>For example: `install_only = true` | bool | `false` |
-| `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list+ | `none` |
-| `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`. | list | `required` |
+| <a id="component.build_presets"></a> `build_presets` | CMake presets to use for building. Passed as `--preset <?>` during the build phase, once for each preset. | list | `none` |
+| <a id="component.build_args"></a> `build_args` | Extra arguments passed to the build step.<br/>For example: `build_args = ["-j", "--target", "foo"]` | list+ | `none` |
+| <a id="component.build_tool_args"></a> `build_tool_args` | Extra arguments passed to the build tool in the build step (e.g. to Make or Ninja).<br/>For example: `build_tool_args = ["--verbose", "-d", "explain"]` | list+ | `none` |
+| <a id="component.install_only"></a> `install_only` | Do not build the project, only install it.<br/>For example: `install_only = true` | bool | `false` |
+| <a id="component.install_args"></a> `install_args` | Extra arguments passed to the install step.<br/>For example: `install_args = ["--strip"]` | list+ | `none` |
+| <a id="component.install_components"></a> `install_components` | List of components to install, the install step is executed once for each component, with the option `--component <?>`. | list | `required` |

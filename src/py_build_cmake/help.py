@@ -49,6 +49,7 @@ def help_print_md(pbc_opts: ConfigOption):
             typename = vv.get_typename(md=True) or ""
             print(
                 "|",
+                f'<a id="{k}.{kk}"></a>',
                 f"`{kk}`",
                 "|",
                 _get_full_description(vv),
