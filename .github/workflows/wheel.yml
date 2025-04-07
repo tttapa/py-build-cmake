@@ -205,7 +205,7 @@ jobs:
         CIBW_ARCHS_WINDOWS: 'AMD64 x86 ARM64'
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
         CIBW_BUILD: 'cp311-* pp39-* cp313t-*'
-        CIBW_SKIP: ${{ matrix.project == 'swig-project' && 'cp313t-win*' || '' }}
+        CIBW_SKIP: ${{ (matrix.project == 'swig-project' || matrix.project == 'nanobind-project') && 'cp313t-win*' || '' }}
         CIBW_ENVIRONMENT: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1'
         CIBW_ENVIRONMENT_MACOS: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1 MACOSX_DEPLOYMENT_TARGET="10.15"'
         CIBW_ENVIRONMENT_LINUX: 'PIP_FIND_LINKS=/project/dist PY_BUILD_CMAKE_VERBOSE=1'
