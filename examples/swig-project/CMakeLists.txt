@@ -54,6 +54,7 @@ target_compile_definitions(add_module PRIVATE VERSION_INFO="${PY_FULL_VERSION}")
 # Link to the correct Python library and configure the appropriate ABI
 if (Python_INTERPRETER_ID STREQUAL "Python"
     AND NOT "${Python_SOABI}" MATCHES "^cpython-[0-9dmu]+t")  # No free-threading
+    # TODO: Detect free-threading on Windows (without querying the interpreter)
     if (NOT TARGET Python::SABIModule)
         message(SEND_ERROR "CPython requires component Development.SABIModule")
     endif()

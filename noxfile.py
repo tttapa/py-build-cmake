@@ -143,7 +143,9 @@ def get_ext_suffix(name: str):
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix
-    elif name == "swig-project":  # noqa: SIM102
+    elif name == "swig-project":
+        if sys.platform == "win32" and free_threading:
+            ext_suffix = None  # skip
         if impl.name == "cpython" and py_v >= (3, 7) and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
