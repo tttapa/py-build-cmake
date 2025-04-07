@@ -200,7 +200,7 @@ jobs:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
       env:
-        CIBW_ENABLE: 'pypy cpython-freethreading'
+        CIBW_ENABLE: ${{ startsWith(matrix.os, 'macos') && 'pypy' || 'pypy cpython-freethreading' }}
         CIBW_ARCHS_LINUX: 'x86_64 i686'
         CIBW_ARCHS_WINDOWS: 'AMD64 x86 ARM64'
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
