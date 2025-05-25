@@ -42,7 +42,10 @@ def write_license_files(cfg: Config | ComponentConfig, distinfo_dir: Path):
     license = cfg.standard_metadata.license
     if not license:
         return
-    if license.file:
+    if isinstance(license, str):
+        with (distinfo_dir / "LICENSE").open("w", encoding="utf-8") as f:
+            f.write(license)
+    elif license.file:
         shutil.copy2(license.file, distinfo_dir)
     else:
         with (distinfo_dir / "LICENSE").open("w", encoding="utf-8") as f:

@@ -2,7 +2,7 @@
 requires = [
     "distlib~=0.3.5",
     "packaging>=23.2",
-    "pyproject-metadata~=0.7.1",
+    "pyproject-metadata~=0.9.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
     "lark>=1.1.9,<2",
 ]
@@ -36,7 +36,7 @@ classifiers = [
 dependencies = [
     "distlib~=0.3.5",
     "packaging>=23.2",
-    "pyproject-metadata~=0.7.1",
+    "pyproject-metadata~=0.9.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
     "lark>=1.1.9,<2",
     "click~=8.1.3",

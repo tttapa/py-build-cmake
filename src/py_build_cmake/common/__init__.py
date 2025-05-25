@@ -109,8 +109,10 @@ class Config:
         res: list[Path] = []
         if metadata.readme is not None and metadata.readme.file is not None:
             res += [metadata.readme.file]
-        if metadata.license is not None and metadata.license.file is not None:
+        if metadata.license is not None and not isinstance(metadata.license, str) and metadata.license.file is not None:
             res += [metadata.license.file]
+        if metadata.license_files is not None:
+            res += metadata.license_files
         return res
 
     def check(self):
