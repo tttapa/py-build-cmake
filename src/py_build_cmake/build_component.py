@@ -148,7 +148,7 @@ class _BuildComponentBackend:
         for k, component in components.items():
             if k not in cmake_cfg:
                 msg = f"Index {k} in [tool.py-build-cmake.component] does not "
-                msg += "refer to an exiting CMake configuration in the main "
+                msg += "refer to an existing CMake configuration in the main "
                 msg += "project."
                 raise ConfigError(msg)
             cmkcfg = cmake_cfg[k]
