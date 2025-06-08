@@ -139,7 +139,7 @@ class _BuildComponentBackend:
 
         # Write metadata, license and entry points to Wheel's distinfo
         export_metadata.write_metadata(comp_cfg, distinfo_dir)
-        export_metadata.write_license_files(comp_cfg, distinfo_dir)
+        export_metadata.write_license_files(comp_cfg, src_dir, distinfo_dir)
         export_metadata.write_entry_points(comp_cfg, distinfo_dir)
 
         # Build and install the CMake project(s)

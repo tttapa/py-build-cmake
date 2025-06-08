@@ -106,12 +106,13 @@ class Config:
     @property
     def referenced_files(self) -> list[Path]:
         metadata = self.standard_metadata
+        readme, lic = metadata.readme, metadata.license
         res: list[Path] = []
-        if metadata.readme is not None and metadata.readme.file is not None:
-            res += [metadata.readme.file]
-        if metadata.license is not None and not isinstance(metadata.license, str) and metadata.license.file is not None:
-            res += [metadata.license.file]
-        if metadata.license_files is not None:
+        if isinstance(readme, pyproject_metadata.Readme) and readme.file is not None:
+            res += [readme.file]
+        if isinstance(lic, pyproject_metadata.License) and lic.file is not None:
+            res += [lic.file]
+        if metadata.license_files:
             res += metadata.license_files
         return res
 

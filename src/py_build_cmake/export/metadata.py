@@ -5,6 +5,8 @@ import shutil
 from copy import copy
 from pathlib import Path
 
+import pyproject_metadata
+
 from ..common import ComponentConfig, Config
 
 logger = logging.getLogger(__name__)
@@ -36,20 +38,31 @@ def write_entry_points(cfg: Config | ComponentConfig, distinfo_dir: Path):
         _write_entry_points(entrypoints, f)
 
 
-def write_license_files(cfg: Config | ComponentConfig, distinfo_dir: Path):
+def write_license_files(
+    cfg: Config | ComponentConfig, src_dir: Path, distinfo_dir: Path
+):
     """Write the LICENSE file from pyproject.toml to the distinfo
-    directory."""
+    directory, and copy license-files."""
     license = cfg.standard_metadata.license
-    if not license:
+    license_files = cfg.standard_metadata.license_files
+    # From https://packaging.python.org/en/latest/specifications/pyproject-toml/#license-files
+    # If the license-files key is present and is set to a value of an empty
+    # array, then tools MUST NOT include any license files and MUST NOT raise
+    # an error.
+    if license_files is not None and not license_files:
         return
-    if isinstance(license, str):
-        with (distinfo_dir / "LICENSE").open("w", encoding="utf-8") as f:
-            f.write(license)
-    elif license.file:
-        shutil.copy2(license.file, distinfo_dir)
-    else:
-        with (distinfo_dir / "LICENSE").open("w", encoding="utf-8") as f:
-            f.write(license.text)
+    if isinstance(license, pyproject_metadata.License):
+        if license.file:
+            shutil.copy2(src_dir / license.file, distinfo_dir)
+        else:
+            with (distinfo_dir / "LICENSE").open("w", encoding="utf-8") as f:
+                f.write(license.text)
+    # https://peps.python.org/pep-0639
+    if license_files:
+        for p in license_files:
+            dst = distinfo_dir / "licenses" / p
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_dir / p, dst)
 
 
 def write_metadata(cfg: Config | ComponentConfig, distinfo_dir: Path):
