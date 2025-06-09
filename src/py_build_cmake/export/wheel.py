@@ -150,7 +150,7 @@ class WheelBuilder(Wheel):
                 if fn not in ('RECORD', 'INSTALLER', 'SHARED', 'WHEEL'):
                     p = fsdecode(os.path.join(root, fn))
                     r = os.path.relpath(root, distinfo)
-                    ap = to_posix(os.path.join(info_dir, r, fn))
+                    ap = to_posix(os.path.normpath(os.path.join(info_dir, r, fn)))
                     archive_paths.append((ap, p))
 
         wheel_metadata = [
