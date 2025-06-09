@@ -454,18 +454,6 @@ Pyodide-specific options can be added in the `[tool.py-build-cmake.pyodide]`
 section of `pyproject.toml`.
 
 ```{note}
-Current releases of `pyodide-build` have a bug that causes py-build-cmake to be
-ignored when installing build dependencies, because its name contains `cmake`:
-<https://github.com/pyodide/pyodide-build/issues/100>.
-Since py-build-cmake is not installed in the build environment, the process
-fails with the error
-`pyproject_hooks._impl.BackendUnavailable: Cannot import 'py_build_cmake.build'`.
-
-A temporary workaround is to rename the py-build-cmake package to e.g.
-`py-build-cmak` (change the `project.name` option in its pyproject.toml), build
-this renamed version of py-build-cmake locally, add its Wheel directory to
-the `PIP_FIND_LINKS` path, and then build your own package with a build
-dependency on `py-build-cmak` instead of `py-build-cmake`.
-Refer to `.github/workflows/wheel.yml` to see how this is done for
-py-build-cmake's CI tests.
+At the time of writing, pyodide support requires a recent version of
+pyodide-build (>=0.30.0) and cibuildwheel (>=3.0.0rc2).
 ```
