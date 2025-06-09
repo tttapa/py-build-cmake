@@ -227,17 +227,12 @@ jobs:
       name: Install Python
       with:
         python-version: '3.12'
-    # https://github.com/pyodide/pyodide-build/issues/100
-    - name: Patch name
-      run: |
-        sed -i 's/^name = "py-build-cmake"/name = "py-build-cmak"/' pyproject.toml
-        sed -i 's/"py-build-cmake~/"py-build-cmak~/g' examples/${{ matrix.project }}/pyproject.toml
-    - name: Build py-build-cmak
+    - name: Build py-build-cmake
       run: |
         python3.12 -m pip install -U build
         python3.12 -m build -w -o pbc-dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@7940a4c0e76eb2030e473a5f864f291f63ee879b
+      uses: pypa/cibuildwheel@2edf5784998b7b1ab70445baced23069e839541e
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
