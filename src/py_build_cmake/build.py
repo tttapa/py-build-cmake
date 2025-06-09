@@ -439,8 +439,12 @@ class _BuildBackend:
         )
         pkg_info = self.get_pkg_info(cfg, module)
 
+        # Gather files
+        def _make_abs(f: Path):
+            return f if f.is_absolute() else src_dir / f
+
+        extra_files = [pyproject] + [_make_abs(f) for f in cfg.referenced_files]
         # Export dist
-        extra_files = [pyproject, *cfg.referenced_files]
         sdist_cfg = cfg.sdist["cross" if cfg.cross else self.plat.os_name]
         sdist_builder = SdistBuilder(
             module,
