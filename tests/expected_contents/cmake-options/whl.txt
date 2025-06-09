@@ -1,4 +1,4 @@
-cmake_options-{{version}}.dist-info/LICENSE
+cmake_options-{{version}}.dist-info/licenses/LICENSE
 cmake_options-{{version}}.dist-info/METADATA
 cmake_options-{{version}}.dist-info/RECORD
 cmake_options-{{version}}.dist-info/WHEEL

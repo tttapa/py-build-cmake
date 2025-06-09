@@ -1,7 +1,7 @@
 {% if sys.platform in ("linux", "win32") %}
 minimal_comp/_add_module{{dbg_suffix}}
 {% endif %}
-minimal_comp_debug-{{version}}.dist-info/LICENSE
+minimal_comp_debug-{{version}}.dist-info/licenses/LICENSE
 minimal_comp_debug-{{version}}.dist-info/METADATA
 minimal_comp_debug-{{version}}.dist-info/RECORD
 minimal_comp_debug-{{version}}.dist-info/WHEEL

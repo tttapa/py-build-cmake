@@ -1,4 +1,4 @@
-namespace_project_b-{{version}}.dist-info/LICENSE
+namespace_project_b-{{version}}.dist-info/licenses/LICENSE
 namespace_project_b-{{version}}.dist-info/METADATA
 namespace_project_b-{{version}}.dist-info/RECORD
 namespace_project_b-{{version}}.dist-info/WHEEL

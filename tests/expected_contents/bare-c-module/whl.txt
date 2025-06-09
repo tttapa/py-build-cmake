@@ -1,4 +1,4 @@
-bare_c_module-{{version}}.dist-info/LICENSE
+bare_c_module-{{version}}.dist-info/licenses/LICENSE
 bare_c_module-{{version}}.dist-info/METADATA
 bare_c_module-{{version}}.dist-info/RECORD
 bare_c_module-{{version}}.dist-info/WHEEL

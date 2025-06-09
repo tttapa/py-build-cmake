@@ -1,4 +1,4 @@
-swig_project-{{version}}.dist-info/LICENSE
+swig_project-{{version}}.dist-info/licenses/LICENSE
 swig_project-{{version}}.dist-info/METADATA
 swig_project-{{version}}.dist-info/RECORD
 swig_project-{{version}}.dist-info/WHEEL

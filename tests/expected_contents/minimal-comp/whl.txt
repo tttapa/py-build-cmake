@@ -1,4 +1,4 @@
-minimal_comp-{{version}}.dist-info/LICENSE
+minimal_comp-{{version}}.dist-info/licenses/LICENSE
 minimal_comp-{{version}}.dist-info/METADATA
 minimal_comp-{{version}}.dist-info/RECORD
 minimal_comp-{{version}}.dist-info/WHEEL

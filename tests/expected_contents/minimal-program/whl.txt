@@ -1,5 +1,5 @@
 minimal_program-{{version}}.data/scripts/minimal_program{{exe_suffix}}
-minimal_program-{{version}}.dist-info/LICENSE
+minimal_program-{{version}}.dist-info/licenses/LICENSE
 minimal_program-{{version}}.dist-info/METADATA
 minimal_program-{{version}}.dist-info/RECORD
 minimal_program-{{version}}.dist-info/WHEEL

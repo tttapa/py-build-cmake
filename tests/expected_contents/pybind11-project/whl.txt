@@ -1,4 +1,4 @@
-pybind11_project-{{version}}.dist-info/LICENSE
+pybind11_project-{{version}}.dist-info/licenses/LICENSE
 pybind11_project-{{version}}.dist-info/METADATA
 pybind11_project-{{version}}.dist-info/RECORD
 pybind11_project-{{version}}.dist-info/WHEEL

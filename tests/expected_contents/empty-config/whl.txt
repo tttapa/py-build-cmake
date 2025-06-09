@@ -1,4 +1,4 @@
-empty_config-{{version}}.dist-info/LICENSE
+empty_config-{{version}}.dist-info/licenses/LICENSE
 empty_config-{{version}}.dist-info/METADATA
 empty_config-{{version}}.dist-info/RECORD
 empty_config-{{version}}.dist-info/WHEEL

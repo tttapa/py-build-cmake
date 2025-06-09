@@ -1,4 +1,4 @@
-nanobind_project-{{version}}.dist-info/LICENSE
+nanobind_project-{{version}}.dist-info/licenses/LICENSE
 nanobind_project-{{version}}.dist-info/METADATA
 nanobind_project-{{version}}.dist-info/RECORD
 nanobind_project-{{version}}.dist-info/WHEEL
