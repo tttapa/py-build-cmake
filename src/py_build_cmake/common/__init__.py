@@ -189,7 +189,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
         msg = (
             "\n"
             "\n"
-            "\t\u274C Error in user configuration:\n"
+            "\t\u274c Error in user configuration:\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
@@ -210,7 +210,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
         else:
             msg = f"Subprocess {e.cmd[0]} failed"
         msg = (
-            f"\n\n\t\u274C {msg}:\n\n"
+            f"\n\n\t\u274c {msg}:\n\n"
             f"\t\t{e}\n"
             "\n\t(scroll up for subprocess output, above Python backtrace)"
         )
@@ -220,7 +220,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
         msg = (
             "\n"
             "\n"
-            "\t\u274C Internal error:\n"
+            "\t\u274c Internal error:\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
@@ -232,7 +232,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
         msg = (
             "\n"
             "\n"
-            "\t\u274C Internal KeyError:\n"
+            "\t\u274c Internal KeyError:\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
@@ -244,7 +244,7 @@ def format_and_rethrow_exception(e: BaseException, component=False):
         msg = (
             "\n"
             "\n"
-            f"\t\u274C Uncaught exception: {type(e).__name__}\n"
+            f"\t\u274c Uncaught exception: {type(e).__name__}\n"
             "\n"
             f"\t\t{e}\n"
             "\n"
