@@ -61,7 +61,8 @@ and tell py-build-cmake how to build your CMake project. For example:
 name = "example-project"
 requires-python = ">=3.7"
 readme = "README.md"
-license = { "file" = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["numpy"]
 dynamic = ["version", "description"]
 

@@ -3,7 +3,7 @@ name = "find-python"
 version = "0.4.4.dev0"
 description = "Test for CMake FindPython"
 requires-python = ">=3.7"
-license = { "text" = "-" }
+license = "MIT"
 
 [build-system]
 requires = ["py-build-cmake~=0.4.4.dev0"]

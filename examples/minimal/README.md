@@ -125,12 +125,12 @@ for more information about specific options. More information about the
 name = "minimal"
 readme = "README.md"
 requires-python = ">=3.7"
-license = { "file" = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ "name" = "Pieter P", "email" = "pieter.p.dev@outlook.com" }]
 keywords = ["example", "addition", "subtraction"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
