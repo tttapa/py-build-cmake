@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.18...3.31)
 project(swig-project VERSION 0.4.4)
 set(PY_VERSION_SUFFIX ".dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})
-set(Py_LIMITED_API 0x03070000 CACHE STRING
-    "CPython stable ABI version. Should match abi3_minimum_cpython_version")
 
 # Make sure that the Python and CMake versions match
 if (DEFINED PY_BUILD_CMAKE_PROJECT_VERSION)
@@ -52,12 +50,11 @@ set_target_properties(add_module PROPERTIES
 target_compile_definitions(add_module PRIVATE VERSION_INFO="${PY_FULL_VERSION}")
 
 # Link to the correct Python library and configure the appropriate ABI
-if (Python_INTERPRETER_ID STREQUAL "Python"
-    AND NOT "${Python_SOABI}" MATCHES "^cpython-[0-9dmu]+t")  # No free-threading
-    # TODO: Detect free-threading on Windows (without querying the interpreter)
+if (DEFINED PY_BUILD_CMAKE_PACKAGE_LIMITED_API)
     if (NOT TARGET Python::SABIModule)
         message(SEND_ERROR "CPython requires component Development.SABIModule")
     endif()
+    set(Py_LIMITED_API ${PY_BUILD_CMAKE_PACKAGE_LIMITED_API})
     message(STATUS "Using CPython stable ABI (${Py_LIMITED_API} - ${Python_SOSABI})")
     set_target_properties(add_module PROPERTIES
         SWIG_COMPILE_DEFINITIONS Py_LIMITED_API=${Py_LIMITED_API})

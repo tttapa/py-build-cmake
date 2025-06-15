@@ -15,8 +15,15 @@ endif()
 include(cmake/QueryPythonForNanobind.cmake)
 find_nanobind_python_first()
 
+# Determine whether we're doing a free-threaded build
+set(FREE_THREADED)
+if (PY_BUILD_CMAKE_PACKAGE_ABI_TAG MATCHES "(^|;)cp([0-9dmu]+)t($|;)")
+    message(STATUS "Enabling nanobind FREE_THREADED mode")
+    set(FREE_THREADED "FREE_THREADED")
+endif()
+
 # Compile the example Python module
-nanobind_add_module(_add_module STABLE_ABI FREE_THREADED "src/ext/add_module.cpp")
+nanobind_add_module(_add_module STABLE_ABI ${FREE_THREADED} "src/ext/add_module.cpp")
 target_compile_definitions(_add_module PRIVATE
     MODULE_NAME=$<TARGET_FILE_BASE_NAME:_add_module>
     VERSION_INFO="${PY_FULL_VERSION}"
