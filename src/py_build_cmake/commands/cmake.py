@@ -32,6 +32,8 @@ class CMakeSettings:
     os: str
     find_python: bool
     find_python3: bool
+    find_python_build_artifacts_prefix: str | None
+    find_python3_build_artifacts_prefix: str | None
     minimum_required: str
     generator_platform: str | None
     command: Path = Path("cmake")
@@ -314,23 +316,32 @@ class CMaker:
     def get_configure_options_python(self) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
 
-        def get_opts(prefix):
-            executable = self.plat.executable.as_posix()
-            yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
+        def get_opts(prefix, with_exec=True, native=None):
+            if with_exec:
+                executable = self.plat.executable.as_posix()
+                yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
             yield Option(prefix + "_FIND_REGISTRY", "NEVER")
             yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")
             yield Option(prefix + "_FIND_STRATEGY", "LOCATION")
             yield Option(prefix + "_FIND_VIRTUALENV", "FIRST")
-            if not self.cross_compiling():
+            if native is None:
+                native = not self.cross_compiling()
+            if native:
                 yield from self.get_native_python_hints(prefix)
             else:
                 yield from self.get_cross_python_hints(prefix)
 
         opts = []
         if self.cmake_settings.find_python:
-            opts += list(get_opts("Python"))
+            pfx = self.cmake_settings.find_python_build_artifacts_prefix
+            opts += [*get_opts("Python", with_exec=pfx is None)]
+            if pfx is not None:
+                opts += [*get_opts("Python" + pfx, with_exec=True, native=True)]
         if self.cmake_settings.find_python3:
-            opts += list(get_opts("Python3"))
+            pfx = self.cmake_settings.find_python3_build_artifacts_prefix
+            opts += [*get_opts("Python3", with_exec=pfx is None)]
+            if pfx is not None:
+                opts += [*get_opts("Python3" + pfx, with_exec=True, native=True)]
         return opts
 
     def get_configure_options_install(self) -> list[Option]:

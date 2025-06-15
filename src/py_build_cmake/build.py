@@ -546,6 +546,12 @@ class _BuildBackend:
                 os=plat.os_name,
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
+                find_python_build_artifacts_prefix=cmake_cfg.get(
+                    "find_python_build_artifacts_prefix"
+                ),
+                find_python3_build_artifacts_prefix=cmake_cfg.get(
+                    "find_python3_build_artifacts_prefix"
+                ),
                 minimum_required=cmake_cfg["minimum_version"],
                 generator_platform=cmake_plat,
                 command=Path("cmake"),

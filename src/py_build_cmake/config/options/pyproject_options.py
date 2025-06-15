@@ -222,6 +222,38 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "Specify hints for CMake's FindPython3 module.",
                          "find_python3 = false",
                          default=DefaultValueValue(True)),
+        StringConfigOption("find_python_build_artifacts_prefix",
+                           "Prefix to use for the hints and artifacts for the "
+                           "Python interpreter of the build system (i.e. the "
+                           "interpreter that was used to invoke "
+                           "py-build-cmake). Requires CMake 4.0 or later. "
+                           "See https://cmake.org/cmake/help/latest/module/"
+                           "FindPython.html#artifacts-specification for "
+                           "more details. Note that this option does not "
+                           "affect the value of `Python_ARTIFACTS_PREFIX`, it "
+                           "only affects the variable names of the artifacts "
+                           "and hints that are set by py-build-cmake. The user "
+                           "is expected to change `Python_ARTIFACTS_PREFIX` "
+                           "in their CMakeLists.txt (temporarily) when a "
+                           "native interpreter for the build system is "
+                           "required (e.g. for code generation at build time).",
+                           "find_python_build_artifacts_prefix = \"_BUILD\""),
+        StringConfigOption("find_python3_build_artifacts_prefix",
+                           "Prefix to use for the hints and artifacts for the "
+                           "Python interpreter of the build system (i.e. the "
+                           "interpreter that was used to invoke "
+                           "py-build-cmake). Requires CMake 4.0 or later. "
+                           "See https://cmake.org/cmake/help/latest/module/"
+                           "FindPython3.html#artifacts-specification for "
+                           "more details. Note that this option does not "
+                           "affect the value of `Python3_ARTIFACTS_PREFIX`, it "
+                           "only affects the variable names of the artifacts "
+                           "and hints that are set by py-build-cmake. The user "
+                           "is expected to change `Python3_ARTIFACTS_PREFIX` "
+                           "in their CMakeLists.txt (temporarily) when a "
+                           "native interpreter for the build system is "
+                           "required (e.g. for code generation at build time).",
+                           "find_python3_build_artifacts_prefix = \"_BUILD\""),
         ListOfStrConfigOption("build_args",
                               "Extra arguments passed to the build step.",
                               "build_args = [\"-j\", \"--target\", \"foo\"]",
