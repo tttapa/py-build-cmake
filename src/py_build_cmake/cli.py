@@ -24,6 +24,7 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
         cfg, module = backend.read_all_metadata(plat, src_dir, config_settings, verbose)
         pkg_info = backend.get_pkg_info(cfg, module)
         cmake_cfgs = backend.get_cmake_config(plat, cfg)
+        wheel_cfg = backend.get_wheel_config(plat, cfg)
         if not cmake_cfgs:
             msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing)."
             raise ValueError(msg)
@@ -47,6 +48,7 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
             None,
             cmake_cfg,
             cfg.cross,
+            wheel_cfg,
             pkg_info,
             runner=CommandRunner(verbose=verbose, dry=dry),
         )

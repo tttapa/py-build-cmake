@@ -14,6 +14,10 @@ from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 from .. import __version__
 from ..common import PackageInfo
 from ..common.platform import BuildPlatformInfo
+from ..common.util import (
+    python_version_int_to_py_limited_api_value,
+    python_version_int_to_tuple,
+)
 from ..config.environment import substitute_environment_options
 from .cmd_runner import CommandRunner
 
@@ -88,6 +92,13 @@ _MACOSX_DEPL_TGT_MSG = (
 )
 
 
+@dataclass
+class PackageTags:
+    python_tag: list[str]
+    abi_tag: list[str]
+    limited_api: int | None = None
+
+
 class CMaker:
     def __init__(
         self,
@@ -98,6 +109,7 @@ class CMaker:
         install_settings: CMakeInstallSettings,
         package_info: PackageInfo,
         runner: CommandRunner,
+        package_tags: PackageTags,
     ):
         self.plat = plat
         self.cmake_settings = cmake_settings
@@ -106,6 +118,7 @@ class CMaker:
         self.install_settings = install_settings
         self.package_info = package_info
         self.runner = runner
+        self.package_tags = package_tags
         self.environment: dict[str, str] | None = None
 
         env = self.conf_settings.environment
@@ -159,22 +172,43 @@ class CMaker:
         """Flags specific to py-build-cmake, useful in the user's CMake scripts."""
         executable = self.plat.executable.as_posix()
         version = self.plat.python_version_info
-        return [
+        release_level = str(version.releaselevel)
+        python_tag = ";".join(self.package_tags.python_tag)
+        abi_tag = ";".join(self.package_tags.abi_tag)
+        options = [
             Option("PY_BUILD_CMAKE_VERSION", str(__version__)),
+            Option("PY_BUILD_CMAKE_PYTHON_INTERPRETER", executable, "FILEPATH"),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_INTERPRETER", executable, "FILEPATH"),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION", self.plat.python_version),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_VERSION", self.plat.python_version),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MAJOR", str(version.major)),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_VERSION_MAJOR", str(version.major)),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MINOR", str(version.minor)),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_VERSION_MINOR", str(version.minor)),
+            Option("PY_BUILD_CMAKE_PYTHON_VERSION_PATCH", str(version.micro)),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_VERSION_PATCH", str(version.micro)),
+            Option("PY_BUILD_CMAKE_PYTHON_RELEASE_LEVEL", release_level),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_RELEASE_LEVEL", release_level),
+            Option("PY_BUILD_CMAKE_PYTHON_ABIFLAGS", self.plat.python_abiflags),
+            Option("PY_BUILD_CMAKE_BUILD_PYTHON_ABIFLAGS", self.plat.python_abiflags),
             Option("PY_BUILD_CMAKE_PROJECT_VERSION", self.package_info.version),
             Option("PY_BUILD_CMAKE_PACKAGE_VERSION", self.package_info.version),
             Option("PY_BUILD_CMAKE_PROJECT_NAME", self.package_info.norm_name),
             Option("PY_BUILD_CMAKE_PACKAGE_NAME", self.package_info.norm_name),
             Option("PY_BUILD_CMAKE_IMPORT_NAME", self.package_info.module_name),
             Option("PY_BUILD_CMAKE_MODULE_NAME", self.package_info.module_name),
-            Option("PY_BUILD_CMAKE_PYTHON_INTERPRETER", executable, "FILEPATH"),
-            Option("PY_BUILD_CMAKE_PYTHON_VERSION", self.plat.python_version),
-            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MAJOR", str(version.major)),
-            Option("PY_BUILD_CMAKE_PYTHON_VERSION_MINOR", str(version.minor)),
-            Option("PY_BUILD_CMAKE_PYTHON_VERSION_PATCH", str(version.micro)),
-            Option("PY_BUILD_CMAKE_PYTHON_RELEASE_LEVEL", str(version.releaselevel)),
-            Option("PY_BUILD_CMAKE_PYTHON_ABIFLAGS", self.plat.python_abiflags),
+            Option("PY_BUILD_CMAKE_PACKAGE_PYTHON_TAG", python_tag),
+            Option("PY_BUILD_CMAKE_PACKAGE_ABI_TAG", abi_tag),
         ]
+        limited_api = self.package_tags.limited_api
+        if limited_api:
+            limited_api_hex = python_version_int_to_py_limited_api_value(limited_api)
+            use_sabi = ".".join(map(str, python_version_int_to_tuple(limited_api)))
+            options += [
+                Option("PY_BUILD_CMAKE_PACKAGE_LIMITED_API", limited_api_hex),
+                Option("PY_BUILD_CMAKE_PACKAGE_USE_SABI", use_sabi),
+            ]
+        return options
 
     def get_native_python_prefixes(self) -> str:
         """Get the prefix paths to locate this (native) Python installation in,

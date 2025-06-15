@@ -14,6 +14,7 @@ from .commands.cmake import (
     CMakeInstallSettings,
     CMaker,
     CMakeSettings,
+    PackageTags,
 )
 from .commands.cmd_runner import CommandRunner
 from .commands.try_run import check_cmake_program, check_stubgen_program
@@ -261,6 +262,7 @@ class _BuildBackend:
 
         # Configure, build and install the CMake project
         for idx, cmkcfg in cmake_cfg.items():
+            wheel_cfg = _BuildBackend.get_wheel_config(self.plat, cfg)
             build_cfg_name = self.get_build_config_name(self.plat, cfg, idx)
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
@@ -272,6 +274,7 @@ class _BuildBackend:
                 paths.staging_dir,
                 cmkcfg,
                 cfg.cross,
+                wheel_cfg,
                 pkg_info,
                 runner=self.runner,
             )
@@ -468,6 +471,7 @@ class _BuildBackend:
         install_dir: Path | None,
         cmake_cfg: dict,
         cross_cfg: dict | None,
+        wheel_cfg: dict,
         package_info: PackageInfo,
         **kwargs,
     ):
@@ -525,6 +529,13 @@ class _BuildBackend:
                 if plat.system == "Windows":
                     make_program = make_program.with_suffix(".exe")
 
+        # Determine the package tags
+        pure = is_pure(wheel_cfg, cmake_cfg)
+        tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cross_cfg)
+        limited_api: int | None = None
+        if "abi3" in tags["abi"]:
+            limited_api = wheel_cfg["abi3_minimum_cpython_version"]
+
         # CMake options
         return CMaker(
             plat=plat,
@@ -563,6 +574,11 @@ class _BuildBackend:
                 prefix=install_dir,
             ),
             package_info=package_info,
+            package_tags=PackageTags(
+                tags["pyver"],
+                tags["abi"],
+                limited_api,
+            ),
             **kwargs,
         )
 

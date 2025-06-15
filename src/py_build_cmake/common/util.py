@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from typing import Sequence
 
 
@@ -85,3 +86,15 @@ def python_tag_to_cmake(x: str):
     # CMake also supports the values "Anaconda" and "ActivePython", but Anaconda
     # and ActiveState Python interpreters just report "cpython" as their
     # sys.implementation, and they use the same Wheel tags as CPython.
+
+
+def python_version_int_to_tuple(version: int):
+    assert sys.version_info.major < 10
+    str_version = str(version)
+    maj, min = str_version[0], str_version[1:]
+    return int(maj), int(min)
+
+
+def python_version_int_to_py_limited_api_value(version: int):
+    maj, min = python_version_int_to_tuple(version)
+    return f"0x{maj:02X}{min:02X}0000"

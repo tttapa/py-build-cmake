@@ -151,6 +151,7 @@ class _BuildComponentBackend:
                 msg += "refer to an existing CMake configuration in the main "
                 msg += "project."
                 raise ConfigError(msg)
+            wheel_cfg = std_backend.get_wheel_config(self.plat, cfg)
             cmkcfg = cmake_cfg[k]
             build_cfg_name = std_backend.get_build_config_name(self.plat, cfg, k)
             path = cmkcfg["build_path"]
@@ -163,6 +164,7 @@ class _BuildComponentBackend:
                 paths.staging_dir,
                 cmkcfg,
                 cfg.cross,
+                wheel_cfg,
                 pkg_info,
                 component,
                 runner=self.runner,
@@ -184,6 +186,7 @@ class _BuildComponentBackend:
         install_dir: Path | None,
         cmake_cfg: dict,
         cross_cfg: dict | None,
+        wheel_cfg: dict,
         package_info: PackageInfo,
         component: dict,
         **kwargs,
@@ -195,6 +198,7 @@ class _BuildComponentBackend:
             install_dir=install_dir,
             cmake_cfg=cmake_cfg,
             cross_cfg=cross_cfg,
+            wheel_cfg=wheel_cfg,
             package_info=package_info,
             **kwargs,
         )
