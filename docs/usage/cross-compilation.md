@@ -455,5 +455,5 @@ section of `pyproject.toml`.
 
 ```{note}
 At the time of writing, pyodide support requires a recent version of
-pyodide-build (>=0.30.0) and cibuildwheel (>=3.0.0rc2).
+pyodide-build (>=0.30.0) and cibuildwheel (>=3.0.0).
 ```
