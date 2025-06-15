@@ -39,7 +39,7 @@ dependencies = [
     "pyproject-metadata~=0.9.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
     "lark>=1.1.9,<2",
-    "click~=8.1.3",
+    "click>=8.1.3,<9",
 ]
 dynamic = ["version", "description"]
 
@@ -52,12 +52,12 @@ Tracker = "https://github.com/tttapa/py-build-cmake/issues"
 py-build-cmake = "py_build_cmake.cli:cli"
 
 [project.optional-dependencies]
-test = ["nox>=2023.4.22,<2024", "jinja2~=3.1.2"]
+test = ["nox>=2023.4.22,<2026", "jinja2~=3.1.2"]
 docs = [
-    "sphinx==7.4.7",
-    "sphinx-book-theme==1.1.3",
+    "sphinx==8.2.3",
+    "sphinx-book-theme==1.1.4",
     "sphinx_design==0.6.1",
-    "myst-parser==3.0.1",
+    "myst-parser==4.0.1",
 ]
 
 [tool.py-build-cmake.module]
@@ -68,7 +68,7 @@ minversion = "6.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]
-log_cli_level = "info"
+log_cli_level = "INFO"
 testpaths = ["tests"]
 norecursedirs = ["tests/packages"]
 
