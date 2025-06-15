@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18...3.31)
+cmake_minimum_required(VERSION 3.18...4.0)
 project(pybind11-project VERSION 0.4.4)
 set(PY_VERSION_SUFFIX ".dev0")
 set(PY_FULL_VERSION ${PROJECT_VERSION}${PY_VERSION_SUFFIX})

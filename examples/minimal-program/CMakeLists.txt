@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15...3.31)
+cmake_minimum_required(VERSION 3.15...4.0)
 project(minimal-program)
 
 # Add the executable to compile

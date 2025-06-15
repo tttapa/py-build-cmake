@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5...3.31)
+cmake_minimum_required(VERSION 3.5...4.0)
 
 # Can be removed once https://github.com/pybind/pybind11/pull/5083 is merged
 

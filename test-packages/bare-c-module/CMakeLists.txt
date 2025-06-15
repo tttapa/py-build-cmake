@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17...3.31)
+cmake_minimum_required(VERSION 3.17...4.0)
 project(bare-c-module)
 
 # Find the Python development files
