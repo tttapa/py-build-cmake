@@ -38,6 +38,6 @@ Values can be specified using a TOML-like syntax, using square brackets for list
 ```sh
 python -m build . \
    -C "override=cmake.options.CMAKE_PREFIX_PATH=[\"/opt/some-package\", \"/another\"]" \
-   -C "override=cmake.env={MY_PATH = \"/opt/some-package\" }" \
+   -C "override=cmake.env+={MY_PATH = \"/opt/some-package\" }" \
    -C "override=cmake.find_python=true"
 ```
