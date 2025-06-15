@@ -1,0 +1,20 @@
+[project]
+name = "find-python-4"
+version = "0.4.4.dev0"
+description = "Test for CMake FindPython"
+requires-python = ">=3.7"
+license = "MIT"
+
+[build-system]
+requires = ["py-build-cmake~=0.4.4.dev0"]
+build-backend = "py_build_cmake.build"
+
+[tool.py-build-cmake.module]
+generated = "package"
+
+[tool.py-build-cmake.sdist]
+include = ["CMakeLists.txt"]
+
+[tool.py-build-cmake.cmake]
+minimum_version = "4.0"
+find_python3_build_artifacts_prefix = "_BUILD"

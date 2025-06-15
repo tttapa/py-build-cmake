@@ -1,5 +1,0 @@
-cmake_options-{{version}}/CMakeLists.txt
-cmake_options-{{version}}/LICENSE
-cmake_options-{{version}}/PKG-INFO
-cmake_options-{{version}}/README.md
-cmake_options-{{version}}/pyproject.toml

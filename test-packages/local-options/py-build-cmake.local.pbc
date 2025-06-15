@@ -4,6 +4,6 @@ cmake.options.OPTION_E-=/usr/bin/bash
 linux.cmake.options.OPTION_F={prepend = /some/local/linux/path}
 windows.cmake.options.OPTION_F={prepend = /some/local/windows/path}
 mac.cmake.options.OPTION_F={prepend = /some/local/macos/path}
-cmake.env={MY_PATH = "/opt/some-package" }
+cmake.env+={MY_PATH = "/opt/some-package" }
 cmake.find_python=false
 cmake.find_python3=false

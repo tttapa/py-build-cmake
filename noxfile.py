@@ -42,7 +42,7 @@ project_dir = Path(__file__).resolve().parent
 examples = "minimal-program", "pybind11-project", "nanobind-project"
 examples += "swig-project", "minimal"
 test_packages = "empty-config", "namespace-project-a", "namespace-project-b"
-test_packages += "bare-c-module", "cmake-preset", "cmake-options"
+test_packages += "local-options", "bare-c-module", "cmake-preset", "cmake-options"
 
 purity = {"empty-config": True, "namespace-project-b": True}
 
@@ -120,9 +120,10 @@ def test_example_project(
     with session.chdir(dir / name):
         shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
         shutil.rmtree("dist-nox", ignore_errors=True)
-        session.run("python", "-m", "build", ".", "-o", "dist-nox")
+        w = ("-w",) if name == "local-options" else ()
+        session.run("python", "-m", "build", *w, ".", "-o", "dist-nox")
         pure = purity.get(name, False)
-        check_pkg_contents(session, name, ext_suffix, pure=pure)
+        check_pkg_contents(session, name, ext_suffix, with_sdist=not w, pure=pure)
         session.install(".")
         session.run("pytest")
 
@@ -162,10 +163,11 @@ def find_python(session: nox.Session):
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
-    with session.chdir("test-packages/find-python"):
-        shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
-        shutil.rmtree("dist-nox", ignore_errors=True)
-        session.run("python", "-m", "build", ".", "-o", "dist-nox")
+    for name in "find-python", "find-python-4":
+        with session.chdir(f"test-packages/{name}"):
+            shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
+            shutil.rmtree("dist-nox", ignore_errors=True)
+            session.run("python", "-m", "build", ".", "-o", "dist-nox")
 
 
 @nox.session
@@ -269,6 +271,8 @@ def reproducible(session: nox.Session):
 def test_editable(
     session: nox.Session, name: str, mode: str, dir: Path = Path("examples")
 ):
+    if name == "local-options":
+        return  # skip
     ext_suffix = get_ext_suffix(name)
     if ext_suffix is None:
         return
