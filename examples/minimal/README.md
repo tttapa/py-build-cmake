@@ -263,8 +263,10 @@ You can use the `-v` flag to display the full output of the build process
 By default, pip builds packages in a temporary virtual environment, where it
 first installs all build dependencies. This can be slow, and might not be
 desirable during development. You can use the `--no-build-isolation` flag to
-disable this behavior (this requires you to install any build requirements
-yourself).
+disable this behavior. Note that this option requires you to install any build
+requirements yourself: pass the `--check-build-dependencies` flag to have Pip
+verify that appropriate versions of the dependencies are available in the
+current environment.
 See <https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-no-build-isolation>
 for more information.
 
@@ -285,7 +287,7 @@ or enable the [`editable.build_hook`](https://tttapa.github.io/py-build-cmake/re
 setting to automatically re-run `cmake --build` when your package is first
 imported:
 ```sh
-pip install -ve . --no-build-isolation -C override=editable.build_hook=true
+pip install -ve . --no-build-isolation --check-build-dependencies -C override=editable.build_hook=true
 ```
 
 ### Running the tests

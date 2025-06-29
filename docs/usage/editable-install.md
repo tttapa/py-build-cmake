@@ -248,10 +248,11 @@ To avoid depending on packages in Pip's temporary build directory or virtual
 environment, you can use the `--no-build-isolation` flag:
 
 ```sh
-pip install -e . --no-build-isolation
+pip install -e . --no-build-isolation --check-build-dependencies -C override=editable.build_hook=True
 ```
 
-This requires you to install any dependencies into your environment beforehand.
+This requires you to install any dependencies into your environment beforehand,
+as Pip won't install them automatically when build isolation is disabled.
 
 The only mode that is currently supported is `symlink`. This is because
 `symlink` mode installs the extension modules into a hidden folder inside of the

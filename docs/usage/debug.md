@@ -70,7 +70,10 @@ before building, which means that the debugging symbols point to source files
 in these (long deleted) temporary folders, which means your debugger won't be
 able to locate the source code while debugging. To get around this, tell `pip`
 and `build` not to use a temporary build folder using the respective
-`--no-build-isolation` and `--no-isolation` flags.
+`--no-build-isolation` and `--no-isolation` flags. If you're using `pip`, you
+may also want to pass the `--check-build-dependencies` flag to make sure that
+your environment has the required dependencies installed (they won't be
+installed automatically if you disable build isolation).
 
 ## Debugging in VSCode
 

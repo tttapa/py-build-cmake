@@ -292,7 +292,7 @@ def test_editable(
                 f.write(f"build_hook = {str(bh).lower()}")
             args = ("--config-settings=--local=" + f.name,)
             if bh:
-                args += ("--no-build-isolation",)
+                args += ("--no-build-isolation", "--check-build-dependencies")
             session.install("-e", ".", *args)
             session.run("pytest")
     finally:
