@@ -186,14 +186,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2019, macos-13, macos-latest]
+        os: [ubuntu-22.04, windows-2022, macos-13, macos-latest]
         project: [pybind11-project, nanobind-project, swig-project]
-        exclude:
-          - os: windows-2019
-            project: nanobind-project
-        include:
-          - os: windows-2022
-            project: nanobind-project
       fail-fast: false
     steps:
     - uses: actions/checkout@v4
