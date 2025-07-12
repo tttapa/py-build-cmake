@@ -286,4 +286,4 @@ jobs:
         name: py_build_cmake-src-python3.11
         path: dist
     - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc
+      uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc
