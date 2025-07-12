@@ -1,12 +1,12 @@
 [project]
 name = "find-python-4"
-version = "0.4.4.dev0"
+version = "0.5.0b1"
 description = "Test for CMake FindPython"
 requires-python = ">=3.7"
 license = "MIT"
 
 [build-system]
-requires = ["py-build-cmake~=0.4.4.dev0"]
+requires = ["py-build-cmake~=0.5.0b1"]
 build-backend = "py_build_cmake.build"
 
 [tool.py-build-cmake.module]
