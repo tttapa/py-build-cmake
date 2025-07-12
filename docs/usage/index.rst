@@ -8,5 +8,6 @@ Usage
    ./editable-install.md
    ./debug.md
    ./cross-compilation.md
+   ./find-python.md
    ./cli.md
    ./faq.md

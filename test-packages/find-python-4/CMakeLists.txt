@@ -3,6 +3,14 @@ cmake_minimum_required(VERSION 4.0)
 project(TestRequiredArtifacts LANGUAGES C)
 
 block(SCOPE_FOR VARIABLES)
+  # Look for the development files for the target first
+  if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+    find_package(Python3 REQUIRED COMPONENTS Development.Module)
+  else()
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+  endif()
+  # Then look for the interpreter for the build system,
+  # but return its variables using a different name
   set(Python3_ARTIFACTS_PREFIX "_BUILD")
   if (NOT DEFINED Python3_BUILD_EXECUTABLE)
     message(SEND_ERROR "Python3_BUILD_EXECUTABLE not defined")
