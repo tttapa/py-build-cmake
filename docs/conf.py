@@ -14,7 +14,7 @@ sys.path.append(str(Path().resolve()))
 project = "py-build-cmake"
 copyright = "2025, Pieter P"
 author = "Pieter P"
-release = "0.5.0b1"
+release = "0.5.0b2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -39,7 +39,7 @@ html_favicon = "images/py-build-cmake-logo.svg"
 html_context = {
     "github_user": "tttapa",
     "github_repo": "py-build-cmake",
-    "github_version": "0.5.0b1",
+    "github_version": "0.5.0b2",
     "doc_path": "docs",
 }
 html_show_sourcelink = False
