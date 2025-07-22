@@ -15,7 +15,7 @@ repos:
         files: ^src
         args: []
         additional_dependencies:
-          - "distlib==0.3.9"
+          - "distlib~=0.4.0"
           - "pyproject-metadata~=0.9.1"
           - "tomli>=1.2.3,<3; python_version < '3.11'"
           - "lark>=1.1.9,<2"

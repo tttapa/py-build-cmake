@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "distlib==0.3.9",
+    "distlib~=0.4.0",
     "packaging>=23.2",
     "pyproject-metadata~=0.9.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
@@ -34,7 +34,7 @@ classifiers = [
     "Operating System :: MacOS",
 ]
 dependencies = [
-    "distlib==0.3.9",
+    "distlib~=0.4.0",
     "packaging>=23.2",
     "pyproject-metadata~=0.9.1",
     "tomli>=1.2.3,<3; python_version < '3.11'",
