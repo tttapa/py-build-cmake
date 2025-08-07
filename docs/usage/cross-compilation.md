@@ -184,7 +184,7 @@ If everything worked as expected, you should see output similar to the following
 -- pybind11 CMake location: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/share/cmake/pybind11
 -- Performing Test HAS_FLTO
 -- Performing Test HAS_FLTO - Success
--- Found pybind11: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/include (found version "2.13.6")
+-- Found pybind11: /tmp/build-env-xxxxx/lib/python3.9/site-packages/pybind11/include (found version "3.0.0")
 -- Configuring done (1.4s)
 -- Generating done (0.0s)
 -- Build files have been written to: py-build-cmake/examples/pybind11-project/.py-build-cmake_cache/cp311-cp311-manylinux_2_27_aarch64
