@@ -1,3 +1,3 @@
 """Example project using the py-build-cmake build backend and SWIG."""
 
-__version__ = "0.5.0b2"
+__version__ = "0.5.0"

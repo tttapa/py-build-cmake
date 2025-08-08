@@ -88,7 +88,7 @@ Let's go over these requirements step by step:
 We'll first clone `py-build-cmake` and its example projects:
 
 ```sh
-git clone https://github.com/tttapa/py-build-cmake --branch=0.5.0b2
+git clone https://github.com/tttapa/py-build-cmake --branch=0.5.0
 cd py-build-cmake
 ```
 
@@ -193,7 +193,7 @@ If everything worked as expected, you should see output similar to the following
 [100%] Built target _add_module
 -- Installing: /tmp/xxxxx/staging/pybind11_project/_add_module.cpython-311-aarch64-linux-gnu.so
 [...]
-Successfully built pybind11_project-0.5.0b2-cp311-cp311-manylinux_2_27_aarch64.whl
+Successfully built pybind11_project-0.5.0-cp311-cp311-manylinux_2_27_aarch64.whl
 ```
 You can see that CMake is using the cross-compiler we downloaded, and that it
 managed to locate the version of Python we requested (CPython 3.11 for AArch64).
@@ -201,7 +201,7 @@ It is important to verify the module extension suffix
 (`.cpython-311-aarch64-linux-gnu.so` in this case) and the Wheel tags
 (`cp311-cp311-manylinux_2_27_aarch64`).
 
-You can now copy the Wheel package in `examples/pybind11-project/dist/pybind11_project-0.5.0b2-cp311-cp311-manylinux_2_27_aarch64.whl`
+You can now copy the Wheel package in `examples/pybind11-project/dist/pybind11_project-0.5.0-cp311-cp311-manylinux_2_27_aarch64.whl`
 to e.g. a Raspberry Pi and install it using `pip install`.
 
 ### Automated Bash scripts
@@ -221,42 +221,42 @@ You can find the resulting Wheel packages in the
 `examples/pybind11-project/dist` directory:
 ```sh
 examples/pybind11-project/dist
-├── pybind11_project-0.5.0b2-cp37-cp37m-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp37-cp37m-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp37-cp37m-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp37-cp37m-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp38-cp38-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp38-cp38-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp38-cp38-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp38-cp38-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp39-cp39-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp39-cp39-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp39-cp39-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp39-cp39-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp310-cp310-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp310-cp310-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp310-cp310-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp310-cp310-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp311-cp311-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp311-cp311-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp311-cp311-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp311-cp311-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp312-cp312-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp312-cp312-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp312-cp312-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp312-cp312-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-cp313-cp313-linux_armv6l.whl
-├── pybind11_project-0.5.0b2-cp313-cp313-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-cp313-cp313-manylinux_2_27_armv7l.whl
-├── pybind11_project-0.5.0b2-cp313-cp313-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-pp37-pypy37_pp73-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-pp37-pypy37_pp73-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-pp38-pypy38_pp73-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-pp38-pypy38_pp73-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-pp39-pypy39_pp73-manylinux_2_27_aarch64.whl
-├── pybind11_project-0.5.0b2-pp39-pypy39_pp73-manylinux_2_27_x86_64.whl
-├── pybind11_project-0.5.0b2-pp310-pypy310_pp73-manylinux_2_27_aarch64.whl
-└── pybind11_project-0.5.0b2-pp310-pypy310_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp37-cp37m-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp37-cp37m-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp37-cp37m-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp37-cp37m-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp38-cp38-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp38-cp38-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp38-cp38-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp38-cp38-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp39-cp39-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp39-cp39-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp39-cp39-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp39-cp39-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp310-cp310-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp310-cp310-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp310-cp310-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp310-cp310-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp311-cp311-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp311-cp311-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp311-cp311-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp311-cp311-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp312-cp312-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp312-cp312-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp312-cp312-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp312-cp312-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-cp313-cp313-linux_armv6l.whl
+├── pybind11_project-0.5.0-cp313-cp313-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-cp313-cp313-manylinux_2_27_armv7l.whl
+├── pybind11_project-0.5.0-cp313-cp313-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-pp37-pypy37_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-pp37-pypy37_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-pp38-pypy38_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-pp38-pypy38_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-pp39-pypy39_pp73-manylinux_2_27_aarch64.whl
+├── pybind11_project-0.5.0-pp39-pypy39_pp73-manylinux_2_27_x86_64.whl
+├── pybind11_project-0.5.0-pp310-pypy310_pp73-manylinux_2_27_aarch64.whl
+└── pybind11_project-0.5.0-pp310-pypy310_pp73-manylinux_2_27_x86_64.whl
 ```
 
 ### A closer look at the CMake toolchain files
