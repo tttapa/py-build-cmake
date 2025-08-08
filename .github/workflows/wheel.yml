@@ -196,7 +196,7 @@ jobs:
         name: py_build_cmake-whl-python3.11
         path: dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@ffd835cef18fa11522f608fc0fa973b89f5ddc87
+      uses: pypa/cibuildwheel@352e01339f0a173aa2a3eb57f01492e341e83865
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
@@ -233,7 +233,7 @@ jobs:
         python3.12 -m pip install -U build
         python3.12 -m build -w -o pbc-dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@ffd835cef18fa11522f608fc0fa973b89f5ddc87
+      uses: pypa/cibuildwheel@352e01339f0a173aa2a3eb57f01492e341e83865
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
