@@ -18,8 +18,9 @@ jobs:
         python: ['python']
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         include:
-          - python-version: '3.13'
-            image-suffix: ''  # Change this to '-rc' to test pre-releases
+          - python-version: '3.14'
+            image-suffix: '-rc'  # Change this to '-rc' to test pre-releases
+            python: 'python'
           - python-version: '3.10'
             python: 'pypy'
     steps:
@@ -51,8 +52,9 @@ jobs:
         python: ['python']
         python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         include:
-          - python-version: '3.13'
-            image-suffix: ''  # Change this to '-rc' to test pre-releases
+          - python-version: '3.14'
+            image-suffix: '-rc'  # Change this to '-rc' to test pre-releases
+            python: 'python'
           - python-version: '3.10'
             python: 'pypy'
     steps:
@@ -72,7 +74,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.5', 'pypy3.10', '3.13t']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t', '3.14', '3.14t']
         os: ['windows-latest']
     steps:
     - uses: actions/checkout@v4
@@ -101,7 +103,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13.5', 'pypy3.10', '3.13t']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t', '3.14', '3.14t']
         os: ['windows-latest']
     steps:
     - uses: actions/checkout@v4
@@ -125,7 +127,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t', '3.14', '3.14t']
         os: ['macos-latest']
         include:
           - python-version: '3.7'
@@ -156,7 +158,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t']
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.10', '3.13t', '3.14']  # '3.14t' is blocked by https://github.com/wjakob/nanobind/pull/1128
         os: ['macos-latest']
         include:
           - python-version: '3.7'
