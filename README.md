@@ -3,7 +3,7 @@
 
 [![Python Wheel](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml/badge.svg)](https://github.com/tttapa/py-build-cmake/actions/workflows/wheel.yml)
 [![Documentation](https://img.shields.io/badge/Documentation-main-blue)](https://tttapa.github.io/py-build-cmake)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/py-build-cmake?label=PyPI)](https://pypi.org/project/py-build-cmake)
+[![PyPI - Downloads](https://img.shields.io/badge/PyPI-py--build--cmake-green?logo=pypi)](https://pypi.org/project/py-build-cmake)
 
 </div>
 
