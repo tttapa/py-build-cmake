@@ -5,13 +5,16 @@ from pathlib import Path, PurePosixPath
 import click
 
 from . import __version__
+from .build import _BuildBackend as backend
+from .commands.cmd_runner import CommandRunner
 from .common.platform import determine_build_platform_info
+from .config.options.config_path import ConfPath
+from .config.options.config_reference import ConfigReference
+from .config.options.pyproject_options import get_component_options, get_options
 
 
 def cmake_command(directory, build_path, verbose, dry, cross, local, override):
     def get_cmaker(index: int):
-        from .build import _BuildBackend as backend
-        from .commands.cmd_runner import CommandRunner
 
         src_dir = Path(directory or ".").resolve()
         config_settings = {
@@ -233,14 +236,10 @@ def config():
     "--component", is_flag=True, help="Documentation for the build_component backend."
 )
 def format(md, component):
-    from .config.options.config_path import ConfPath
-    from .config.options.config_reference import ConfigReference
-    from .config.options.pyproject_options import get_component_options, get_options
-
     if md:
-        from .help import help_print_md as help_print
+        from .help import help_print_md as help_print  # noqa: PLC0415
     else:
-        from .help import help_print
+        from .help import help_print  # noqa: PLC0415
     help_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake")
     pr_md = print if md else (lambda *args, **kwargs: None)
     pr_tx = (lambda *args, **kwargs: None) if md else print

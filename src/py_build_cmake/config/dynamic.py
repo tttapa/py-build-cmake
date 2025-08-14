@@ -38,6 +38,7 @@ import ast
 import logging
 import sys
 from contextlib import contextmanager
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import distlib.version  # type: ignore[import-untyped]
@@ -110,7 +111,6 @@ def get_docstring_and_version_via_import(mod_filename: Path):
     _import_i += 1
 
     logger.debug("Loading module %s", mod_filename)
-    from importlib.util import module_from_spec, spec_from_file_location
 
     mod_name = f"py_build_cmake.dummy.import{_import_i}"
     spec = spec_from_file_location(mod_name, mod_filename)

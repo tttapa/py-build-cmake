@@ -151,7 +151,7 @@ class PackageInfo:
 
     @property
     def norm_name(self):
-        from .util import normalize_name_wheel
+        from .util import normalize_name_wheel  # noqa: PLC0415
 
         return normalize_name_wheel(self.package_name)
 

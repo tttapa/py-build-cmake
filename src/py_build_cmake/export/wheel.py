@@ -1,4 +1,3 @@
-# ruff: noqa: PLR0912, PLR0915, RUF015, UP031, PTH112, B007, PTH118, PTH123, PLW2901
 # This code was largely copied from distlib to work around
 # https://github.com/pypa/distlib/issues/246, and it does not comply with the
 # ruff warnings used throughout py-build-cmake, so we ignore the entire file for

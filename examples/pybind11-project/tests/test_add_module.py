@@ -12,7 +12,7 @@ def test_version():
     assert py_version == py_cpp_version
     assert py_version == cpp_version
     try:  # No importlib in Python 3.7 and below
-        from importlib.metadata import version
+        from importlib.metadata import version  # noqa: PLC0415
 
         assert py_version == version("pybind11_project")
     except ImportError:

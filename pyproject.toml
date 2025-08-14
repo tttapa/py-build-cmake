@@ -108,7 +108,7 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"noxfile.py" = ["T20"]                                # Removes print statements
+"noxfile.py" = ["T20", "PT"]                          # Removes print statements, not a pytest file
 "**/tests/**" = ["T20"]
 "examples/**" = ["T20"]
 "scripts/**" = ["T20"]

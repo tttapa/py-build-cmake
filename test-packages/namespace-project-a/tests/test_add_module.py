@@ -13,6 +13,6 @@ def test_add():
     reason="No importlib.metadata.version support on older versions of Python",
 )
 def test_version():
-    from importlib.metadata import version
+    from importlib.metadata import version  # noqa: PLC0415
 
     assert __version__ == version("namespace_project_a")

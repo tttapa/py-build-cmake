@@ -13,7 +13,7 @@ import pytest
     reason="No separate debug symbol files on macOS",
 )
 def test_component():
-    from importlib.resources import files
+    from importlib.resources import files  # noqa: PLC0415
 
     contents = [
         resource.name

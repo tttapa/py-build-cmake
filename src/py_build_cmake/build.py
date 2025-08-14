@@ -523,7 +523,7 @@ class _BuildBackend:
         make_program: Path | None = None
         if generator is not None and "ninja" in generator.lower():
             with contextlib.suppress(ImportError):
-                import ninja  # type: ignore[import-not-found]
+                import ninja  # type: ignore[import-not-found] # noqa: PLC0415
 
                 make_program = Path(ninja.BIN_DIR) / "ninja"
                 if plat.system == "Windows":

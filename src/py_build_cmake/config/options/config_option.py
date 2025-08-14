@@ -206,8 +206,8 @@ class MultiConfigOption(ConfigOption):
         return vals
 
     def finalize(self, values: ValueReference) -> Any:
-        from .config_reference import ConfigReference
-        from .override import ConfigOverrider
+        from .config_reference import ConfigReference  # noqa: PLC0415
+        from .override import ConfigOverrider  # noqa: PLC0415
 
         if values.is_value_set(self.default_index):
             # Our own option as a "single" ConfigOption
