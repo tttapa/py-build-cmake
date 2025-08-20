@@ -537,7 +537,13 @@ class _BuildBackend:
             limited_api = wheel_cfg["abi3_minimum_cpython_version"]
 
         # CMake options
-        return CMaker(
+        cls = CMaker
+        if cmake_cfg.get("conan", False):
+            from .commands.conan import ConanCMaker
+
+            cls = ConanCMaker
+
+        return cls(
             plat=plat,
             cmake_settings=CMakeSettings(
                 working_dir=source_dir,
@@ -553,6 +559,7 @@ class _BuildBackend:
                     "find_python3_build_artifacts_prefix"
                 ),
                 minimum_required=cmake_cfg["minimum_version"],
+                maximum_policy=cmake_cfg.get("maximum_policy"),
                 generator_platform=cmake_plat,
                 command=Path("cmake"),
             ),

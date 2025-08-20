@@ -32,23 +32,21 @@ def write_build_hook(
         fname += f"_{idx}"
     pkg_hook = staging_dir / fname
     pkg_hook.mkdir(parents=True, exist_ok=True)
-    cwd = cmaker.get_working_dir()
-    env = cmaker.prepare_environment()
-    env = {k: v for k, v in env.items() if k in cmaker.conf_settings.environment}
+    cwd = cmaker.get_working_dir().as_posix()
+    env = cmaker.get_build_environment()
     cmd = list(cmaker.get_build_commands()) + list(cmaker.get_install_commands())
     content = f"""\
-        import sys, inspect, os
-        from importlib.machinery import PathFinder
+        import sys, os
         import subprocess
 
-        class BuilderPathFinder(PathFinder):
+        class BuilderPathFinder:
             def __init__(self, name, cwd, env, cmd):
                 self.name = name
                 self.cwd = cwd
                 self.env = env
                 self.cmd = cmd
-            def find_spec(self, name, path=None, target=None):
-                if name.split('.', 1)[0] == self.name:
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname.split('.', 1)[0] == self.name:
                     self.build()
                 return None
             def prepare_environment(self):
@@ -62,7 +60,8 @@ def write_build_hook(
                     env = self.prepare_environment()
                     for cmd in self.cmd:
                         try:
-                            subprocess.run(cmd, cwd=self.cwd, check=True, env=env)
+                            subprocess.run(cmd, cwd=self.cwd, check=True, env=env,
+                                           shell=isinstance(cmd, str))
                         except subprocess.CalledProcessError as e:
                             raise ImportError(
                                 f"Failed to build dependencies for module {{self.name!r}}",

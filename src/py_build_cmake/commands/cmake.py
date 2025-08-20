@@ -20,6 +20,7 @@ from ..common.util import (
 )
 from ..config.environment import substitute_environment_options
 from .cmd_runner import CommandRunner
+from .file import VerboseFile
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class CMakeSettings:
     find_python_build_artifacts_prefix: str | None
     find_python3_build_artifacts_prefix: str | None
     minimum_required: str
+    maximum_policy: str | None
     generator_platform: str | None
     command: Path = Path("cmake")
 
@@ -80,6 +82,21 @@ class Option:
     value: str
     type: str = "STRING"
     description: str = ""
+
+    def cli_key(self):
+        cli = self.name
+        if self.type:
+            cli += f":{self.type}"
+        return cli
+
+    def to_cli_string(self):
+        return f"{self.cli_key()}={self.value}"
+
+    def to_preload_set(self):
+        return (
+            f'set({self.name} "{self.value}"'
+            f' CACHE {self.type or "STRING"} "{self.description}" FORCE)\n'
+        )
 
 
 _MACOSX_DEPL_TGT_MSG = (
@@ -137,6 +154,15 @@ class CMaker:
             msg += "supported. Its value will be ignored.\n"
             msg += _MACOSX_DEPL_TGT_MSG
             logger.warning(msg)
+
+    @property
+    def cmake_version_policy(self):
+        """Determine argument for cmake_minimum_required(VERSION X)."""
+        version = self.cmake_settings.minimum_required
+        max_pol = self.cmake_settings.maximum_policy
+        if max_pol:
+            version += "..." + max_pol
+        return version
 
     def run(self, *args, **kwargs):
         return self.runner.run(*args, **kwargs)
@@ -230,8 +256,20 @@ class CMaker:
             "pypy": "PyPy",
         }.get(self.plat.implementation)
 
-    def get_native_python_hints(self, prefix: str) -> Generator[Option]:
+    def get_common_python_hints(self, prefix, with_exec):
+        if with_exec:
+            executable = self.plat.executable.as_posix()
+            yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
+        yield Option(prefix + "_FIND_REGISTRY", "NEVER")
+        yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")
+        yield Option(prefix + "_FIND_STRATEGY", "LOCATION")
+        yield Option(prefix + "_FIND_VIRTUALENV", "FIRST")
+
+    def get_native_python_hints(
+        self, prefix: str, with_exec: bool
+    ) -> Generator[Option]:
         """FindPython hints and artifacts for this (native) Python installation."""
+        yield from self.get_common_python_hints(prefix, with_exec=with_exec)
         # Python_ROOT_DIR is the most important one, because it tells CMake to
         # look in the given directories first. If the ROOT_DIR contains just
         # one version of Python, CMake should locate it correctly. Note that
@@ -291,8 +329,9 @@ class CMaker:
         # TODO: FIND_ABI seems to confuse CMake
         # yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
 
-    def get_cross_python_hints(self, prefix: str) -> Generator[Option]:
+    def get_cross_python_hints(self, prefix: str, with_exec: bool) -> Generator[Option]:
         """FindPython hints and artifacts to set when cross-compiling."""
+        yield from self.get_common_python_hints(prefix, with_exec=with_exec)
         if self.conf_settings.python_prefix:
             pfx = self.conf_settings.python_prefix.as_posix()
             yield Option(prefix + "_ROOT", pfx, "PATH")
@@ -313,33 +352,26 @@ class CMaker:
             soabi = self.conf_settings.python_soabi
             yield Option(prefix + "_SOABI", soabi, "STRING")
 
-    def get_configure_options_python(self) -> list[Option]:
+    def get_configure_options_python(self, native=None) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
+        if native is None:
+            native = not self.cross_compiling()
 
-        def get_opts(prefix, with_exec=True, native=None):
-            if with_exec:
-                executable = self.plat.executable.as_posix()
-                yield Option(prefix + "_EXECUTABLE", executable, "FILEPATH")
-            yield Option(prefix + "_FIND_REGISTRY", "NEVER")
-            yield Option(prefix + "_FIND_FRAMEWORK", "NEVER")
-            yield Option(prefix + "_FIND_STRATEGY", "LOCATION")
-            yield Option(prefix + "_FIND_VIRTUALENV", "FIRST")
-            if native is None:
-                native = not self.cross_compiling()
+        def get_opts(prefix, with_exec, native):
             if native:
-                yield from self.get_native_python_hints(prefix)
+                yield from self.get_native_python_hints(prefix, with_exec=with_exec)
             else:
-                yield from self.get_cross_python_hints(prefix)
+                yield from self.get_cross_python_hints(prefix, with_exec=with_exec)
 
         opts = []
         if self.cmake_settings.find_python:
             pfx = self.cmake_settings.find_python_build_artifacts_prefix
-            opts += [*get_opts("Python", with_exec=pfx is None)]
+            opts += [*get_opts("Python", with_exec=pfx is None, native=native)]
             if pfx is not None:
                 opts += [*get_opts("Python" + pfx, with_exec=True, native=True)]
         if self.cmake_settings.find_python3:
             pfx = self.cmake_settings.find_python3_build_artifacts_prefix
-            opts += [*get_opts("Python3", with_exec=pfx is None)]
+            opts += [*get_opts("Python3", with_exec=pfx is None, native=native)]
             if pfx is not None:
                 opts += [*get_opts("Python3" + pfx, with_exec=True, native=True)]
         return opts
@@ -364,25 +396,35 @@ class CMaker:
             return [opt]
         return []
 
-    def get_configure_options_toolchain(self) -> list[str]:
-        """Sets CMAKE_TOOLCHAIN_FILE."""
+    def get_configure_options_target(self) -> list[Option]:
+        """Sets CMake variables for the target."""
         opts = []
         if not self.cross_compiling() and self.plat.machine == "Darwin":
             version = self.plat.macos_version_str
-            opts += ["CMAKE_OSX_DEPLOYMENT_TARGET:STRING=" + version]
-        if self.conf_settings.toolchain_file:
-            toolchain = str(self.conf_settings.toolchain_file)
-            opts += ["CMAKE_TOOLCHAIN_FILE:FILEPATH=" + toolchain]
+            opts += [Option("CMAKE_OSX_DEPLOYMENT_TARGET", version, "STRING")]
         return opts
 
-    def get_configure_options_settings(self) -> list[str]:
-        return [k + "=" + v for k, v in self.conf_settings.options.items()]
+    def get_configure_options_toolchain(self) -> list[Option]:
+        """Sets CMAKE_TOOLCHAIN_FILE."""
+        opts = []
+        if self.conf_settings.toolchain_file:
+            toolchain = str(self.conf_settings.toolchain_file)
+            opts += [Option("CMAKE_TOOLCHAIN_FILE", toolchain, "FILEPATH")]
+        return opts
 
-    def get_configure_options(self) -> list[str]:
+    def get_configure_options_settings(self) -> list[Option]:
+        def _cvt_opt(k: str, v: str):
+            kt = k.rsplit(":", 1)
+            return Option(kt[0], v, "") if len(kt) == 1 else Option(kt[0], v, kt[1])
+
+        return [_cvt_opt(k, v) for k, v in self.conf_settings.options.items()]
+
+    def get_configure_options(self) -> list[Option]:
         """Get the list of options (-D) passed to the CMake configure step
         through the command line."""
         return (
-            self.get_configure_options_toolchain()
+            self.get_configure_options_target()
+            + self.get_configure_options_toolchain()
             + self.get_configure_options_settings()
         )
 
@@ -395,36 +437,21 @@ class CMaker:
             + self.get_configure_options_install()
         )
 
-    def write_preload_options(self) -> list[str]:
-        """Write the options into the CMake pre-load script and return the
-        command-line flags that tell CMake to load it."""
+    def write_preload_options(self) -> Path | None:
+        """Write the options into the CMake pre-load script and return its
+        path."""
         opts = self.get_preload_options()
         if not opts:
-            return []
-
-        def fmt_opt(o: Option):
-            return (
-                f'set({o.name} "{o.value}"'
-                f' CACHE {o.type} "{o.description}" FORCE)\n'
-            )
+            return None
 
         preload_file = self.cmake_settings.build_path / "py-build-cmake-preload.cmake"
-        version = self.cmake_settings.minimum_required
-        if self.runner.verbose:
-            print("Writing CMake pre-load file")
-            print(f"{preload_file}")
-            print("---------------------------")
-            print(f"cmake_minimum_required(VERSION {version})")
-            for o in opts:
-                print(fmt_opt(o), end="")
-            print("---------------------------\n")
         if not self.runner.dry:
             self.cmake_settings.build_path.mkdir(parents=True, exist_ok=True)
-            with preload_file.open("w", encoding="utf-8") as f:
-                f.write(f"cmake_minimum_required(VERSION {version})\n")
-                for o in opts:
-                    f.write(fmt_opt(o))
-        return ["-C", str(preload_file)]
+        with VerboseFile(self.runner, preload_file, "CMake pre-load file") as f:
+            f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
+            for o in opts:
+                f.write(o.to_preload_set() + "\n")
+        return preload_file
 
     def get_cmake_generator_platform(self) -> list[str]:
         """Returns -A <platform> for the Visual Studio generator on Windows."""
@@ -447,14 +474,15 @@ class CMaker:
         if self.conf_settings.generator:
             cmd += ["-G", self.conf_settings.generator]
         cmd += self.get_cmake_generator_platform()
-        cmd += self.write_preload_options()
-        cmd += [f for opt in options for f in ("-D", opt)]
+        preload_file = self.write_preload_options()
+        if preload_file is not None:
+            cmd += ["-C", str(preload_file)]
+        cmd += [f for opt in options for f in ("-D", opt.to_cli_string())]
         cmd += self.conf_settings.args
         return cmd
 
-    def get_working_dir(self):
-        cwd = self.cmake_settings.working_dir
-        return str(cwd) if cwd is not None else None
+    def get_working_dir(self) -> Path:
+        return self.cmake_settings.working_dir
 
     def configure(self):
         env = self.prepare_environment()
@@ -511,3 +539,8 @@ class CMaker:
         cwd = self.get_working_dir()
         for cmd in self.get_install_commands():
             self.run(cmd, cwd=cwd, check=True, env=env)
+
+    def get_build_environment(self):
+        """Get the environment variables to add to the build hook files."""
+        env = self.prepare_environment()
+        return {k: v for k, v in env.items() if k in self.conf_settings.environment}

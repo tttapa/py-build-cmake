@@ -149,6 +149,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "automatically as a build dependency (using Pip).",
                            "minimum_version = \"3.18\"",
                            default=DefaultValueValue(CMAKE_MINIMUM_REQUIRED)),
+        StringConfigOption("maximum_policy",
+                           "Maximum supported CMake version to use for "
+                           "policies in the automatically generated CMake "
+                           "files.",
+                           "maximum_policy = \"4.1\"",
+                           default=NoDefaultValue()),
         StringConfigOption("build_type",
                            "Build type passed to the configuration step, as "
                            "`-DCMAKE_BUILD_TYPE=<?>`.",
@@ -304,6 +310,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({}),
                               finalize_to_str=False),
+        BoolConfigOption("conan",
+                         "Experimental.",  # TODO
+                         "conan = true",
+                         default=DefaultValueValue(False)),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.wheel]
