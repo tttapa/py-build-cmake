@@ -10,6 +10,19 @@
 A modern, [PEP 517](https://www.python.org/dev/peps/pep-0517/) compliant build
 backend for creating Python packages with extensions built using CMake.
 
+In short, the task of a build backend is to make your Python project
+`pip install`able.
+For Python projects that incorporate native code, this may include compilation
+or other build steps, which often require the invocation of tools like CMake.  
+Specifically, py-build-cmake performs the following tasks:
+1. It reads the **project metadata** and **configuration options** from the
+  standard `pyproject.toml` file of your Python project.
+2. It creates **source distributions** (sdists) of your project that can be shared
+  with others (e.g. by uploading them to PyPI).
+3. It drives the **CMake build process** (e.g. for compiling extension modules
+  written in C or C++) and bundles the results into a **Wheel package** that can
+  be `pip install`ed by others.
+
 ## Features
 
  - Building and packaging C, C++ or Fortran extension modules for Python using CMake
@@ -37,18 +50,17 @@ pip install py-build-cmake
 
 The documentation can be found on **<https://tttapa.github.io/py-build-cmake>**.
 
-The format of the configuration file is explained in
-[Config.md](https://tttapa.github.io/py-build-cmake/reference/config.html).
+A quick start guide is available on the [First Steps](https://tttapa.github.io/py-build-cmake/getting-started/first-steps.html) page.
+It goes over the recommended file structure, and discusses a basic configuration.  
+More detailed examples can be found on the [Examples](https://tttapa.github.io/py-build-cmake/examples) page
 
+The format of the `pyproject.toml` configuration file is explained in the
+[Reference](https://tttapa.github.io/py-build-cmake/reference).  
 Alternatively, use the [command-line interface](https://tttapa.github.io/py-build-cmake/usage/cli.html)
 to get the documentation for all supported options:
 ```sh
 py-build-cmake config format
 ```
-
-To get started quickly, have a look at the following section and the README in
-[`examples/minimal`](https://github.com/tttapa/py-build-cmake/tree/main/examples/minimal),
-which goes over the project structure and the configuration files you'll need.
 
 ## Usage
 
