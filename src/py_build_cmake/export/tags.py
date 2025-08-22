@@ -81,9 +81,9 @@ def convert_wheel_tags(tags: WheelTags, wheel_cfg: dict) -> WheelTags:
     return tags
 
 
-def is_pure(wheel_cfg: dict, cmake_cfg: dict | None) -> bool:
+def is_pure(wheel_cfg: dict, has_build_step: bool) -> bool:
     """Check if the package is a pure-Python package without platform-
     specific binaries."""
     if "pure_python" in wheel_cfg:
         return wheel_cfg["pure_python"]
-    return not cmake_cfg
+    return not has_build_step

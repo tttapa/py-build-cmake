@@ -293,10 +293,12 @@ def process_config(
         msg = "Missing [tools.py-build-cmake.module] section"
         raise AssertionError(msg)
 
+    oses_cross = ("linux", "windows", "mac", "pyodide", "cross")
+
     # Store the editable configuration
     cfg.editable = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "editable"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in oses_cross
         if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
     }
 
@@ -309,22 +311,40 @@ def process_config(
 
     cfg.sdist = {
         os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in oses_cross
         if pbc_value_ref.is_value_set(os)
+    }
+
+    # Store the Conan configuration
+    cfg.conan = {
+        os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "conan"))))
+        for os in oses_cross
+        if pbc_value_ref.is_value_set(ConfPath((os, "conan")))
     }
 
     # Store the CMake configuration
     cfg.cmake = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "cmake"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in oses_cross
         if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
     }
+
+    # Make sure only one of Conan or CMake is enabled for each platform
+    for o in ("linux", "windows", "mac", "pyodide", "cross"):
+        if cfg.conan.get(o) and cfg.cmake.get(o):
+            msg = f"tool.py-build-cmake.{o}.cmake and tool.py-build-cmake.{o}.conan "
+            msg += "are mutually exclusive. "
+            msg += f"Did you mean to set tool.py-build-cmake.{o}.conan.cmake?"
+            raise ConfigError(msg)
+
+    # If completely empty, we want cfg.conan.get(...) to fail
+    cfg.conan = cfg.conan or None
     cfg.cmake = cfg.cmake or None
 
     # Store the Wheel configuration
     cfg.wheel = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "wheel"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in oses_cross
         if pbc_value_ref.is_value_set(ConfPath((os, "wheel")))
     }
 
@@ -338,7 +358,7 @@ def process_config(
     if pbc_value_ref.is_value_set(s):
         cfg.cross = copy(cast(Optional[Dict[str, Any]], pbc_value_ref.get_value(s)))
         if cfg.cross is not None:
-            for k in ("cmake", "wheel", "sdist", "editable"):
+            for k in ("conan", "cmake", "wheel", "sdist", "editable"):
                 cfg.cross.pop(k, None)
 
     # Check for incompatible options
@@ -442,6 +462,8 @@ def print_config_verbose(plat: BuildPlatformInfo, cfg: Config):
     pp(cfg.editable)
     print("sdist:")
     pp(cfg.sdist)
+    print("conan:")
+    pp(cfg.conan)
     print("cmake:")
     pp(cfg.cmake)
     print("wheel:")

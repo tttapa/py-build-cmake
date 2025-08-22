@@ -98,6 +98,7 @@ class Config:
     module: dict[str, str | bool] = field(default_factory=dict)
     editable: dict[str, dict[str, Any]] = field(default_factory=dict)
     sdist: dict[str, dict[str, Any]] = field(default_factory=dict)
+    conan: dict[str, dict[str, Any]] | None = field(default=None)
     cmake: dict[str, dict[str, Any]] | None = field(default=None)
     wheel: dict[str, dict[str, Any]] = field(default_factory=dict)
     stubgen: dict[str, Any] | None = field(default=None)

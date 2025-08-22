@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import typing
+
 from .cmd_runner import CommandRunner
 
 
@@ -33,6 +36,7 @@ class VerboseFile:
     def flush(self):
         if self._file is not None:
             return self._file.flush()
+        return None
 
     def __getattr__(self, name):
         # Delegate everything else to the underlying file

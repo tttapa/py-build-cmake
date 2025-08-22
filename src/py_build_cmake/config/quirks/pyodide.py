@@ -3,16 +3,38 @@ from __future__ import annotations
 import logging
 import os
 import re
+import subprocess as sp
 import sysconfig
 from typing import Any
 
 from ...common import ConfigError
 from ...common.platform import BuildPlatformInfo
 from ...config.options.config_option import MultiConfigOption
+from ...config.options.list import ListOption
 from ..options.string import StringOption
 from ..options.value_reference import ValueReference
 
 logger = logging.getLogger(__name__)
+
+
+def _get_emcc_version():
+    result = sp.run(["emcc", "-v"], stderr=sp.PIPE, text=True, check=True)
+    print(result.stderr)
+    m = re.search(r"emcc \([^)]+\) ([\d\.]+)", result.stderr)
+    if not m:
+        msg = "Failed to determine Emscripten emcc version"
+        raise RuntimeError(msg)
+    return m.group(1)
+
+
+_COMPILERS = {"c": "emcc", "cpp": "em++"}
+_BINUTILS = {  # use the em-prefixed binutils programs
+    f"CMAKE_{t.upper()}": f"em{t}" for t in ("ar", "nm", "ranlib", "strip")
+}
+_NO_BINUTILS = {  # otherwise CMake sets these to /usr/bin/objcopy etc.
+    f"CMAKE_{t.upper()}": "FALSE"
+    for t in ("objcopy", "objdump", "readelf", "addr2line")
+}
 
 
 def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
@@ -24,10 +46,37 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     # Prepare cross-compilation config
     assert not config.is_value_set("cross")
     all = MultiConfigOption.default_index
-    cross_cfg: dict[str, Any] = {
-        "os": "pyodide",
-        "cmake": {all: {"env": {}, "options": {}}},
-    }
+    cross_cfg: dict[str, Any] = {"os": "pyodide"}
+    if config.is_value_set("cmake"):
+        cross_cfg["cmake"] = {all: {"env": {}, "options": {}}}
+    print(f'{config.is_value_set("conan")=}')
+    if config.is_value_set("conan"):
+        cross_cfg["conan"] = {all: {"profile_host": ListOption(clear=True)}}
+        cross_cfg["_conan"] = {
+            "settings": [
+                "arch=wasm",
+                "compiler=emcc",
+                "compiler.version=" + _get_emcc_version(),
+                "compiler.libcxx=libc++",
+            ],
+            "conf": [
+                "tools.gnu:host_triplet=wasm32-unknown-emscripten",
+                "tools.build.cross_building:can_run=False",
+                # https://github.com/pybind/pybind11/blob/v2.13.6/tools/pybind11Common.cmake#L78-L102
+                "tools.cmake.cmaketoolchain:extra_variables*={'_pybind11_no_exceptions': 'On'}",
+                f"tools.cmake.cmaketoolchain:extra_variables*={_BINUTILS!r}",
+                f"tools.cmake.cmaketoolchain:extra_variables*={_NO_BINUTILS!r}",
+                f"tools.build:compiler_executables={_COMPILERS!r}",
+            ],
+            "buildenv": [
+                "CC=emcc",
+                "CXX=em++",
+                "AR=emar",
+                "NM=emnm",
+                "RANLIB=emranlib",
+                "STRIP=emstrip",
+            ],
+        }
 
     # Determine Python version
     py_version = _determine_pyodide_python_version(plat)
@@ -50,7 +99,8 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
 
     # The SETUPTOOLS_EXT_SUFFIX variable is used by e.g. pybind11
     setuptools_ext = StringOption.create(ext_suffix)
-    cross_cfg["cmake"][all]["env"]["SETUPTOOLS_EXT_SUFFIX"] = setuptools_ext
+    if config.is_value_set("cmake"):
+        cross_cfg["cmake"][all]["env"]["SETUPTOOLS_EXT_SUFFIX"] = setuptools_ext
 
     # Check Emscripten toolchain file
     # TODO: this is a hack. CMake older than 3.21 does not support setting the
@@ -132,7 +182,7 @@ def config_quirks_pyodide(plat: BuildPlatformInfo, config: ValueReference):
             "so I'm ignoring the PYODIDE environment variable"
         )
         return
-    if not config.is_value_set("cmake"):
+    if not (config.is_value_set("cmake") or config.is_value_set("conan")):
         logger.warning(
             "CMake configuration was empty, "
             "so I'm ignoring the PYODIDE environment variable"

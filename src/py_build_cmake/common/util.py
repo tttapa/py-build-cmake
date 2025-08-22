@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Sequence
+from typing import Dict, List, Literal, Sequence
+
+if sys.version_info < (3, 8):
+    OSIdentifier = str
+    WheelTags = Dict[str, List[str]]
+else:
+    from typing import Literal
+
+    OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
+    WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
 def normalize_name_wheel_pep_427(name: str) -> str:
@@ -98,3 +107,12 @@ def python_version_int_to_tuple(version: int):
 def python_version_int_to_py_limited_api_value(version: int):
     maj, min = python_version_int_to_tuple(version)
     return f"0x{maj:02X}{min:02X}0000"
+
+
+def os_to_conan_os(os: OSIdentifier):
+    return {
+        "linux": "Linux",
+        "windows": "Windows",
+        "mac": "Macos",
+        "pyodide": "Emscripten",
+    }[os]

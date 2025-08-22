@@ -8,7 +8,7 @@ import sys
 import sysconfig
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Mapping, cast
+from typing import Mapping, cast
 
 import packaging.tags
 
@@ -20,6 +20,8 @@ from ..export.native_tags import (
     get_python_tag,
 )
 from .util import (
+    OSIdentifier,
+    WheelTags,
     archflags_to_platform_tag,
     platform_tag_to_archflags,
     platform_to_platform_tag,
@@ -27,15 +29,6 @@ from .util import (
 )
 
 logger = logging.getLogger(__name__)
-
-if sys.version_info < (3, 8):
-    OSIdentifier = str
-    WheelTags = Dict[str, List[str]]
-else:
-    from typing import Literal
-
-    OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
-    WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
 def _get_python_prefixes():
@@ -222,7 +215,7 @@ def _determine_macos_version_archs(
         msg = "Unable to determine MACOSX_DEPLOYMENT_TARGET. Please set it as an environment variable."
         raise RuntimeError(msg)
 
-    return macos_version, archs
+    return macos_version, tuple(sorted(archs))
 
 
 def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs):

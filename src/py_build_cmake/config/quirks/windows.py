@@ -81,16 +81,42 @@ def cross_compile_win(
     logger.info(msg, cmake_plat)
     assert not config.is_value_set("cross")
     all = MultiConfigOption.default_index
-    options = {
-        "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
-        "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
-    }
     cross_cfg = {
         "os": "windows",
         "arch": StringOption.create(platform_to_platform_tag(plat_name)),
-        "cmake": {all: {"options": options}},
         "generator_platform": cmake_plat,
     }
+    if config.is_value_set("cmake"):
+        options = {
+            "CMAKE_SYSTEM_NAME": CMakeOption.create("Windows", "STRING"),
+            "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create(cmake_proc, "STRING"),
+        }
+        cross_cfg["cmake"] = {all: {"options": options}}
+    if config.is_value_set("conan"):
+        conan_arch = {
+            "win32": "x86",
+            "win-amd64": "x86_64",
+            "win-arm32": "armv7",
+            "win-arm64": "armv8",
+        }[plat_name]
+        can_run = (plat_name, plat.sysconfig_platform) in {
+            ("win32", "win32"),
+            ("win32", "win-amd64"),
+            ("win-amd64", "win-amd64"),
+            ("win-arm32", "win-arm32"),
+            ("win-arm64", "win-arm64"),
+        }
+        cross_cfg["_conan"] = {
+            "settings": [
+                "os=Windows",
+                f"arch={conan_arch}",
+            ],
+            "conf": [
+                "tools.cmake.cmaketoolchain:system_name=Windows",
+                f"tools.cmake.cmaketoolchain:system_processor={cmake_proc}",
+                f"tools.build.cross_building:can_run={can_run}",
+            ],
+        }
     configure_python_artifacts(plat, library_dirs, cross_cfg, stable=False)
     configure_python_artifacts(plat, library_dirs, cross_cfg, stable=True)
     config.set_value("cross", cross_cfg)
@@ -147,7 +173,7 @@ def config_quirks_win(plat: BuildPlatformInfo, config: ValueReference):
         if config.is_value_set("cross"):
             msg = "Cross-compilation configuration was not empty, so I'm ignoring DIST_EXTRA_CONFIG"
             logger.warning(msg)
-        elif not config.is_value_set("cmake"):
+        elif not (config.is_value_set("cmake") or config.is_value_set("conan")):
             msg = "CMake configuration was empty, so I'm ignoring DIST_EXTRA_CONFIG"
             logger.warning(msg)
         else:

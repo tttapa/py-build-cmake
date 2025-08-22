@@ -4,7 +4,7 @@ import logging
 import textwrap
 from pathlib import Path
 
-from ...commands.cmake import CMaker
+from ...commands.cmake import Builder
 from ...common import Config, Module
 from ...common.platform import BuildPlatformInfo
 
@@ -16,7 +16,7 @@ def write_build_hook(
     cfg: Config,
     staging_dir: Path,
     module: Module,
-    cmaker: CMaker,
+    builder: Builder,
     idx: int,
 ):
     """Write a hook that re-compiles extension modules."""
@@ -32,9 +32,9 @@ def write_build_hook(
         fname += f"_{idx}"
     pkg_hook = staging_dir / fname
     pkg_hook.mkdir(parents=True, exist_ok=True)
-    cwd = cmaker.get_working_dir().as_posix()
-    env = cmaker.get_build_environment()
-    cmd = list(cmaker.get_build_commands()) + list(cmaker.get_install_commands())
+    cwd = builder.get_working_dir().as_posix()
+    env = builder.get_build_environment()
+    cmd = list(builder.get_build_commands()) + list(builder.get_install_commands())
     content = f"""\
         import sys, os
         import subprocess

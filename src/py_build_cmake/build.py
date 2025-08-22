@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from .commands.builder import Builder, BuilderConfig, PythonSettings
 from .commands.cmake import (
     CMakeBuildSettings,
     CMakeConfigureSettings,
@@ -237,7 +238,6 @@ class _BuildBackend:
             self.plat, src_dir, config_settings, self.verbose
         )
         pkg_info = self.get_pkg_info(cfg, module)
-        cmake_cfg = self.get_cmake_config(self.plat, cfg)
 
         # Set up all paths
         paths = self.get_default_paths(
@@ -261,18 +261,13 @@ class _BuildBackend:
         export_metadata.write_entry_points(cfg, distinfo_dir)
 
         # Configure, build and install the CMake project
-        for idx, cmkcfg in cmake_cfg.items():
-            wheel_cfg = _BuildBackend.get_wheel_config(self.plat, cfg)
-            build_cfg_name = self.get_build_config_name(self.plat, cfg, idx)
-            path = cmkcfg["build_path"]
-            path = str(path).replace("{build_config}", build_cfg_name)
-            build_dir = Path(path)
-            cmaker = self.get_cmaker(
-                self.plat,
+        has_build_step = False
+        wheel_cfg = _BuildBackend.get_wheel_config(self.plat, cfg)
+        for idx, cmkcfg in self.get_builder_configs(self.plat, cfg).items():
+            has_build_step = True
+            cmaker = cmkcfg.get_builder(
                 paths.source_dir,
-                build_dir,
                 paths.staging_dir,
-                cmkcfg,
                 cfg.cross,
                 wheel_cfg,
                 pkg_info,
@@ -292,7 +287,7 @@ class _BuildBackend:
             self.generate_stubs(paths, module, cfg.stubgen)
 
         # Create wheel
-        return self.create_wheel(self.plat, paths, cfg, cmake_cfg, pkg_info)
+        return self.create_wheel(self.plat, paths, cfg, has_build_step, pkg_info)
 
     @staticmethod
     def get_pkg_info(cfg: Config | ComponentConfig, module: Module | None):
@@ -372,7 +367,7 @@ class _BuildBackend:
         plat: BuildPlatformInfo,
         paths: BuildPaths,
         cfg: Config,
-        cmake_cfg,
+        has_build_step: bool,
         package_info: PackageInfo,
     ):
         """Create a wheel package from the build directory."""
@@ -380,7 +375,7 @@ class _BuildBackend:
         whl.name = package_info.norm_name
         whl.version = package_info.version
         wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
-        pure = is_pure(wheel_cfg, cmake_cfg)
+        pure = is_pure(wheel_cfg, has_build_step)
         tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cfg.cross)
         libdir = "purelib" if pure else "platlib"
         staging_dir = paths.pkg_staging_dir
@@ -423,6 +418,166 @@ class _BuildBackend:
             return {}
         sort_cfg = sorted(cmake_cfg.items(), key=lambda item: int(item[0]))
         return {int(key): value for key, value in sort_cfg}
+
+    @staticmethod
+    def get_builder_configs(
+        plat: BuildPlatformInfo, cfg: Config
+    ) -> dict[int, BuilderConfig]:
+        if cfg.cmake:
+
+            class CMakerConfig(BuilderConfig):
+                def __init__(
+                    self, idx: int, plat: BuildPlatformInfo, config: dict[str, Any]
+                ) -> None:
+                    self.plat = plat
+                    self.config = config
+                    self.build_config_name = _BuildBackend.get_build_config_name(
+                        self.plat, cfg, idx
+                    )
+
+                def get_builder(
+                    self,
+                    source_dir: Path,
+                    install_dir: Path | None,
+                    cross_cfg: dict | None,
+                    wheel_cfg: dict,
+                    package_info: PackageInfo,
+                    runner: CommandRunner,
+                ) -> Builder:
+                    path = self.config["build_path"]
+                    path = str(path).replace("{build_config}", self.build_config_name)
+                    build_path = Path(path)
+                    return _BuildBackend.get_cmaker(
+                        self.plat,
+                        source_dir,
+                        build_path,
+                        install_dir,
+                        self.config,
+                        cross_cfg,
+                        wheel_cfg,
+                        package_info,
+                        runner,
+                    )
+
+            cmake_cfg = cfg.cmake.get(plat.os_name if cfg.cross is None else "cross")
+            if not cmake_cfg:
+                return {}
+            sort_cfg = sorted(cmake_cfg.items(), key=lambda item: int(item[0]))
+            return {int(k): CMakerConfig(int(k), plat, v) for k, v in sort_cfg}
+
+        elif cfg.conan:
+
+            from .commands.conan import (
+                CMakeBuildSettings,
+                CMakeConfigureSettings,
+                CMakeInstallSettings,
+                CMakeSettings,
+                ConanCMaker,
+                ConanSettings,
+            )
+
+            class ConanCMakerConfig(BuilderConfig):
+                def __init__(
+                    self, idx: int, plat: BuildPlatformInfo, config: dict[str, Any]
+                ) -> None:
+                    self.plat = plat
+                    self.config = config
+                    self.build_config_name = _BuildBackend.get_build_config_name(
+                        self.plat, cfg, idx
+                    )
+
+                def get_builder(
+                    self,
+                    source_dir: Path,
+                    install_dir: Path | None,
+                    cross_cfg: dict | None,
+                    wheel_cfg: dict,
+                    package_info: PackageInfo,
+                    runner: CommandRunner,
+                ) -> Builder:
+                    cmake_cfg: dict[str, Any] = self.config.get("cmake", {})
+                    path = self.config["output_folder"]
+                    path = str(path).replace("{build_config}", self.build_config_name)
+                    output_folder = Path(path)
+
+                    cross_compiling = bool(cross_cfg)
+                    _, toolchain_file, cross_python_opts = (
+                        _BuildBackend.get_cross_options(plat, cross_cfg)
+                    )
+
+                    # Determine the package tags
+                    pure = is_pure(wheel_cfg, has_build_step=True)
+                    tags = _BuildBackend.get_wheel_tags(
+                        plat, pure, wheel_cfg, cross_cfg
+                    )
+                    limited_api: int | None = None
+                    if "abi3" in tags["abi"]:
+                        limited_api = wheel_cfg["abi3_minimum_cpython_version"]
+
+                    return ConanCMaker(
+                        plat=self.plat,
+                        package_info=package_info,
+                        package_tags=PackageTags(
+                            tags["pyver"],
+                            tags["abi"],
+                            limited_api,
+                        ),
+                        python_settings=PythonSettings(
+                            find_python=bool(cmake_cfg["find_python"]),
+                            find_python3=bool(cmake_cfg["find_python3"]),
+                            find_python_build_artifacts_prefix=cmake_cfg.get(
+                                "find_python_build_artifacts_prefix"
+                            ),
+                            find_python3_build_artifacts_prefix=cmake_cfg.get(
+                                "find_python3_build_artifacts_prefix"
+                            ),
+                            **cross_python_opts,
+                        ),
+                        conan_settings=ConanSettings(
+                            output_folder=output_folder,
+                            build_profiles=self.config["profile_build"],
+                            host_profiles=self.config["profile_host"],
+                            extra_host_profile_data=(cross_cfg or {}).get("_conan", {}),
+                            args=self.config.get("args", []),
+                        ),
+                        cmake_settings=CMakeSettings(
+                            minimum_required=cmake_cfg["minimum_version"],
+                            maximum_policy=cmake_cfg.get("maximum_policy"),
+                        ),
+                        conf_settings=CMakeConfigureSettings(
+                            working_dir=source_dir,
+                            source_path=Path(cmake_cfg["source_path"]),
+                            os=self.plat.os_name,
+                            cross_compiling=cross_compiling,
+                            toolchain_file=toolchain_file,
+                            environment=cmake_cfg.get("env", {}),
+                            build_type=cmake_cfg.get("build_type"),
+                            options=cmake_cfg.get("options", {}),
+                            args=cmake_cfg.get("args", []),
+                            generator=cmake_cfg.get("generator"),
+                        ),
+                        build_settings=CMakeBuildSettings(
+                            args=cmake_cfg["build_args"],
+                            tool_args=cmake_cfg["build_tool_args"],
+                            configs=cmake_cfg.get("config", []),
+                        ),
+                        install_settings=CMakeInstallSettings(
+                            args=cmake_cfg["install_args"],
+                            configs=cmake_cfg.get("install_config", []),
+                            components=cmake_cfg.get("install_components", []),
+                            prefix=install_dir,
+                        ),
+                        runner=runner,
+                    )
+
+            cmake_cfg = cfg.conan.get(plat.os_name if cfg.cross is None else "cross")
+            if not cmake_cfg:
+                return {}
+            sort_cfg = sorted(cmake_cfg.items(), key=lambda item: int(item[0]))
+            return {int(k): ConanCMakerConfig(int(k), plat, v) for k, v in sort_cfg}
+
+        else:
+            return {}
 
     @staticmethod
     def get_wheel_config(plat: BuildPlatformInfo, cfg: Config):
@@ -473,44 +628,13 @@ class _BuildBackend:
         cross_cfg: dict | None,
         wheel_cfg: dict,
         package_info: PackageInfo,
-        **kwargs,
+        runner: CommandRunner,
     ):
         # Optionally include the cross-compilation settings
-        if cross_cfg:
-            cross_compiling = True
-            cmake_plat = cross_cfg.get("generator_platform")
-
-            def cvt_path(x):
-                if x is None:
-                    return None
-                if isinstance(x, str) and not x:
-                    return None
-                assert isinstance(x, (Path, str))
-                return Path(x)
-
-            cross_opts = {
-                "toolchain_file": cvt_path(cross_cfg.get("toolchain_file")),
-                "python_prefix": cvt_path(cross_cfg.get("prefix")),
-                "python_library": cvt_path(cross_cfg.get("library")),
-                "python_sabi_library": cvt_path(cross_cfg.get("sabi_library")),
-                "python_include_dir": cvt_path(cross_cfg.get("include_dir")),
-                "python_interpreter_id": python_tag_to_cmake(
-                    cross_cfg.get("implementation") or plat.implementation
-                ),
-                "python_soabi": cross_cfg.get("soabi"),
-            }
-        else:
-            cross_compiling = False
-            cmake_plat = plat.cmake_generator_platform
-            cross_opts = {
-                "toolchain_file": None,
-                "python_prefix": None,
-                "python_library": None,
-                "python_sabi_library": None,
-                "python_include_dir": None,
-                "python_interpreter_id": None,
-                "python_soabi": None,
-            }
+        cross_compiling = bool(cross_cfg)
+        cmake_plat, toolchain_file, cross_python_opts = _BuildBackend.get_cross_options(
+            plat, cross_cfg
+        )
 
         # Add some CMake configure options
         options = cmake_cfg.get("options", {})
@@ -530,26 +654,22 @@ class _BuildBackend:
                     make_program = make_program.with_suffix(".exe")
 
         # Determine the package tags
-        pure = is_pure(wheel_cfg, cmake_cfg)
+        pure = is_pure(wheel_cfg, has_build_step=bool(cmake_cfg))
         tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cross_cfg)
         limited_api: int | None = None
         if "abi3" in tags["abi"]:
             limited_api = wheel_cfg["abi3_minimum_cpython_version"]
 
         # CMake options
-        cls = CMaker
-        if cmake_cfg.get("conan", False):
-            from .commands.conan import ConanCMaker
-
-            cls = ConanCMaker
-
-        return cls(
+        return CMaker(
             plat=plat,
-            cmake_settings=CMakeSettings(
-                working_dir=source_dir,
-                source_path=Path(cmake_cfg["source_path"]),
-                build_path=build_dir,
-                os=plat.os_name,
+            package_info=package_info,
+            package_tags=PackageTags(
+                tags["pyver"],
+                tags["abi"],
+                limited_api,
+            ),
+            python_settings=PythonSettings(
                 find_python=bool(cmake_cfg["find_python"]),
                 find_python3=bool(cmake_cfg["find_python3"]),
                 find_python_build_artifacts_prefix=cmake_cfg.get(
@@ -558,21 +678,28 @@ class _BuildBackend:
                 find_python3_build_artifacts_prefix=cmake_cfg.get(
                     "find_python3_build_artifacts_prefix"
                 ),
+                **cross_python_opts,
+            ),
+            cmake_settings=CMakeSettings(
                 minimum_required=cmake_cfg["minimum_version"],
                 maximum_policy=cmake_cfg.get("maximum_policy"),
-                generator_platform=cmake_plat,
                 command=Path("cmake"),
+                make_program=make_program,
             ),
             conf_settings=CMakeConfigureSettings(
+                working_dir=source_dir,
+                source_path=Path(cmake_cfg["source_path"]),
+                build_path=build_dir,
+                os=plat.os_name,
+                generator_platform=cmake_plat,
+                cross_compiling=cross_compiling,
+                toolchain_file=toolchain_file,
                 environment=cmake_cfg.get("env", {}),
                 build_type=cmake_cfg.get("build_type"),
                 options=options,
                 args=cmake_cfg.get("args", []),
                 preset=cmake_cfg.get("preset"),
                 generator=generator,
-                make_program=make_program,
-                cross_compiling=cross_compiling,
-                **cross_opts,
             ),
             build_settings=CMakeBuildSettings(
                 args=cmake_cfg["build_args"],
@@ -586,14 +713,44 @@ class _BuildBackend:
                 components=cmake_cfg.get("install_components", []),
                 prefix=install_dir,
             ),
-            package_info=package_info,
-            package_tags=PackageTags(
-                tags["pyver"],
-                tags["abi"],
-                limited_api,
-            ),
-            **kwargs,
+            runner=runner,
         )
+
+    @staticmethod
+    def get_cross_options(plat: BuildPlatformInfo, cross_cfg: dict[str, Any] | None):
+        def cvt_path(x):
+            if x is None:
+                return None
+            if isinstance(x, str) and not x:
+                return None
+            assert isinstance(x, (Path, str))
+            return Path(x)
+
+        if cross_cfg:
+            cmake_plat = cross_cfg.get("generator_platform")
+            toolchain_file = cvt_path(cross_cfg.get("toolchain_file"))
+            impl = cross_cfg.get("implementation") or plat.implementation
+            cross_python_opts = {
+                "prefix": cvt_path(cross_cfg.get("prefix")),
+                "library": cvt_path(cross_cfg.get("library")),
+                "sabi_library": cvt_path(cross_cfg.get("sabi_library")),
+                "include_dir": cvt_path(cross_cfg.get("include_dir")),
+                "interpreter_id": python_tag_to_cmake(impl),
+                "soabi": cross_cfg.get("soabi"),
+            }
+        else:
+            cmake_plat = plat.cmake_generator_platform
+            toolchain_file = None
+            cross_python_opts = {
+                "prefix": None,
+                "library": None,
+                "sabi_library": None,
+                "include_dir": None,
+                "interpreter_id": None,
+                "soabi": None,
+            }
+
+        return cmake_plat, toolchain_file, cross_python_opts
 
     # --- Generate stubs ------------------------------------------------------
 
@@ -706,7 +863,7 @@ class _BuildBackend:
         used to name the build folder so builds for different versions don't
         interfere."""
         wheel_cfg = _BuildBackend.get_wheel_config(plat, cfg)
-        pure = is_pure(wheel_cfg, cfg.cmake)
+        pure = is_pure(wheel_cfg, has_build_step=bool(cfg.cmake or cfg.conan))
         tags = _BuildBackend.get_wheel_tags(plat, pure, wheel_cfg, cfg.cross)
         name = "-".join(".".join(x) for x in tags.values())
         if index != 0:

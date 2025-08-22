@@ -26,26 +26,50 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
     )
     all = MultiConfigOption.default_index
     macos_version = plat.macos_version_str
-    options = {
-        "CMAKE_SYSTEM_NAME": CMakeOption.create("Darwin", "STRING"),
-        "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(list(plat.archs), "STRING"),
-        "CMAKE_OSX_DEPLOYMENT_TARGET": CMakeOption.create(macos_version, "STRING"),
-    }
-    env = {"MACOSX_DEPLOYMENT_TARGET": macos_version}
     cross_cfg: dict[str, Any] = {
+        "arch": StringOption.create(plat.platform_tag),
         "os": "mac",
-        "cmake": {all: {"options": options, "env": env}},
     }
-    cross_cfg["arch"] = StringOption.create(plat.platform_tag)
+    # CMake configuration
+    if config.is_value_set("cmake"):
+        options = {
+            "CMAKE_SYSTEM_NAME": CMakeOption.create("Darwin", "STRING"),
+            "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(list(plat.archs), "STRING"),
+            "CMAKE_OSX_DEPLOYMENT_TARGET": CMakeOption.create(macos_version, "STRING"),
+        }
+        env = {"MACOSX_DEPLOYMENT_TARGET": macos_version}
+        cross_cfg["cmake"] = {all: {"options": options, "env": env}}
+    # Conan profile
+    if config.is_value_set("conan"):
+        assert list(plat.archs) == sorted(plat.archs)
+        conan_arch = {
+            ("x86_64",): "x86_64",
+            ("arm64",): "armv8",
+            ("arm64", "x86_64"): "armv8|x86_64",
+        }[plat.archs]
+        cross_cfg["_conan"] = {
+            "settings": [
+                f"arch={conan_arch}",
+                f"os.version={macos_version}",
+                # CMAKE_OSX_ARCHITECTURES and CMAKE_OSX_DEPLOYMENT_TARGET are
+                # set automatically by Conan based on arch and os.version
+            ],
+            "conf": [
+                "tools.cmake.cmaketoolchain:system_name=Darwin",
+            ],
+        }
     # The SETUPTOOLS_EXT_SUFFIX variable is used by e.g. pybind11
     if plat.implementation == "cpython":
+        # TODO: We assume that cibuildwheel uses consistent Python versions and
+        #       ABIs between the build Python and host Python installations.
         version = f"{plat.python_version_info.major}{plat.python_version_info.minor}"
         abi = plat.python_abiflags
-        cross_cfg["cmake"][all]["env"] = {
-            "SETUPTOOLS_EXT_SUFFIX": StringOption.create(
-                f".cpython-{version}{abi}-darwin.so"
-            )
-        }
+        soabi = f"cpython-{version}{abi}-darwin"
+        cross_cfg["soabi"] = soabi
+        if config.is_value_set("cmake"):
+            cross_cfg["cmake"][all]["env"] = {
+                "SETUPTOOLS_EXT_SUFFIX": StringOption.create(f".{soabi}.so")
+            }
     config.set_value("cross", cross_cfg)
 
 
@@ -60,7 +84,7 @@ def config_quirks_mac(plat: BuildPlatformInfo, config: ValueReference):
             "Cross-compilation configuration was not empty, so I'm ignoring ARCHFLAGS"
         )
         return
-    if not config.is_value_set("cmake"):
+    if not (config.is_value_set("cmake") or config.is_value_set("conan")):
         logger.warning("CMake configuration was empty, so I'm ignoring ARCHFLAGS")
         return
     if plat.machine not in plat.archs:

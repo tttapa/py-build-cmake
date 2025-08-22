@@ -133,15 +133,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                                 default=DefaultValueValue([])),
     ])  # fmt: skip
 
-    # [tool.py-build-cmake.cmake]
-    cmake = pbc.insert(
-        MultiConfigOption("cmake",
-                     "Defines how to build the project to package. If omitted, "
-                     "py-build-cmake will produce a pure Python package.",
-        ))  # fmt: skip
-    cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
-    cmake.insert_multiple([
-        StringConfigOption("minimum_version",
+    common_cmake_options = ([
+         StringConfigOption("minimum_version",
                            "Minimum required CMake version. Used for policies "
                            "in the automatically generated CMake cache pre-"
                            "load files. If this version is not available in "
@@ -159,27 +152,6 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "Build type passed to the configuration step, as "
                            "`-DCMAKE_BUILD_TYPE=<?>`.",
                            "build_type = \"RelWithDebInfo\""),
-        ListOfStrConfigOption("config",
-                              "Configuration type passed to the build step, "
-                              "as `--config <?>`. You can specify either a "
-                              "single string, or a list of strings. If a "
-                              "multi-config generator is used, all "
-                              "configurations in this list will be built.",
-                              "config = [\"Debug\", \"Release\"]",
-                              default=RefDefaultValue(
-                                  ConfPath.from_string("build_type"),
-                                  relative=True,
-                              ),
-                              convert_str_to_singleton=True),
-        StringConfigOption("preset",
-                           "CMake preset to use for configuration. Passed as "
-                           "`--preset <?>` during the configuration phase."),
-        ListOfStrConfigOption('build_presets',
-                              "CMake presets to use for building. Passed as "
-                              "`--preset <?>` during the build phase, once "
-                              "for each preset.",
-                              default=None,
-                              convert_str_to_singleton=True),
         StringConfigOption("generator",
                            "CMake generator to use, passed to the "
                            "configuration step, as "
@@ -194,17 +166,6 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          expected_contents=[] if test else ["CMakeLists.txt"],
                          base_path=RelativeToProject(project_path),
                          must_exist=not test),
-        PathConfigOption("build_path",
-                         "CMake build and cache folder. The placeholder "
-                         "`{build_config}` can be used to insert the name of "
-                         "the Python version and ABI, operating system, and "
-                         "architecture. This ensures that separate build "
-                         "directories are used for different host systems and "
-                         "Python versions/implementations.",
-                         default=DefaultValueValue(".py-build-cmake_cache/{build_config}"),
-                         allow_abs=True,
-                         base_path=RelativeToProject(project_path),
-                         must_exist=False),
         CMakeOptConfigOption("options",
                              "Extra options passed to the configuration step, "
                              "as `-D<option>=<value>`.\n"
@@ -272,19 +233,6 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "[\"--verbose\", \"-d\", \"explain\"]",
                               default=DefaultValueValue([]),
                               append_by_default=True),
-        ListOfStrConfigOption("install_config",
-                              "Configuration types passed to the "
-                              "install step, as `--config <?>`. You can "
-                              "specify either a single string, or a list of "
-                              "strings. If a multi-config generator is used, "
-                              "all configurations in this list will be "
-                              "included in the package.",
-                              "install_config = [\"Debug\", \"Release\"]",
-                              default=RefDefaultValue(
-                                  ConfPath.from_string("config"),
-                                  relative=True,
-                              ),
-                              convert_str_to_singleton=True),
         ListOfStrConfigOption("install_args",
                               "Extra arguments passed to the install step.",
                               "install_args = [\"--strip\"]",
@@ -310,10 +258,110 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "= \"${HOME}/.local\" }",
                               default=DefaultValueValue({}),
                               finalize_to_str=False),
-        BoolConfigOption("conan",
-                         "Experimental.",  # TODO
-                         "conan = true",
-                         default=DefaultValueValue(False)),
+    ])  # fmt: skip
+
+    # [tool.py-build-cmake.conan]
+    conan = pbc.insert(
+        MultiConfigOption("conan",
+                     "Defines how to install the dependencies and how to build "
+                     "the project to package using the Conan package manager.",
+        ))  # fmt: skip
+    conan_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/conan")
+    conan.insert_multiple([
+        PathConfigOption("output_folder",
+                         "Conan output folder used to write temporary build "
+                         "files. The placeholder `{build_config}` can be used "
+                         "to insert the name of the Python version and ABI, "
+                         "operating system, and architecture. This ensures "
+                         "that separate build directories are used for "
+                         "different host systems and Python versions/"
+                         "implementations.",
+                         default=DefaultValueValue(".py-build-cmake_cache/{build_config}"),
+                         allow_abs=True,
+                         base_path=RelativeToProject(project_path),
+                         must_exist=False),
+        ListOfStrConfigOption("profile_host",
+                              "List of Conan profiles to use when building "
+                              "packages for the host system. Passed to Conan "
+                              "using the `-pr:h` flag.",
+                              "profile_host = \"raspberry_pi\"",
+                              default=DefaultValueValue(["default"]),
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption("profile_build",
+                              "List of Conan profiles to use when building "
+                              "tools for the build system. Passed to Conan "
+                              "using the `-pr:b` flag.",
+                              "profile_build = \"clang20\"",
+                              default=DefaultValueValue(["default"]),
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption("args",
+                              "Extra arguments passed to the `conan install` "
+                              "command.",
+                              "args = [\"--no-remote\", \"--build=pybind11/*\"]",
+                              default=DefaultValueValue(["--build=missing"]),
+                              append_by_default=True),
+    ])  # fmt: skip
+    conan_cmake = conan.insert(
+        ConfigOption("cmake",
+                     "Defines CMake options for the problem to package"),
+    )  # fmt: skip
+    conan_cmake.insert_multiple(common_cmake_options)
+
+    # [tool.py-build-cmake.cmake]
+    cmake = pbc.insert(
+        MultiConfigOption("cmake",
+                          "Defines how to build the project to package. If "
+                          "neither tool.py-build-cmake.conan or "
+                          "tool.py-build-cmake.cmake are set, py-build-cmake "
+                          "will produce a pure Python package.",
+        ))  # fmt: skip
+    cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
+    cmake.insert_multiple([*common_cmake_options,
+        PathConfigOption("build_path",
+                         "CMake build and cache folder. The placeholder "
+                         "`{build_config}` can be used to insert the name of "
+                         "the Python version and ABI, operating system, and "
+                         "architecture. This ensures that separate build "
+                         "directories are used for different host systems and "
+                         "Python versions/implementations.",
+                         default=DefaultValueValue(".py-build-cmake_cache/{build_config}"),
+                         allow_abs=True,
+                         base_path=RelativeToProject(project_path),
+                         must_exist=False),
+        StringConfigOption("preset",
+                           "CMake preset to use for configuration. Passed as "
+                           "`--preset <?>` during the configuration phase."),
+        ListOfStrConfigOption("config",
+                              "Configuration type passed to the build step, "
+                              "as `--config <?>`. You can specify either a "
+                              "single string, or a list of strings. If a "
+                              "multi-config generator is used, all "
+                              "configurations in this list will be built.",
+                              "config = [\"Debug\", \"Release\"]",
+                              default=RefDefaultValue(
+                                  ConfPath.from_string("build_type"),
+                                  relative=True,
+                              ),
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption('build_presets',
+                              "CMake presets to use for building. Passed as "
+                              "`--preset <?>` during the build phase, once "
+                              "for each preset.",
+                              default=None,
+                              convert_str_to_singleton=True),
+        ListOfStrConfigOption("install_config",
+                              "Configuration types passed to the "
+                              "install step, as `--config <?>`. You can "
+                              "specify either a single string, or a list of "
+                              "strings. If a multi-config generator is used, "
+                              "all configurations in this list will be "
+                              "included in the package.",
+                              "install_config = [\"Debug\", \"Release\"]",
+                              default=RefDefaultValue(
+                                  ConfPath.from_string("config"),
+                                  relative=True,
+                              ),
+                              convert_str_to_singleton=True),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.wheel]
@@ -491,6 +539,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          f"{system_name}-specific sdist options.",
                          inherit_from=sdist_pth,
                          create_if_inheritance_target_exists=True),
+            MultiConfigOption("conan",
+                         f"{system_name}-specific Conan options.",
+                         inherit_from=conan_pth,
+                         create_if_inheritance_target_exists=True),
             MultiConfigOption("cmake",
                          f"{system_name}-specific CMake options.",
                          inherit_from=cmake_pth,
@@ -617,6 +669,10 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Override sdist options when cross-compiling.",
                      inherit_from=sdist_pth,
                      create_if_inheritance_target_exists=True),
+        MultiConfigOption("conan",
+                     "Override Conan options when cross-compiling.",
+                     inherit_from=conan_pth,
+                     create_if_inheritance_target_exists=True),
         MultiConfigOption("cmake",
                      "Override CMake options when cross-compiling.",
                      inherit_from=cmake_pth,
@@ -625,6 +681,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Override Wheel options when cross-compiling.",
                      inherit_from=wheel_pth,
                      create_if_inheritance_target_exists=True),
+        UncheckedConfigOption("_conan",
+                              "Extra rules to add to the Conan profile."),
     ])  # fmt: skip
 
     return root
