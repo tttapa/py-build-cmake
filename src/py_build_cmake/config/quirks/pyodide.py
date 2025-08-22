@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 def _get_emcc_version():
     result = sp.run(["emcc", "-v"], stderr=sp.PIPE, text=True, check=True)
-    print(result.stderr)
     m = re.search(r"emcc \([^)]+\) ([\d\.]+)", result.stderr)
     if not m:
-        msg = "Failed to determine Emscripten emcc version"
+        msg = "Failed to determine Emscripten emcc version:\n"
+        msg += result.stderr
         raise RuntimeError(msg)
     return m.group(1)
 
@@ -49,7 +49,6 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     cross_cfg: dict[str, Any] = {"os": "pyodide"}
     if config.is_value_set("cmake"):
         cross_cfg["cmake"] = {all: {"env": {}, "options": {}}}
-    print(f'{config.is_value_set("conan")=}')
     if config.is_value_set("conan"):
         cross_cfg["conan"] = {all: {"profile_host": ListOption(clear=True)}}
         cross_cfg["_conan"] = {

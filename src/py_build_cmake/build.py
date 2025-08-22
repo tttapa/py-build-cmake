@@ -467,7 +467,8 @@ class _BuildBackend:
 
         elif cfg.conan:
 
-            from .commands.conan import (
+            # We don't want to import Conan unless the user requested it
+            from .commands.conan import (  # noqa: PLC0415
                 CMakeBuildSettings,
                 CMakeConfigureSettings,
                 CMakeInstallSettings,

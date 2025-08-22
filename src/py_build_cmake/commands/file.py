@@ -17,7 +17,7 @@ class VerboseFile:
             print(f"Writing {self.descr}\n{self.path}")
             print("---------------------------")
         if not self.runner.dry:
-            self._file = open(self.path, "w", encoding="utf-8")
+            self._file = open(self.path, "w", encoding="utf-8")  # noqa: PTH123
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

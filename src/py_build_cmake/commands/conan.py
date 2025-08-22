@@ -12,11 +12,11 @@ from pathlib import Path
 from string import Template
 from typing import Any, Mapping, cast
 
-import conan
-import conan.api.conan_api
-import conan.cli.cli
-import conan.tools.cmake
-import conan.tools.env
+import conan  # type: ignore[import-untyped]
+import conan.api.conan_api  # type: ignore[import-untyped]
+import conan.cli.cli  # type: ignore[import-untyped]
+import conan.tools.cmake  # type: ignore[import-untyped]
+import conan.tools.env  # type: ignore[import-untyped]
 
 from ..commands.cmd_runner import CommandRunner
 from ..common import ConfigError, PackageInfo
@@ -73,18 +73,20 @@ class CMakeInstallSettings:
     prefix: Path | None
 
 
-class ConanCMaker(Builder):
-    _SPECIAL_CMAKE_OPTIONS = {
-        "system_name",
-        "system_processor",
-        "system_version",
-        "toolset_arch",
-    }
+_SPECIAL_CMAKE_OPTIONS = {
+    "system_name",
+    "system_processor",
+    "system_version",
+    "toolset_arch",
+}
 
-    _MODULE_LINK_FLAGS = {  # https://github.com/conan-io/conan/issues/17539
-        f"CMAKE_MODULE_LINKER_FLAGS{c}_INIT": f"${{CMAKE_SHARED_LINKER_FLAGS{c}_INIT}}"
-        for c in ("", "_DEBUG", "_RELEASE", "_RELWITHDEBINFO")
-    }
+_MODULE_LINK_FLAGS = {  # https://github.com/conan-io/conan/issues/17539
+    f"CMAKE_MODULE_LINKER_FLAGS{c}_INIT": f"${{CMAKE_SHARED_LINKER_FLAGS{c}_INIT}}"
+    for c in ("", "_DEBUG", "_RELEASE", "_RELWITHDEBINFO")
+}
+
+
+class ConanCMaker(Builder):
 
     def __init__(
         self,
@@ -113,7 +115,12 @@ class ConanCMaker(Builder):
 
     def check_cmake_options(self, opts: dict[str, Any]):
         super().check_cmake_options(opts)
-        for o in self._SPECIAL_CMAKE_OPTIONS:
+        if "CMAKE_BUILD_TYPE" in self.conf_settings.options:
+            msg = "Setting CMAKE_BUILD_TYPE as a CMake option is not "
+            msg += "supported. Please set 'settings.build_type' in the "
+            msg += "selected Conan host profile instead."
+            logger.warning(msg)
+        for o in _SPECIAL_CMAKE_OPTIONS:
             key = "CMAKE_" + o.upper()
             v = self.conf_settings.options.pop(key, None)
             if v:
@@ -200,7 +207,7 @@ class ConanCMaker(Builder):
             ]
         # Correct linker flags for CMake MODULE libraries (https://github.com/conan-io/conan/issues/17539)
         profile["conf"] += [
-            f"tools.cmake.cmaketoolchain:extra_variables*={self._MODULE_LINK_FLAGS!r}"
+            f"tools.cmake.cmaketoolchain:extra_variables*={_MODULE_LINK_FLAGS!r}"
         ]
         # CMake toolchain file with Python hints etc.
         toolchain_file = self.write_toolchain()
@@ -244,18 +251,17 @@ class ConanCMaker(Builder):
         if not opts:
             return None
 
-        preload_file = (
-            self.conan_settings.output_folder / "py-build-cmake-preload.cmake"
-        )
+        of = self.conan_settings.output_folder
+        preload_file = of / "py-build-cmake-preload.cmake"
         if not self.runner.dry:
-            self.conan_settings.output_folder.mkdir(parents=True, exist_ok=True)
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(self.runner, preload_file, "CMake pre-load file") as f:
             f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
             for o in opts:
                 f.write(o.to_preload_set())
         return preload_file
 
-    def _get_environment(self, env: conan.tools.env.Environment):
+    def _configure_environment(self, env: conan.tools.env.Environment):
         for k, v in self.get_env_vars_package().items():
             env.define(k, v)
         pbc = "PY_BUILD_CMAKE"
@@ -269,7 +275,7 @@ class ConanCMaker(Builder):
         self._substitute_environment_options(env, self.conf_settings.environment)
         return env
 
-    def _substitute_environment_options(
+    def _substitute_environment_options(  # noqa: PLR0912
         self,
         env: conan.tools.env.Environment,
         config_env: Mapping[str, StringOption | None],
@@ -310,7 +316,8 @@ class ConanCMaker(Builder):
             # If we're appending or prepending to the original value, translate
             # to Conan equivalents
             elif v.append or v.prepend:
-                assert not v.append_path and not v.prepend_path
+                assert not v.append_path
+                assert not v.prepend_path
                 if v.prepend:
                     env.prepend(k, v.prepend)
                 if v.append:
@@ -334,11 +341,9 @@ class ConanCMaker(Builder):
             build_profile = self.write_profile_build()
             host_profile = self.write_profile()
             pre_load = self.write_preload_options()
+
             # 1. Install dependencies
             # ---
-            api = conan.api.conan_api.ConanAPI()
-            # TODO: Why is this necessary? Where is this documented?
-            conan.cli.cli.Cli(api).add_commands()
             cmd = ["install", conan_project_dir.as_posix()]
             for pr in self.conan_settings.build_profiles:
                 cmd += ["-pr:b", pr]
@@ -349,7 +354,10 @@ class ConanCMaker(Builder):
             cmd += ["-of", self.conan_settings.output_folder.as_posix()]
             cmd += self.conan_settings.args
             if self.runner.verbose:
-                print(["conan"] + cmd)
+                print(["conan", *cmd])  # noqa: T201
+            api = conan.api.conan_api.ConanAPI()
+            # TODO: Why is this necessary? Where is this documented?
+            conan.cli.cli.Cli(api).add_commands()
             install = api.command.run(shlex.join(cmd))
             dep_graph = install["graph"]
             self.conanfile = cast(conan.ConanFile, dep_graph.root.conanfile)
@@ -362,10 +370,10 @@ class ConanCMaker(Builder):
                 self.conanfile.folders.set_base_package(prefix.as_posix())
             self.conanfile.folders.source = self.conf_settings.source_path.as_posix()
 
-            # 3. Set environment
+            # 3. Set environment variables
             # ---
             self.buildenv = conan.tools.env.VirtualBuildEnv(self.conanfile)
-            self._get_environment(self.buildenv.environment())
+            self._configure_environment(self.buildenv.environment())
             self.buildenv.generate()
 
             # 4. Configure CMake
@@ -430,6 +438,7 @@ class ConanCMaker(Builder):
         return Path(self.conanfile.build_folder)
 
     def _wrap_pyodide_toolchain(self, toolchain_file: Path) -> Path:
+        """Workaround for https://github.com/pyodide/pyodide-build/issues/104."""
         wrapper = self.conan_settings.output_folder / "pyodide-build-toolchain.cmake"
         content = f"""\
         cmake_minimum_required(VERSION {self.cmake_version_policy})
@@ -445,7 +454,7 @@ class ConanCMaker(Builder):
         endif()
         message(STATUS "Including Pyodide toolchain: ${{PYODIDE_TOOLCHAIN_FILE}}")
         include(${{PYODIDE_TOOLCHAIN_FILE}})
-        message(STATUS "Patching up CMAKE_<?>_FLAGS_INIT")
+        message(STATUS "Adding side module flags to CMAKE_C_FLAGS_INIT, CMAKE_CXX_FLAGS_INIT, CMAKE_SHARED_LINKER_FLAGS_INIT")
         set(CMAKE_C_FLAGS_INIT "${{CMAKE_C_FLAGS_INIT}} $ENV{{SIDE_MODULE_CFLAGS}}")
         set(CMAKE_CXX_FLAGS_INIT "${{CMAKE_CXX_FLAGS_INIT}} $ENV{{SIDE_MODULE_CXXFLAGS}}")
         set(CMAKE_SHARED_LINKER_FLAGS_INIT "${{CMAKE_SHARED_LINKER_FLAGS_INIT}} $ENV{{SIDE_MODULE_LDFLAGS}}")
