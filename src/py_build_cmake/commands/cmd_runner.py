@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from pprint import pprint
-from shlex import join
 from subprocess import CalledProcessError
 from subprocess import run as sp_run
 
@@ -29,7 +29,7 @@ class CommandRunner:
             pprint(log_kwargs, width=200)
             print(flush=True)
         elif self.dry:
-            print(join(args[0]))
+            print(" ".join(shlex.quote(arg) for arg in args[0]))
         if not self.dry:
             return sp_run(*args, **kwargs)  # noqa: PLW1510
         return None
