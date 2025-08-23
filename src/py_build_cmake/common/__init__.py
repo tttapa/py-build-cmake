@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from dataclasses import dataclass, field
@@ -182,6 +183,13 @@ class Command:
 
 def format_and_rethrow_exception(e: BaseException, component=False):
     """Raises a FormattedErrorMessage from the given exception"""
+    ConanException = None
+    with contextlib.suppress(ImportError):
+        from conan.errors import (  # type: ignore[import-untyped]  # noqa: PLC0415
+            ConanException as ConanException_,
+        )
+
+        ConanException = ConanException_  # intermediate step to keep mypy happy
     if isinstance(e, FormattedErrorMessage):
         raise e
     if isinstance(e, ConfigError):
@@ -210,6 +218,15 @@ def format_and_rethrow_exception(e: BaseException, component=False):
             msg = "Stub generation failed"
         else:
             msg = f"Subprocess {e.cmd[0]} failed"
+        msg = (
+            f"\n\n\t\u274c {msg}:\n\n"
+            f"\t\t{e}\n"
+            "\n\t(scroll up for subprocess output, above Python backtrace)"
+        )
+        raise FormattedErrorMessage(msg) from e
+    elif ConanException is not None and isinstance(e, ConanException):
+        logger.error("Conan failed", exc_info=False)
+        msg = "Conan failed"
         msg = (
             f"\n\n\t\u274c {msg}:\n\n"
             f"\t\t{e}\n"
