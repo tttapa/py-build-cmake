@@ -13,53 +13,74 @@ from .config.options.config_reference import ConfigReference
 from .config.options.pyproject_options import get_component_options, get_options
 
 
-def cmake_command(directory, build_path, verbose, dry, cross, local, override):
-    def get_cmaker(index: int):
+def cmake_command(**kwargs):
+    class Context:
+        def __init__(
+            self, directory, build_path, verbose, dry, cross, local, override
+        ) -> None:
+            self.directory = directory
+            self.build_path = build_path
+            self.verbose = verbose
+            self.dry = dry
+            self.cross = cross
+            self.local = local
+            self.override = override
 
-        src_dir = Path(directory or ".").resolve()
-        config_settings = {
-            "--cross": list(cross),
-            "--local": list(local),
-            "--override": list(override),
-        }
-        # Read configuration and package metadata
-        plat = determine_build_platform_info()
-        cfg, module = backend.read_all_metadata(plat, src_dir, config_settings, verbose)
-        pkg_info = backend.get_pkg_info(cfg, module)
-        cmake_cfgs = backend.get_cmake_config(plat, cfg)
-        wheel_cfg = backend.get_wheel_config(plat, cfg)
-        if not cmake_cfgs:
-            msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing). "
-            if cfg.conan:
-                msg += "The py-build-cmake command-line interface currently "
-                msg += "does not support Conan projects."
-            raise ValueError(msg)
-        try:
-            cmake_cfg = cmake_cfgs[index]
-        except KeyError as e:
-            msg = "Invalid CMake configuration index (--index). "
-            msg += "Possible values are: " + " ".join(map(str, cmake_cfgs))
-            raise ValueError(msg) from e
+        def get_build_config_name(self, index: int):
+            _, plat, cfg, _ = self._load()
+            return backend.get_build_config_name(plat, cfg, index)
 
-        # Set up all paths
-        build_cfg_name = backend.get_build_config_name(plat, cfg, index)
-        path = build_path or cmake_cfg["build_path"]
-        build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
+        def get_cmaker(self, index: int):
+            src_dir, plat, cfg, pkg_info = self._load()
+            cmake_cfgs = backend.get_cmake_config(plat, cfg)
+            wheel_cfg = backend.get_wheel_config(plat, cfg)
+            if not cmake_cfgs:
+                msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing). "
+                if cfg.conan:
+                    msg += "The py-build-cmake command-line interface currently "
+                    msg += "does not support Conan projects."
+                raise ValueError(msg)
+            try:
+                cmake_cfg = cmake_cfgs[index]
+            except KeyError as e:
+                msg = "Invalid CMake configuration index (--index). "
+                msg += "Possible values are: " + " ".join(map(str, cmake_cfgs))
+                raise ValueError(msg) from e
 
-        # CMake builder
-        return backend.get_cmaker(
-            plat,
-            src_dir,
-            build_dir,
-            None,
-            cmake_cfg,
-            cfg.cross,
-            wheel_cfg,
-            pkg_info,
-            runner=CommandRunner(verbose=verbose, dry=dry),
-        )
+            # Set up all paths
+            build_cfg_name = backend.get_build_config_name(plat, cfg, index)
+            path = self.build_path or cmake_cfg["build_path"]
+            build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 
-    return get_cmaker
+            # CMake builder
+            return backend.get_cmaker(
+                plat,
+                src_dir,
+                build_dir,
+                None,
+                cmake_cfg,
+                cfg.cross,
+                wheel_cfg,
+                pkg_info,
+                runner=CommandRunner(verbose=self.verbose, dry=self.dry),
+            )
+
+        def _load(self):
+            src_dir = Path(self.directory or ".").resolve()
+            config_settings = {
+                "--cross": list(self.cross),
+                "--local": list(self.local),
+                "--override": list(self.override),
+            }
+            # Read configuration and package metadata
+            plat = determine_build_platform_info()
+            cfg, module = backend.read_all_metadata(
+                plat, src_dir, config_settings, self.verbose
+            )
+            pkg_info = backend.get_pkg_info(cfg, module)
+            return src_dir, plat, cfg, pkg_info
+
+    return Context(**kwargs)
 
 
 @click.group()
@@ -152,7 +173,7 @@ def cli(ctx: click.Context, **kwargs):
 )
 @click.argument("args", nargs=-1, required=False)
 def configure(obj, preset, use_build_presets, args, index):
-    cmaker = obj(index)
+    cmaker = obj.get_cmaker(index)
     if cmaker is None:
         return
     cmaker.conf_settings.args += args or []
@@ -183,7 +204,7 @@ def configure(obj, preset, use_build_presets, args, index):
 )
 @click.argument("args", nargs=-1, required=False)
 def build(obj, preset, config, args, index):
-    cmaker = obj(index)
+    cmaker = obj.get_cmaker(index)
     if cmaker is None:
         return
     cmaker.build_settings.args += args or []
@@ -217,7 +238,7 @@ def build(obj, preset, config, args, index):
 )
 @click.argument("args", nargs=-1, required=False)
 def install(obj, config, component, args, index):
-    cmaker = obj(index)
+    cmaker = obj.get_cmaker(index)
     if cmaker is None:
         return
     cmaker.install_settings.args += args or []
@@ -226,6 +247,25 @@ def install(obj, config, component, args, index):
     if component:
         cmaker.install_settings.components = component
     cmaker.install()
+
+
+@cli.command(
+    help="Get the name of the build configuration. "
+    "Useful to determine the names of CMake presets."
+)
+@click.pass_obj
+@click.option(
+    "--index",
+    default=0,
+    nargs=1,
+    type=int,
+    required=False,
+    metavar="INDEX",
+    help="Numeric index of the CMake configurations to use. This corresponds "
+    "to the keys used in [tool.py-build-cmake.cmake] in pyproject.toml.",
+)
+def build_config_name(obj, index):
+    print(obj.get_build_config_name(index))  # noqa: T201
 
 
 @cli.group(help="Config file operations.")
