@@ -24,6 +24,7 @@ from ..common.platform import BuildPlatformInfo, OSIdentifier
 from ..common.util import os_to_conan_os
 from ..config.options.string import StringOption
 from .builder import Builder, PackageTags, PythonSettings
+from .chdir import chdir
 from .file import VerboseFile
 
 logger = logging.getLogger(__name__)
@@ -353,7 +354,7 @@ class ConanCMaker(Builder):
 
     def configure(self):
         conan_project_dir = self.conf_settings.source_path
-        with contextlib.chdir(self.conf_settings.working_dir):
+        with chdir(self.conf_settings.working_dir):
             # 0. Write config files and pre-load files
             # ---
             build_profile = self.write_profile_build()
