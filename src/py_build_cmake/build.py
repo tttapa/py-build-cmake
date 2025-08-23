@@ -539,7 +539,7 @@ class _BuildBackend:
                             build_profiles=self.config["profile_build"],
                             host_profiles=self.config["profile_host"],
                             extra_host_profile_data=(cross_cfg or {}).get("_conan", {}),
-                            build_folder_vars=[f"const.{self.build_config_name}"],
+                            build_config_name=self.build_config_name,
                             args=self.config.get("args", []),
                         ),
                         cmake_settings=CMakeSettings(

@@ -282,7 +282,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          "that separate build directories are used for "
                          "different host systems and Python versions/"
                          "implementations.",
-                         default=DefaultValueValue(".py-build-cmake_cache/{build_config}"),
+                         "output_folder=\"/tmp/build/{build_config}\"",
+                         default=DefaultValueValue(".py-build-cmake_cache"),
                          allow_abs=True,
                          base_path=RelativeToProject(project_path),
                          must_exist=False),

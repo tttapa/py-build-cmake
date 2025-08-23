@@ -35,7 +35,7 @@ class ConanSettings:
     build_profiles: list[str]
     host_profiles: list[str]
     extra_host_profile_data: dict[str, list[str]]
-    build_folder_vars: list[str] | None
+    build_config_name: str
     args: list[str]
 
 
@@ -148,11 +148,11 @@ class ConanCMaker(Builder):
 
     def write_toolchain(self) -> Path | None:
         opts = self.get_configure_options_python(native=None)
-        build_path = self.conan_settings.output_folder
-        toolchain_file = build_path / "py-build-cmake-toolchain.cmake"
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        toolchain_file = of / "py-build-cmake-toolchain.cmake"
         user_toolchain_file = self.conf_settings.toolchain_file
         if not self.runner.dry:
-            build_path.mkdir(parents=True, exist_ok=True)
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(
             self.runner, toolchain_file, "CMake toolchain file (host context)"
         ) as f:
@@ -178,10 +178,10 @@ class ConanCMaker(Builder):
 
     def write_toolchain_build(self) -> Path | None:
         opts = self.get_configure_options_python(native=True)
-        build_path = self.conan_settings.output_folder
-        toolchain_file = build_path / "py-build-cmake-toolchain-build.cmake"
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        toolchain_file = of / "py-build-cmake-toolchain-build.cmake"
         if not self.runner.dry:
-            build_path.mkdir(parents=True, exist_ok=True)
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(
             self.runner, toolchain_file, "CMake toolchain file (build context)"
         ) as f:
@@ -191,7 +191,8 @@ class ConanCMaker(Builder):
         return toolchain_file
 
     def write_profile(self) -> Path:
-        profile_file = self.conan_settings.output_folder / "py-build-cmake-profile"
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        profile_file = of / "py-build-cmake-profile"
         profile = deepcopy(self.conan_settings.extra_host_profile_data)
         profile.setdefault("settings", [])
         profile.setdefault("conf", [])
@@ -224,9 +225,10 @@ class ConanCMaker(Builder):
                 profile["tool_requires"] += ["ninja/[*]"]
             profile["conf"] += [f"tools.cmake.cmaketoolchain:generator={generator}"]
         # Build folder name
-        if self.conan_settings.build_folder_vars is not None:
+        if self.conan_settings.build_config_name is not None:
+            build_vars = [f"const.{self.conan_settings.build_config_name}"]
             profile["conf"] += [
-                f"tools.cmake.cmake_layout:build_folder_vars={self.conan_settings.build_folder_vars!r}"
+                f"tools.cmake.cmake_layout:build_folder_vars={build_vars!r}"
             ]
         with VerboseFile(
             self.runner, profile_file, "Conan profile (host context)"
@@ -239,9 +241,8 @@ class ConanCMaker(Builder):
 
     def write_profile_build(self) -> Path:
         toolchain_file = self.write_toolchain_build()
-        profile_file = (
-            self.conan_settings.output_folder / "py-build-cmake-profile-build"
-        )
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        profile_file = of / "py-build-cmake-profile-build"
         conf = "[conf]\n"
         if toolchain_file is not None:
             conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}"
@@ -257,7 +258,7 @@ class ConanCMaker(Builder):
         if not opts:
             return None
 
-        of = self.conan_settings.output_folder
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
         preload_file = of / "py-build-cmake-preload.cmake"
         if not self.runner.dry:
             of.mkdir(parents=True, exist_ok=True)
@@ -383,6 +384,7 @@ class ConanCMaker(Builder):
             self.buildenv.generate()
 
             # 4. Re-generate CMake toolchain (to include environment variables)
+            # ---
             with contextlib.suppress(ValueError):
                 self.conanfile.generators.remove("CMakeToolchain")
             tc = conan.tools.cmake.CMakeToolchain(self.conanfile)
@@ -452,7 +454,8 @@ class ConanCMaker(Builder):
 
     def _wrap_pyodide_toolchain(self, toolchain_file: Path) -> Path:
         """Workaround for https://github.com/pyodide/pyodide-build/issues/104."""
-        wrapper = self.conan_settings.output_folder / "pyodide-build-toolchain.cmake"
+        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        wrapper = of / "pyodide-build-toolchain.cmake"
         content = f"""\
         cmake_minimum_required(VERSION {self.cmake_version_policy})
         set(PYODIDE_TOOLCHAIN_FILE "{toolchain_file.as_posix()}")
@@ -485,7 +488,7 @@ class ConanCMaker(Builder):
         endif()
         """
         if not self.runner.dry:
-            self.conan_settings.output_folder.mkdir(parents=True, exist_ok=True)
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(self.runner, wrapper, "pyodide-build toolchain wrapper") as f:
             f.write(textwrap.dedent(content))
 
