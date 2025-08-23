@@ -228,6 +228,10 @@ class ConanCMaker(Builder):
                 profile.setdefault("tool_requires", [])
                 profile["tool_requires"] += ["ninja/[*]"]
             profile["conf"] += [f"tools.cmake.cmaketoolchain:generator={generator}"]
+        # CMake
+        profile["tool_requires"] += [
+            f"cmake/[>={self.cmake_settings.minimum_required}]",
+        ]
         # Build folder name
         if self.conan_settings.build_config_name is not None:
             build_vars = [f"const.{self.conan_settings.build_config_name}"]
