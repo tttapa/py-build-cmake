@@ -74,6 +74,9 @@ class CMakeInstallSettings:
     prefix: Path | None
 
 
+_CMAKE_TOOLCHAIN_POLICY = "3.5...4.1"
+
+
 _SPECIAL_CMAKE_OPTIONS = {
     "system_name",
     "system_processor",
@@ -156,7 +159,7 @@ class ConanCMaker(Builder):
         with VerboseFile(
             self.runner, toolchain_file, "CMake toolchain file (host context)"
         ) as f:
-            f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
+            f.write(f"cmake_minimum_required(VERSION {_CMAKE_TOOLCHAIN_POLICY})\n")
             for o in opts:
                 f.write(o.to_preload_set(force=False))
             # https://github.com/pyodide/pyodide-build/issues/104
@@ -185,7 +188,7 @@ class ConanCMaker(Builder):
         with VerboseFile(
             self.runner, toolchain_file, "CMake toolchain file (build context)"
         ) as f:
-            f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
+            f.write(f"cmake_minimum_required(VERSION {_CMAKE_TOOLCHAIN_POLICY})\n")
             for o in opts:
                 f.write(o.to_preload_set(force=False))
         return toolchain_file
@@ -213,7 +216,7 @@ class ConanCMaker(Builder):
             ]
         # Correct linker flags for CMake MODULE libraries (https://github.com/conan-io/conan/issues/17539)
         profile["conf"] += [
-            f"tools.cmake.cmaketoolchain:extra_variables*={_MODULE_LINK_FLAGS!r}"
+            f"&:tools.cmake.cmaketoolchain:extra_variables*={_MODULE_LINK_FLAGS!r}"
         ]
         # CMake toolchain file with Python hints etc.
         toolchain_file = self.write_toolchain()
@@ -226,11 +229,11 @@ class ConanCMaker(Builder):
         if generator is not None:
             if "Ninja" in generator:
                 profile.setdefault("tool_requires", [])
-                profile["tool_requires"] += ["ninja/[*]"]
-            profile["conf"] += [f"tools.cmake.cmaketoolchain:generator={generator}"]
+                profile["tool_requires"] += ["&:ninja/[*]"]
+            profile["conf"] += [f"&:tools.cmake.cmaketoolchain:generator={generator}"]
         # CMake
         profile["tool_requires"] += [
-            f"cmake/[>={self.cmake_settings.minimum_required}]",
+            f"&:cmake/[>={self.cmake_settings.minimum_required}]",
         ]
         # Build folder name
         if self.conan_settings.build_config_name is not None:
@@ -465,7 +468,7 @@ class ConanCMaker(Builder):
         of = self.conan_settings.output_folder / self.conan_settings.build_config_name
         wrapper = of / "pyodide-build-toolchain.cmake"
         content = f"""\
-        cmake_minimum_required(VERSION {self.cmake_version_policy})
+        cmake_minimum_required(VERSION {_CMAKE_TOOLCHAIN_POLICY})
         set(PYODIDE_TOOLCHAIN_FILE "{toolchain_file.as_posix()}")
         if (DEFINED CMAKE_C_FLAGS)
             set(PBC_CMAKE_C_FLAGS_SET On)
