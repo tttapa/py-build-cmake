@@ -207,6 +207,10 @@ class ConanCMaker(Builder):
             profile["settings"] += [
                 f"os.version={self.plat.macos_version_str}",
             ]
+        if self.conf_settings.build_type is not None:
+            profile["settings"] += [
+                f"build_type={self.conf_settings.build_type}",
+            ]
         # Correct linker flags for CMake MODULE libraries (https://github.com/conan-io/conan/issues/17539)
         profile["conf"] += [
             f"tools.cmake.cmaketoolchain:extra_variables*={_MODULE_LINK_FLAGS!r}"
