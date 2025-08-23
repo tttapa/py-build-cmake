@@ -265,7 +265,7 @@ class _BuildBackend:
         wheel_cfg = _BuildBackend.get_wheel_config(self.plat, cfg)
         for idx, cmkcfg in self.get_builder_configs(self.plat, cfg).items():
             has_build_step = True
-            cmaker = cmkcfg.get_builder(
+            builder = cmkcfg.get_builder(
                 paths.source_dir,
                 paths.staging_dir,
                 cfg.cross,
@@ -273,13 +273,13 @@ class _BuildBackend:
                 pkg_info,
                 runner=self.runner,
             )
-            cmaker.configure()
-            cmaker.build()
-            cmaker.install()
+            builder.configure()
+            builder.build()
+            builder.install()
 
             if editable:
                 write_build_hook(
-                    self.plat, cfg, paths.pkg_staging_dir, module, cmaker, idx
+                    self.plat, cfg, paths.pkg_staging_dir, module, builder, idx
                 )
 
         # Generate .pyi stubs (for the Python files only)
@@ -539,6 +539,7 @@ class _BuildBackend:
                             build_profiles=self.config["profile_build"],
                             host_profiles=self.config["profile_host"],
                             extra_host_profile_data=(cross_cfg or {}).get("_conan", {}),
+                            build_folder_vars=[f"const.{self.build_config_name}"],
                             args=self.config.get("args", []),
                         ),
                         cmake_settings=CMakeSettings(

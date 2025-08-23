@@ -174,7 +174,9 @@ class _BuildComponentBackend:
             cmaker.install()
 
         # Create wheel
-        return std_backend.create_wheel(self.plat, paths, cfg, cmake_cfg, pkg_info)
+        return std_backend.create_wheel(
+            self.plat, paths, cfg, bool(cmake_cfg), pkg_info
+        )
 
     # --- CMake builds --------------------------------------------------------
 

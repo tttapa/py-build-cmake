@@ -239,7 +239,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               default=DefaultValueValue([]),
                               append_by_default=True),
         ListOfStrConfigOption("install_components",
-                              "List of components to install, the install step "
+                              "List of components to install: The install step "
                               "is executed once for each component, with the "
                               "option `--component <?>`.\n"
                               "Use an empty string to specify the default "
@@ -264,7 +264,13 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     conan = pbc.insert(
         MultiConfigOption("conan",
                      "Defines how to install the dependencies and how to build "
-                     "the project to package using the Conan package manager.",
+                     "the project to package using the Conan package manager. "
+                     "Users can either define `tool.py-build-cmake.conan` or "
+                     "`tool.py-build-cmake.cmake`: the former first performs "
+                     "a `conan install` of the project and then configures, "
+                     "builds and installs the CMake project; the latter only "
+                     "configures, builds and installs the CMake project, "
+                     "without using Conan.",
         ))  # fmt: skip
     conan_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/conan")
     conan.insert_multiple([
@@ -303,16 +309,17 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     ])  # fmt: skip
     conan_cmake = conan.insert(
         ConfigOption("cmake",
-                     "Defines CMake options for the problem to package"),
+                     "Defines options for the CMake build under Conan."),
     )  # fmt: skip
     conan_cmake.insert_multiple(common_cmake_options)
 
     # [tool.py-build-cmake.cmake]
     cmake = pbc.insert(
         MultiConfigOption("cmake",
-                          "Defines how to build the project to package. If "
-                          "neither tool.py-build-cmake.conan or "
-                          "tool.py-build-cmake.cmake are set, py-build-cmake "
+                          "Defines how to build the project to package. "
+                          "See also the `conan` option above. If "
+                          "neither `tool.py-build-cmake.conan` or "
+                          "`tool.py-build-cmake.cmake` are set, py-build-cmake "
                           "will produce a pure Python package.",
         ))  # fmt: skip
     cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
@@ -443,7 +450,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "your pyproject.toml file directly. Instead, it "
                               "is intended to be specified from the command "
                               "line, or in a local override. "
-                              "See also: cross.abi.\n"
+                              "See also: `cross.abi`.\n"
                               "For details about platform compatibility tags, "
                               "see the PyPA specification: "
                               "<https://packaging.python.org/en/latest/"
@@ -462,7 +469,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "your pyproject.toml file directly. Instead, it "
                               "is intended to be specified from the command "
                               "line, or in a local override. "
-                              "See also: cross.arch.\n"
+                              "See also: `cross.arch`.\n"
                               "There are no checks in place to ensure that the "
                               "platform tag applies to all files in the Wheel. "
                               "If possible, you should use a tool such as "
@@ -516,42 +523,6 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               default=DefaultValueValue([]),
                               append_by_default=True),
     ])  # fmt: skip
-
-    # [tool.py-build-cmake.{linux,windows,mac}]
-    for system, system_name in (
-        ("linux", "Linux"),
-        ("windows", "Windows"),
-        ("mac", "macOS"),
-        ("pyodide", "Pyodide"),
-    ):
-        opt = pbc.insert(
-            ConfigOption(system,
-                         f"Specific options for {system_name}.",
-                         create_if_inheritance_target_exists=True,
-                         default=DefaultValueValue({}),
-            ))  # fmt: skip
-        opt.insert_multiple([
-            ConfigOption("editable",
-                         f"{system_name}-specific editable options.",
-                         inherit_from=editable_pth,
-                         create_if_inheritance_target_exists=True),
-            ConfigOption("sdist",
-                         f"{system_name}-specific sdist options.",
-                         inherit_from=sdist_pth,
-                         create_if_inheritance_target_exists=True),
-            MultiConfigOption("conan",
-                         f"{system_name}-specific Conan options.",
-                         inherit_from=conan_pth,
-                         create_if_inheritance_target_exists=True),
-            MultiConfigOption("cmake",
-                         f"{system_name}-specific CMake options.",
-                         inherit_from=cmake_pth,
-                         create_if_inheritance_target_exists=True),
-            ConfigOption("wheel",
-                         f"{system_name}-specific Wheel options.",
-                         inherit_from=wheel_pth,
-                         create_if_inheritance_target_exists=True),
-        ])  # fmt: skip
 
     # [tool.py-build-cmake.cross]
     cross = pbc.insert(
@@ -685,10 +656,46 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "Extra rules to add to the Conan profile."),
     ])  # fmt: skip
 
+    # [tool.py-build-cmake.{linux,windows,mac,pyodide}]
+    for system, system_name in (
+        ("linux", "Linux"),
+        ("windows", "Windows"),
+        ("mac", "macOS"),
+        ("pyodide", "Pyodide"),
+    ):
+        opt = pbc.insert(
+            ConfigOption(system,
+                         f"Specific options for {system_name}.",
+                         create_if_inheritance_target_exists=True,
+                         default=DefaultValueValue({}),
+            ))  # fmt: skip
+        opt.insert_multiple([
+            ConfigOption("editable",
+                         f"{system_name}-specific editable options.",
+                         inherit_from=editable_pth,
+                         create_if_inheritance_target_exists=True),
+            ConfigOption("sdist",
+                         f"{system_name}-specific sdist options.",
+                         inherit_from=sdist_pth,
+                         create_if_inheritance_target_exists=True),
+            MultiConfigOption("conan",
+                         f"{system_name}-specific Conan options.",
+                         inherit_from=conan_pth,
+                         create_if_inheritance_target_exists=True),
+            MultiConfigOption("cmake",
+                         f"{system_name}-specific CMake options.",
+                         inherit_from=cmake_pth,
+                         create_if_inheritance_target_exists=True),
+            ConfigOption("wheel",
+                         f"{system_name}-specific Wheel options.",
+                         inherit_from=wheel_pth,
+                         create_if_inheritance_target_exists=True),
+        ])  # fmt: skip
+
     return root
 
 
-def get_component_options(project_path: Path, *, test: bool = False):
+def get_component_options(project_path: Path | PurePosixPath, *, test: bool = False):
     root = ConfigOption("root")
     pyproject = root.insert(UncheckedConfigOption("pyproject.toml"))
     project = pyproject.insert(UncheckedConfigOption("project"))

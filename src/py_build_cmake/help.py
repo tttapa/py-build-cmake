@@ -34,22 +34,27 @@ def get_default_str(opt: ConfigOption):
     return opt.default.get_name()
 
 
-def help_print_md(pbc_opts: ConfigOption):
+def help_print_md(pbc_opts: ConfigOption, prefix: str = "", level=2):
     """
     Prints the top-level options in `pbc_opts` as MarkDown tables.
     """
     for k, v in pbc_opts.sub_options.items():
         if not v.sub_options:
             continue
-        print("##", k)
+        print(f"{'#' * level} {prefix}{k}")
         print(_get_full_description(v), "\n")
         print("| Option | Description | Type | Default |")
         print("|--------|-------------|------|---------|")
         for kk, vv in v.sub_options.items() or {}:
+            if kk.startswith("_"):
+                continue
+            if k == "conan" and kk == "cmake":
+                print("|" f"`{kk}`" "|" "See below." "|" "|" "|")
+                continue
             typename = vv.get_typename(md=True) or ""
             print(
                 "|",
-                f'<a id="{k}.{kk}"></a>',
+                f'<a id="{prefix}{k}.{kk}"></a>',
                 f"`{kk}`",
                 "|",
                 _get_full_description(vv),
@@ -60,6 +65,8 @@ def help_print_md(pbc_opts: ConfigOption):
                 "|",
             )
         print()
+        if k == "conan":
+            help_print_md(v, prefix="conan.", level=level + 1)
 
 
 def _get_full_description(vv: ConfigOption):

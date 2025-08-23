@@ -35,6 +35,7 @@ class ConanSettings:
     build_profiles: list[str]
     host_profiles: list[str]
     extra_host_profile_data: dict[str, list[str]]
+    build_folder_vars: list[str] | None
     args: list[str]
 
 
@@ -213,7 +214,7 @@ class ConanCMaker(Builder):
         toolchain_file = self.write_toolchain()
         if toolchain_file is not None:
             profile["conf"] += [
-                f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}\n"
+                f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}"
             ]
         # Ninja build tool
         generator = self.conf_settings.generator
@@ -222,6 +223,11 @@ class ConanCMaker(Builder):
                 profile.setdefault("tool_requires", [])
                 profile["tool_requires"] += ["ninja/[*]"]
             profile["conf"] += [f"tools.cmake.cmaketoolchain:generator={generator}"]
+        # Build folder name
+        if self.conan_settings.build_folder_vars is not None:
+            profile["conf"] += [
+                f"tools.cmake.cmake_layout:build_folder_vars={self.conan_settings.build_folder_vars!r}"
+            ]
         with VerboseFile(
             self.runner, profile_file, "Conan profile (host context)"
         ) as f:
@@ -238,7 +244,7 @@ class ConanCMaker(Builder):
         )
         conf = "[conf]\n"
         if toolchain_file is not None:
-            conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file!s}\n"
+            conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}"
         with VerboseFile(
             self.runner, profile_file, "Conan profile (build context)"
         ) as f:
@@ -364,9 +370,9 @@ class ConanCMaker(Builder):
 
             # 2. Set directories
             # ---
-            # TODO: Is there an officially supported way to set the install prefix?
             prefix = self.install_settings.prefix
             if prefix is not None:
+                # TODO: Is there an officially supported way to set the install prefix?
                 self.conanfile.folders.set_base_package(prefix.as_posix())
             self.conanfile.folders.source = self.conf_settings.source_path.as_posix()
 
@@ -376,7 +382,14 @@ class ConanCMaker(Builder):
             self._configure_environment(self.buildenv.environment())
             self.buildenv.generate()
 
-            # 4. Configure CMake
+            # 4. Re-generate CMake toolchain (to include environment variables)
+            with contextlib.suppress(ValueError):
+                self.conanfile.generators.remove("CMakeToolchain")
+            tc = conan.tools.cmake.CMakeToolchain(self.conanfile)
+            tc.presets_build_environment = self.buildenv.environment()
+            tc.generate()
+
+            # 5. Configure CMake
             # ---
             args = self.conf_settings.args
             if pre_load is not None:

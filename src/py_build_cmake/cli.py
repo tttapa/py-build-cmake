@@ -29,7 +29,10 @@ def cmake_command(directory, build_path, verbose, dry, cross, local, override):
         cmake_cfgs = backend.get_cmake_config(plat, cfg)
         wheel_cfg = backend.get_wheel_config(plat, cfg)
         if not cmake_cfgs:
-            msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing)."
+            msg = "Not a CMake project ([tool.py-build-cmake.cmake] missing). "
+            if cfg.conan:
+                msg += "The py-build-cmake command-line interface currently "
+                msg += "does not support Conan projects."
             raise ValueError(msg)
         try:
             cmake_cfg = cmake_cfgs[index]
