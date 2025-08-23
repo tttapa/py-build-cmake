@@ -25,9 +25,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Select the architectures and Python versions to build for.
 triples=(x86_64-bionic-linux-gnu armv6-rpi-linux-gnueabihf armv7-neon-linux-gnueabihf aarch64-rpi3-linux-gnu)
-python_versions=("python3.7" "python3.8" "python3.9" "python3.10" "python3.11" "python3.12" "python3.13" "python3.14")
+python_versions=("python3.8" "python3.9" "python3.10" "python3.11" "python3.12" "python3.13" "python3.14")
 pypy_triples=(x86_64-bionic-linux-gnu aarch64-rpi3-linux-gnu)
-pypy_versions=("pypy3.7-v7.3" "pypy3.8-v7.3" "pypy3.9-v7.3" "pypy3.10-v7.3" "pypy3.11-v7.3")
+pypy_versions=("pypy3.8-v7.3" "pypy3.9-v7.3" "pypy3.10-v7.3" "pypy3.11-v7.3")
 
 # Ensure that the necessary toolchains are available.
 toolchain_folder="$PWD/../../toolchains"
