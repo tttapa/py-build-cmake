@@ -158,7 +158,7 @@ class ConanCMaker(Builder):
         ) as f:
             f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
             for o in opts:
-                f.write(o.to_preload_set())
+                f.write(o.to_preload_set(force=False))
             # https://github.com/pyodide/pyodide-build/issues/104
             pyodide104 = "pyodide_build/tools/cmake/Modules/Platform/Emscripten.cmake"
             if (
@@ -187,7 +187,7 @@ class ConanCMaker(Builder):
         ) as f:
             f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
             for o in opts:
-                f.write(o.to_preload_set())
+                f.write(o.to_preload_set(force=False))
         return toolchain_file
 
     def write_profile(self) -> Path:

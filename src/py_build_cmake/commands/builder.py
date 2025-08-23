@@ -62,10 +62,11 @@ class Option:
     def to_cli_string(self):
         return f"{self.cli_key()}={self.value}"
 
-    def to_preload_set(self):
+    def to_preload_set(self, force=True):
+        force_ = " FORCE" if force else ""
         return (
             f'set({self.name} "{self.value}"'
-            f' CACHE {self.type or "STRING"} "{self.description}" FORCE)\n'
+            f' CACHE {self.type or "STRING"} "{self.description}"{force_})\n'
         )
 
 
