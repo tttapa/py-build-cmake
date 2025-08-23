@@ -38,16 +38,6 @@ class ConfigInheritor:
         self.done.add(self.value_path.pth)
         # Find the option we inherit from
         super = self.ref.resolve_inheritance_single(self.root)
-        # If the option we're inheriting from does not have its value set,
-        # don't do anything.
-        try:
-            super_value = self.root_values.sub_ref(super.config_path)
-        except KeyError:
-            return
-        # If our option does not have its value set, create this value and
-        # all its parents.
-        if not self._create_parent_values():
-            return
 
         # If our super option inherits from other options, carry out that
         # inheritance first.
@@ -61,6 +51,17 @@ class ConfigInheritor:
         # Note that we only detect direct inheritance, inheriting from a
         # subtree that is part of an inherited tree is not supported (and
         # and unnecessary for the current schema)
+
+        # If the option we're inheriting from does not have its value set,
+        # don't do anything.
+        try:
+            super_value = self.root_values.sub_ref(super.config_path)
+        except KeyError:
+            return
+        # If our option does not have its value set, create this value and
+        # all its parents.
+        if not self._create_parent_values():
+            return
 
         # Create a copy of the values of our super option and override them
         # with our own values

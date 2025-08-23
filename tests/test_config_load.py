@@ -276,6 +276,219 @@ def test_inherit_cross_cmake():
     }
 
 
+def test_inherit_cross_os_cmake():
+    plat = BuildPlatformInfo()
+    pyproj_path = PurePosixPath("/project/pyproject.toml")
+    pyproj = {
+        "project": {"name": "foobar", "version": "1.2.3", "description": "descr"},
+        "tool": {
+            "some-other-tool": {},
+            "py-build-cmake": {
+                "cmake": {
+                    "build_type": "Release",
+                    "source_path": "src",
+                    "args": ["arg1", "arg2"],
+                    "install_components": ["all_install"],
+                },
+                "cross": {
+                    "implementation": "cp",
+                    "version": "310",
+                    "abi": "cp310",
+                    "arch": "linux_aarch64",
+                    "toolchain_file": "aarch64-linux-gnu.cmake",
+                    "os": "linux",
+                    "cmake": {
+                        "generator": "Unix Makefiles",
+                        "build_type": "RelWithDebInfo",
+                        "env": {"crosscompiling": "true"},
+                        "args": ["arg3", "arg4"],
+                    },
+                },
+                "linux": {
+                    "cmake": {
+                        "args": ["linux_arg"],
+                        "install_components": ["linux_install"],
+                    }
+                },
+                "windows": {
+                    "cmake": {
+                        "install_components": {"+": ["win_install"]},
+                    }
+                },
+            },
+        },
+    }
+    files = {"pyproject.toml": pyproj}
+    conf = process_config(plat, pyproj_path, files, {}, test=True)
+    assert conf.standard_metadata.name == "foobar"
+    assert str(conf.standard_metadata.version) == "1.2.3"
+    assert conf.standard_metadata.description == "descr"
+    assert conf.module == {
+        "name": "foobar",
+        "directory": PurePosixPath("/project"),
+        "namespace": False,
+    }
+    assert conf.editable == {
+        "cross": {"build_hook": False, "mode": "symlink"},
+        "linux": {"build_hook": False, "mode": "symlink"},
+        "windows": {"build_hook": False, "mode": "symlink"},
+        "mac": {"build_hook": False, "mode": "symlink"},
+        "pyodide": {"build_hook": False, "mode": "symlink"},
+    }
+    assert conf.sdist == {
+        "cross": {"include_patterns": [], "exclude_patterns": []},
+        "linux": {"include_patterns": [], "exclude_patterns": []},
+        "windows": {"include_patterns": [], "exclude_patterns": []},
+        "mac": {"include_patterns": [], "exclude_patterns": []},
+        "pyodide": {"include_patterns": [], "exclude_patterns": []},
+    }
+    assert conf.cmake == {
+        "cross": {
+            "0": {
+                "build_type": "RelWithDebInfo",
+                "config": ["RelWithDebInfo"],
+                "generator": "Unix Makefiles",
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2", "linux_arg", "arg3", "arg4"],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["RelWithDebInfo"],
+                "install_args": [],
+                "install_components": ["linux_install"],
+                "minimum_version": "3.15",
+                "env": {
+                    "crosscompiling": StringOption(value="true"),
+                },
+            },
+        },
+        "linux": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2", "linux_arg"],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": ["linux_install"],
+                "minimum_version": "3.15",
+                "env": {},
+            },
+        },
+        "windows": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": ["all_install", "win_install"],
+                "minimum_version": "3.15",
+                "env": {},
+            }
+        },
+        "mac": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": ["all_install"],
+                "minimum_version": "3.15",
+                "env": {},
+            }
+        },
+        "pyodide": {
+            "0": {
+                "build_type": "Release",
+                "config": ["Release"],
+                "source_path": PurePosixPath("/project/src"),
+                "build_path": PurePosixPath(
+                    "/project/.py-build-cmake_cache/{build_config}"
+                ),
+                "options": {},
+                "args": ["arg1", "arg2"],
+                "find_python": True,
+                "find_python3": True,
+                "build_args": [],
+                "build_tool_args": [],
+                "install_config": ["Release"],
+                "install_args": [],
+                "install_components": ["all_install"],
+                "minimum_version": "3.15",
+                "env": {},
+            }
+        },
+    }
+    assert conf.wheel == {
+        "cross": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "linux": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "windows": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "mac": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+        "pyodide": {
+            "python_tag": ["auto"],
+            "python_abi": "auto",
+            "abi3_minimum_cpython_version": 32,
+        },
+    }
+    assert conf.cross == {
+        "implementation": "cp",
+        "version": "310",
+        "abi": "cp310",
+        "arch": "linux_aarch64",
+        "toolchain_file": PurePosixPath("/project/aarch64-linux-gnu.cmake"),
+        "os": "linux",
+    }
+
+
 def test_real_config_no_cross():
     plat = BuildPlatformInfo()
     pyproj_path = PurePosixPath("/project/pyproject.toml")

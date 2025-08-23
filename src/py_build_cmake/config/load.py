@@ -435,7 +435,7 @@ def set_up_os_specific_cross_inheritance(
         cross_os = cast(Optional[str], root_val.get_value(os_path))
 
     if cross_os is not None:
-        for s in ("editable", "sdist", "cmake", "wheel"):
+        for s in ("editable", "sdist", "conan", "cmake", "wheel"):
             parent = get_tool_pbc_path().join(cross_os).join(s)
             child = get_cross_path().join(s)
             root_ref.sub_ref(child).config.inherits = parent
