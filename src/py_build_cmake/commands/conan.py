@@ -200,6 +200,7 @@ class ConanCMaker(Builder):
         profile = deepcopy(self.conan_settings.extra_host_profile_data)
         profile.setdefault("settings", [])
         profile.setdefault("conf", [])
+        profile.setdefault("tool_requires", [])
 
         # Operating system
         if all(not ln.startswith("os=") for ln in profile["settings"]):
@@ -236,7 +237,6 @@ class ConanCMaker(Builder):
         generator = self.conf_settings.generator
         if generator is not None:
             if "Ninja" in generator:
-                profile.setdefault("tool_requires", [])
                 profile["tool_requires"] += ["&:ninja/[*]"]
             profile["conf"] += [f"&:tools.cmake.cmaketoolchain:generator={generator}"]
         # CMake build tool
@@ -273,7 +273,10 @@ class ConanCMaker(Builder):
 
     def write_preload_options(self) -> Path | None:
         """Write the options into the CMake pre-load script and return its path."""
-        opts = self.get_configure_options_package()
+        opts = [
+            *self.get_configure_options_package(),
+            *self.get_configure_options_python(native=None),
+        ]
         if not opts:
             return None
 

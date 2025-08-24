@@ -259,10 +259,13 @@ class MultiConfigOption(ConfigOption):
             if v == _MAGIC_CLEAR_VALUE:
                 r[k] = _MAGIC_CLEAR_VALUE
             else:
-                r.setdefault(k, {})
+                r.setdefault(k, {})  # actual values are handled by ConfigOverrider
         return r
 
 
 class UncheckedConfigOption(ConfigOption):
     def verify(self, values: ValueReference):
         return values.values
+
+    def override(self, old_value: ValueReference, new_value: ValueReference) -> Any:
+        return new_value.values
