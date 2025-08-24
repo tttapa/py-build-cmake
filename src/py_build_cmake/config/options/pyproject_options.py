@@ -307,6 +307,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "args = [\"--no-remote\", \"--build=pybind11/*\"]",
                               default=DefaultValueValue(["--build=missing"]),
                               append_by_default=True),
+        UncheckedConfigOption("_profile_data",
+                              "Extra rules to add to the Conan profile."),
     ])  # fmt: skip
     conan_cmake = conan.insert(
         ConfigOption("cmake",
@@ -630,7 +632,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "applies to the Visual Studio generator on "
                            "Windows. See <https://cmake.org/cmake/help/"
                            "latest/variable/CMAKE_GENERATOR_PLATFORM.html> "
-                           "for details.",
+                           "for details. Ignored when using Conan.",
                            "generator_platform = 'ARM64'",
                            default=None),
         ConfigOption("editable",
@@ -653,8 +655,9 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Override Wheel options when cross-compiling.",
                      inherit_from=wheel_pth,
                      create_if_inheritance_target_exists=True),
-        UncheckedConfigOption("_conan",
-                              "Extra rules to add to the Conan profile."),
+        UncheckedConfigOption("_force_native_python",
+                              "Tell CMake to use the native Python interpreter "
+                              "(even when cross-compiling)"),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.{linux,windows,mac,pyodide}]

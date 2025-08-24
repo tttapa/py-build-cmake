@@ -25,7 +25,6 @@ from .util import (
     archflags_to_platform_tag,
     platform_tag_to_archflags,
     platform_to_platform_tag,
-    python_sysconfig_platform_to_cmake_platform_win,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,6 @@ class BuildPlatformInfo:
     pyodide: bool = field(default_factory=lambda: os.getenv("PYODIDE") == "1")
     archs: tuple[str, ...] | None = None
     macos_version: tuple[int, int] | None = None
-    cmake_generator_platform: str | None = None
 
     @property
     def macos_version_str(self) -> str:
@@ -224,19 +222,9 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs
     kwargs.setdefault("specific_platform_tag", _get_specific_platform(env))
     r = BuildPlatformInfo(**kwargs)
 
-    # Determine CMake generator platform (i.e. whether to use Visual Studio to
-    # build for x86 or AMD64)
-    if r.system == "Windows":
-        r.cmake_generator_platform = python_sysconfig_platform_to_cmake_platform_win(
-            r.sysconfig_platform
-        )
-        if not r.cmake_generator_platform:
-            msg = "Unknown platform %s. Not setting CMake generator platform."
-            logger.warning(msg, r.sysconfig_platform)
-
     # For macOS, we need to change the platform tag etc. based on the values of
     # MACOSX_DEPLOYMENT_TARGET and ARCHFLAGS.
-    elif r.system == "Darwin":
+    if r.system == "Darwin":
         r.macos_version, r.archs = _determine_macos_version_archs(env)
         if "_PYTHON_HOST_PLATFORM" in env:
             host_plat = env["_PYTHON_HOST_PLATFORM"]

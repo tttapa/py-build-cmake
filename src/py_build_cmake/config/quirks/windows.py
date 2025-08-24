@@ -10,6 +10,7 @@ from ...common.util import (
     platform_to_platform_tag,
     python_sysconfig_platform_to_cmake_platform_win,
     python_sysconfig_platform_to_cmake_processor_win,
+    python_sysconfig_platform_to_conan_arch_win,
 )
 from ...config.options.config_option import MultiConfigOption
 from ..options.cmake_opt import CMakeOption
@@ -93,12 +94,8 @@ def cross_compile_win(
         }
         cross_cfg["cmake"] = {all: {"options": options}}
     if config.is_value_set("conan"):
-        conan_arch = {
-            "win32": "x86",
-            "win-amd64": "x86_64",
-            "win-arm32": "armv7",
-            "win-arm64": "armv8",
-        }[plat_name]
+        conan_arch = python_sysconfig_platform_to_conan_arch_win(plat_name)
+        assert conan_arch is not None, "Unknown DIST_EXTRA_CONFIG.build_ext.plat_name"
         can_run = (plat_name, plat.sysconfig_platform) in {
             ("win32", "win32"),
             ("win32", "win-amd64"),
@@ -106,7 +103,7 @@ def cross_compile_win(
             ("win-arm32", "win-arm32"),
             ("win-arm64", "win-arm64"),
         }
-        cross_cfg["_conan"] = {
+        profile = {
             "settings": [
                 "os=Windows",
                 f"arch={conan_arch}",
@@ -117,6 +114,7 @@ def cross_compile_win(
                 f"tools.build.cross_building:can_run={can_run}",
             ],
         }
+        cross_cfg["conan"] = {all: {"_profile_data": profile}}
     configure_python_artifacts(plat, library_dirs, cross_cfg, stable=False)
     configure_python_artifacts(plat, library_dirs, cross_cfg, stable=True)
     config.set_value("cross", cross_cfg)

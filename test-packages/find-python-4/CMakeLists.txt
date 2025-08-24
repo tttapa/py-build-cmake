@@ -4,7 +4,7 @@ project(TestRequiredArtifacts LANGUAGES C)
 
 block(SCOPE_FOR VARIABLES)
   # Look for the development files for the target first
-  if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+  if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     find_package(Python3 REQUIRED COMPONENTS Development.Module)
   else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)

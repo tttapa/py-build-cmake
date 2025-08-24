@@ -21,7 +21,7 @@ import conan.tools.env  # type: ignore[import-untyped]
 from ..commands.cmd_runner import CommandRunner
 from ..common import ConfigError, PackageInfo
 from ..common.platform import BuildPlatformInfo, OSIdentifier
-from ..common.util import os_to_conan_os
+from ..common.util import archs_to_conan_arch, os_to_conan_os, processor_to_conan_arch
 from ..config.options.string import StringOption
 from .builder import Builder, PackageTags, PythonSettings
 from .chdir import chdir
@@ -211,6 +211,13 @@ class ConanCMaker(Builder):
             profile["settings"] += [
                 f"os.version={self.plat.macos_version_str}",
             ]
+        # Architecture
+        if not self.cross_compiling():
+            arch = processor_to_conan_arch(self.plat.machine)
+            if self.plat.os_name == "mac" and self.plat.archs:
+                arch = archs_to_conan_arch(self.plat.archs)  # TODO: move to quirks
+            profile["settings"] += [f"arch={arch}"]
+        # Build type
         if self.conf_settings.build_type is not None:
             profile["settings"] += [
                 f"build_type={self.conf_settings.build_type}",
@@ -232,7 +239,7 @@ class ConanCMaker(Builder):
                 profile.setdefault("tool_requires", [])
                 profile["tool_requires"] += ["&:ninja/[*]"]
             profile["conf"] += [f"&:tools.cmake.cmaketoolchain:generator={generator}"]
-        # CMake
+        # CMake build tool
         profile["tool_requires"] += [
             f"&:cmake/[>={self.cmake_settings.minimum_required}]",
         ]

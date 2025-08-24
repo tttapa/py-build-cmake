@@ -36,7 +36,7 @@ from .common.platform import (
     WheelTags,
     determine_build_platform_info,
 )
-from .common.util import python_tag_to_cmake
+from .common.util import cmake_processor_to_generator_platform_win, python_tag_to_cmake
 from .config import load as config_load
 from .config.dynamic import find_module, update_dynamic_metadata
 from .export import editable as export_editable
@@ -532,13 +532,18 @@ class _BuildBackend:
                             find_python3_build_artifacts_prefix=cmake_cfg.get(
                                 "find_python3_build_artifacts_prefix"
                             ),
+                            force_native=(cross_cfg or {}).get(
+                                "_force_native_python", False
+                            ),
                             **cross_python_opts,
                         ),
                         conan_settings=ConanSettings(
                             output_folder=output_folder,
                             build_profiles=self.config["profile_build"],
                             host_profiles=self.config["profile_host"],
-                            extra_host_profile_data=(cross_cfg or {}).get("_conan", {}),
+                            extra_host_profile_data=self.config.get(
+                                "_profile_data", {}
+                            ),
                             build_config_name=self.build_config_name,
                             args=self.config.get("args", []),
                         ),
@@ -680,6 +685,7 @@ class _BuildBackend:
                 find_python3_build_artifacts_prefix=cmake_cfg.get(
                     "find_python3_build_artifacts_prefix"
                 ),
+                force_native=(cross_cfg or {}).get("_force_native_python", False),
                 **cross_python_opts,
             ),
             cmake_settings=CMakeSettings(
@@ -728,6 +734,7 @@ class _BuildBackend:
             assert isinstance(x, (Path, str))
             return Path(x)
 
+        cmake_plat: str | None = None
         if cross_cfg:
             cmake_plat = cross_cfg.get("generator_platform")
             toolchain_file = cvt_path(cross_cfg.get("toolchain_file"))
@@ -741,7 +748,8 @@ class _BuildBackend:
                 "soabi": cross_cfg.get("soabi"),
             }
         else:
-            cmake_plat = plat.cmake_generator_platform
+            if plat.os_name == "windows":
+                cmake_plat = cmake_processor_to_generator_platform_win(plat.machine)
             toolchain_file = None
             cross_python_opts = {
                 "prefix": None,

@@ -50,8 +50,7 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     if config.is_value_set("cmake"):
         cross_cfg["cmake"] = {all: {"env": {}, "options": {}}}
     if config.is_value_set("conan"):
-        cross_cfg["conan"] = {all: {"profile_host": ListOption(clear=True)}}
-        cross_cfg["_conan"] = {
+        profile = {
             "settings": [
                 "arch=wasm",
                 "compiler=emcc",
@@ -75,6 +74,9 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
                 "RANLIB=emranlib",
                 "STRIP=emstrip",
             ],
+        }
+        cross_cfg["conan"] = {
+            all: {"profile_host": ListOption(clear=True), "_profile_data": profile}
         }
 
     # Determine Python version

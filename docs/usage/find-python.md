@@ -59,14 +59,10 @@ cross-compiling or not:
 - When cross-compiling, the interpreter is generally not usable, so you
   should look for the development files only. It is assumed that the user sets
   the necessary paths in `tool.py-build-cmake.cross`.
-- When cross-compiling for a target system that is compatible with the system
-  you're building on (most notably, macOS systems with universal binaries),
-  locating the interpreter first helps CMake locate the appropriate development
-  files.
 
 To handle these different situations, the following CMake snippet is recommended:
 ```cmake
-if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     find_package(Python3 REQUIRED COMPONENTS Development.Module)
 else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -91,7 +87,7 @@ involved:
 # CMake 4.0 or later is required for this technique to work
 cmake_minimum_required(VERSION 4.0)
 # Look for the development files for the target first
-if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     find_package(Python3 REQUIRED COMPONENTS Development.Module)
 else()
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)

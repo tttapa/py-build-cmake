@@ -34,6 +34,10 @@ class PythonSettings:
     find_python3: bool
     find_python_build_artifacts_prefix: str | None
     find_python3_build_artifacts_prefix: str | None
+    # If set, always passes hints for the native Python interpreter to CMake,
+    # even when cross-compiling. Useful for universal Python installations on
+    # macOS.
+    force_native: bool
 
 
 @dataclass
@@ -293,7 +297,7 @@ class Builder(ABC):
     def get_configure_options_python(self, native=None) -> list[Option]:
         """Flags to help CMake find the right version of Python."""
         if native is None:
-            native = not self.cross_compiling()
+            native = not self.cross_compiling() or self.python_settings.force_native
 
         def get_opts(prefix, with_exec, native):
             if native:

@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from ...common.platform import BuildPlatformInfo
+from ...common.util import archs_to_conan_arch
 from ...config.options.config_option import MultiConfigOption
 from ..options.cmake_opt import CMakeOption
 from ..options.config_path import ConfPath
@@ -26,9 +27,14 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
     )
     all = MultiConfigOption.default_index
     macos_version = plat.macos_version_str
+    emulator = None
+    if plat.archs == "x86_64" and plat.machine == "arm64":
+        emulator = ["arch", "-arch", "x86_64"]
+        # TODO: Rosetta 2 will be discontinued
     cross_cfg: dict[str, Any] = {
         "arch": StringOption.create(plat.platform_tag),
         "os": "mac",
+        "_force_native_python": True,
     }
     # CMake configuration
     if config.is_value_set("cmake"):
@@ -37,19 +43,18 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
             "CMAKE_OSX_ARCHITECTURES": CMakeOption.create(list(plat.archs), "STRING"),
             "CMAKE_OSX_DEPLOYMENT_TARGET": CMakeOption.create(macos_version, "STRING"),
         }
+        if emulator:
+            options["CMAKE_CROSSCOMPILING_EMULATOR"] = CMakeOption.create(emulator)
         env = {"MACOSX_DEPLOYMENT_TARGET": macos_version}
         cross_cfg["cmake"] = {all: {"options": options, "env": env}}
     # Conan profile
     if config.is_value_set("conan"):
-        assert list(plat.archs) == sorted(plat.archs)
-        conan_arch = {
-            ("x86_64",): "x86_64",
-            ("arm64",): "armv8",
-            ("arm64", "x86_64"): "armv8|x86_64",
-        }[plat.archs]
-        cross_cfg["_conan"] = {
+        options = {}
+        if emulator:
+            options["CMAKE_CROSSCOMPILING_EMULATOR"] = CMakeOption.create(emulator)
+        profile = {
             "settings": [
-                f"arch={conan_arch}",
+                f"arch={archs_to_conan_arch(plat.archs)}",
                 f"os.version={macos_version}",
                 # CMAKE_OSX_ARCHITECTURES and CMAKE_OSX_DEPLOYMENT_TARGET are
                 # set automatically by Conan based on arch and os.version
@@ -57,6 +62,9 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
             "conf": [
                 "tools.cmake.cmaketoolchain:system_name=Darwin",
             ],
+        }
+        cross_cfg["conan"] = {
+            all: {"cmake": {"options": options}, "_profile_data": profile}
         }
     # The SETUPTOOLS_EXT_SUFFIX variable is used by e.g. pybind11
     if plat.implementation == "cpython":
@@ -96,10 +104,13 @@ def config_quirks_mac(plat: BuildPlatformInfo, config: ValueReference):
             plat.machine,
         )
         all = MultiConfigOption.default_index
-        cmake_pth = ConfPath(("cmake", all))
-        config.set_value_default(cmake_pth, {})
-        config.set_value_default(cmake_pth.join("options"), {})
-        config.set_value_default(
-            cmake_pth.join("options").join("CMAKE_OSX_ARCHITECTURES"),
-            CMakeOption.create(list(plat.archs), "STRING"),
-        )
+        if config.is_value_set("cmake"):
+            cmake_pth = ConfPath(("cmake", all))
+            config.set_value_default(cmake_pth, {})
+            config.set_value_default(cmake_pth.join("options"), {})
+            config.set_value_default(
+                cmake_pth.join("options").join("CMAKE_OSX_ARCHITECTURES"),
+                CMakeOption.create(list(plat.archs), "STRING"),
+            )
+        # Conan case is handled in conan.py
+        # TODO: use conan._profile_data

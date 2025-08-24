@@ -11,7 +11,7 @@ macro(find_pybind11_python_first)
     set(PYBIND11_USE_CROSSCOMPILING On)
 
     # Find Python
-    if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+    if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
         find_package(Python3 REQUIRED COMPONENTS Development.Module)
     else()
         find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)

@@ -53,6 +53,32 @@ def python_sysconfig_platform_to_cmake_processor_win(
     }.get(plat_name)
 
 
+def python_sysconfig_platform_to_conan_arch_win(
+    plat_name: str | None,
+) -> str | None:
+    """Convert a sysconfig platform string to the corresponding value of 'arch'
+    https://docs.conan.io/2/reference/config_files/settings.html"""
+    return {
+        None: None,
+        "win32": "x86",
+        "win-amd64": "x86_64",
+        "win-arm32": "armv7",
+        "win-arm64": "armv8",
+    }.get(plat_name)
+
+
+def cmake_processor_to_generator_platform_win(proc: str | None) -> str | None:
+    """Convert a processor architecture (%PROCESSOR_ARCHITECTURE%) to the
+    corresponding CMAKE_GENERATOR_PLATFORM value for Visual Studio."""
+    return {
+        None: None,
+        "x86": "Win32",
+        "AMD64": "x64",
+        "ARM": "ARM",
+        "ARM64": "ARM64",
+    }.get(proc)
+
+
 def platform_to_platform_tag(plat: str) -> str:
     """https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-tag"""
     return plat.replace(".", "_").replace("-", "_")
@@ -116,3 +142,37 @@ def os_to_conan_os(os: OSIdentifier):
         "mac": "Macos",
         "pyodide": "Emscripten",
     }[os]
+
+
+def archs_to_conan_arch(archs):
+    try:
+        return {
+            ("x86_64",): "x86_64",
+            ("arm64",): "armv8",
+            ("arm64", "x86_64"): "armv8|x86_64",
+        }[sorted(archs)]
+    except KeyError as e:
+        msg = "Invalid value for ARCHFLAGS"
+        raise RuntimeError(msg) from e
+
+
+def processor_to_conan_arch(machine: str) -> str:
+    """Convert the value of platform.machine() to the corresponding Conan
+    architecture."""
+    return {
+        "i386": "x86",  # Linux
+        "i686": "x86",  # Linux
+        "x86_64": "x86_64",  # Linux, macOS
+        "armv6l": "armv6",  # Linux
+        "armv7l": "armv7hf",  # Linux
+        "aarch64": "armv8",  # Linux
+        "Win32": "x86",  # Windows
+        "x86": "x86",  # Windows
+        "x64": "x86_64",  # Windows
+        "AMD64": "x86_64",  # Windows
+        "ARM": "armv7",  # Windows
+        "ARM64": "armv8",  # Windows
+        "ARM64EC": "arm64ec",  # Windows
+        "arm64": "armv8",  # macOS
+        "arm64e": "armv8.3",  # macOS
+    }[machine]

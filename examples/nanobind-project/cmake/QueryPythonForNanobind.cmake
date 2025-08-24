@@ -18,7 +18,7 @@ endfunction()
 macro(find_nanobind_python_first)
 
     # Find Python
-    if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
+    if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
         find_package(Python 3.8 REQUIRED
             COMPONENTS Development.Module
             OPTIONAL_COMPONENTS Development.SABIModule)
