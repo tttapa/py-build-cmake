@@ -24,7 +24,7 @@ def normalize_name_wheel(name: str) -> str:
     return re.sub(r"[-_.]+", "_", name).lower()
 
 
-def python_sysconfig_platform_to_cmake_platform_win(
+def sysconfig_platform_to_cmake_platform_win(
     plat_name: str | None,
 ) -> str | None:
     """Convert a sysconfig platform string to the corresponding value of
@@ -38,7 +38,7 @@ def python_sysconfig_platform_to_cmake_platform_win(
     }.get(plat_name)
 
 
-def python_sysconfig_platform_to_cmake_processor_win(
+def sysconfig_platform_to_cmake_processor_win(
     plat_name: str | None,
 ) -> str | None:
     """Convert a sysconfig platform string to the corresponding value of
@@ -53,7 +53,7 @@ def python_sysconfig_platform_to_cmake_processor_win(
     }.get(plat_name)
 
 
-def python_sysconfig_platform_to_conan_arch_win(
+def sysconfig_platform_to_conan_arch_win(
     plat_name: str | None,
 ) -> str | None:
     """Convert a sysconfig platform string to the corresponding value of 'arch'
@@ -175,4 +175,48 @@ def processor_to_conan_arch(machine: str) -> str:
         "ARM64EC": "arm64ec",  # Windows
         "arm64": "armv8",  # macOS
         "arm64e": "armv8.3",  # macOS
+        "wasm32": "wasm",  # Pyodide
+        "wasm64": "wasm64",  # Pyodide
     }[machine]
+
+
+def sysconfig_platform_to_conan_arch(plat_name: str) -> str | None:
+    # Windows
+    if plat_name.startswith("win"):
+        return {
+            "win32": "x86",
+            "win-amd64": "x86_64",
+            "win-arm32": "armv7",
+            "win-arm64": "armv8",
+        }.get(plat_name)
+    # macOS
+    if plat_name.startswith("macosx"):
+        m = re.match(r"macosx[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
+        if m is None:
+            return None
+        return {
+            "arm64": "armv8",
+            "x86_64": "x86_64",
+            "universal2": "armv8|x86_64",
+        }[m.group(1)]
+    # Linux
+    linux = re.match(r"(many|musl)?linux[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
+    if linux:
+        return {
+            "x86_64": "x86_64",
+            "i686": "x86",
+            "aarch64": "armv8",
+            "armv6l": "armv6",
+            "armv7l": "armv7hf",
+            "ppc64": "ppc64",
+            "ppc64le": "ppc64le",
+            "s390x": "s390x",
+        }[linux.group(2)]
+    # Pyodide
+    pyodide = re.match(r"emscripten[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
+    if pyodide:
+        return {
+            "wasm32": "wasm",
+            "wasm64": "wasm64",
+        }[pyodide.group(1)]
+    return None

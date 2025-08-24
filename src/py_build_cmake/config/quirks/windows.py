@@ -8,9 +8,9 @@ from pathlib import Path
 from ...common.platform import BuildPlatformInfo
 from ...common.util import (
     platform_to_platform_tag,
-    python_sysconfig_platform_to_cmake_platform_win,
-    python_sysconfig_platform_to_cmake_processor_win,
-    python_sysconfig_platform_to_conan_arch_win,
+    sysconfig_platform_to_cmake_platform_win,
+    sysconfig_platform_to_cmake_processor_win,
+    sysconfig_platform_to_conan_arch_win,
 )
 from ...config.options.config_option import MultiConfigOption
 from ..options.cmake_opt import CMakeOption
@@ -94,7 +94,7 @@ def cross_compile_win(
         }
         cross_cfg["cmake"] = {all: {"options": options}}
     if config.is_value_set("conan"):
-        conan_arch = python_sysconfig_platform_to_conan_arch_win(plat_name)
+        conan_arch = sysconfig_platform_to_conan_arch_win(plat_name)
         assert conan_arch is not None, "Unknown DIST_EXTRA_CONFIG.build_ext.plat_name"
         can_run = (plat_name, plat.sysconfig_platform) in {
             ("win32", "win32"),
@@ -129,8 +129,8 @@ def handle_cross_win(
     """Try to configure cross-compilation for the given Windows platform.
     library_dirs should contain the directory with the Python library."""
     plat_proc = (
-        python_sysconfig_platform_to_cmake_platform_win(plat_name),
-        python_sysconfig_platform_to_cmake_processor_win(plat_name),
+        sysconfig_platform_to_cmake_platform_win(plat_name),
+        sysconfig_platform_to_cmake_processor_win(plat_name),
     )
     if all(plat_proc):
         cross_compile_win(plat, config, plat_name, library_dirs, *plat_proc)

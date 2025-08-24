@@ -25,7 +25,7 @@ from .util import (
     archflags_to_platform_tag,
     platform_tag_to_archflags,
     platform_to_platform_tag,
-    python_sysconfig_platform_to_cmake_platform_win,
+    sysconfig_platform_to_cmake_platform_win,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,7 @@ class BuildPlatformInfo:
             "Linux": "linux",
             "Windows": "windows",
             "Darwin": "mac",
+            "Emscripten": "pyodide",
         }.get(self.system)
         if not osname:
             msg = f"Unsupported platform: {self.system}"
@@ -170,10 +171,9 @@ def _determine_macos_version_archs(
     if archflags:
         archs = tuple(re.findall(r"-arch +(\S+)", archflags))
         if not archs:
-            logger.warning(
-                "The ARCHFLAGS environment variable was set, "
-                "but its value is not valid, so I'm ignoring it."
-            )
+            msg = "The ARCHFLAGS environment variable was set, "
+            msg += "but its value is not valid, so I'm ignoring it."
+            logger.warning(msg)
     if not archs:
         _, _, machine = platform.mac_ver()
         archs = platform_tag_to_archflags(machine)
@@ -186,31 +186,25 @@ def _determine_macos_version_archs(
     macos_version = _check_version_mac(target_str)
     if not macos_version:
         if target_str:
-            logger.warning(
-                "The MACOSX_DEPLOYMENT_TARGET environment variable was set, "
-                "but its value is not valid, so I'm ignoring it."
-            )
+            msg = "The MACOSX_DEPLOYMENT_TARGET environment variable was set, "
+            msg += "but its value is not valid, so I'm ignoring it."
+            logger.warning(msg)
         target_str = sysconfig.get_config_var("MACOSX_DEPLOYMENT_TARGET")
         macos_version = _check_version_mac(target_str)
         if target_str:
             if not macos_version:
-                logger.warning(
-                    "MACOSX_DEPLOYMENT_TARGET sysconfig has an invalid value, so I'm ignoring it"
-                )
+                msg = "MACOSX_DEPLOYMENT_TARGET sysconfig has an invalid value, so I'm ignoring it"
+                logger.warning(msg)
             else:
-                logger.info(
-                    "The MACOSX_DEPLOYMENT_TARGET environment variable was not set, "
-                    "using interpreter default of %s.",
-                    target_str,
-                )
+                msg = "The MACOSX_DEPLOYMENT_TARGET environment variable was not set, "
+                msg += "using interpreter default of %s."
+                logger.info(msg, target_str)
     if not macos_version:
         target_str, _, _ = platform.mac_ver()
         macos_version = _check_version_mac(target_str)
         if macos_version:
-            logger.info(
-                "MACOSX_DEPLOYMENT_TARGET not set, using system version %s.",
-                target_str,
-            )
+            msg = "MACOSX_DEPLOYMENT_TARGET not set, using system version %s."
+            logger.info(msg, target_str)
     if not macos_version:
         msg = "Unable to determine MACOSX_DEPLOYMENT_TARGET. Please set it as an environment variable."
         raise RuntimeError(msg)
@@ -226,8 +220,8 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs
 
     # Determine CMake generator platform (i.e. whether to use Visual Studio to
     # build for x86 or AMD64)
-    if r.system == "Windows":
-        r.cmake_generator_platform = python_sysconfig_platform_to_cmake_platform_win(
+    if r.os_name == "windows":
+        r.cmake_generator_platform = sysconfig_platform_to_cmake_platform_win(
             r.sysconfig_platform
         )
         if not r.cmake_generator_platform:
@@ -236,7 +230,7 @@ def determine_build_platform_info(env: Mapping[str, str] | None = None, **kwargs
 
     # For macOS, we need to change the platform tag etc. based on the values of
     # MACOSX_DEPLOYMENT_TARGET and ARCHFLAGS.
-    elif r.system == "Darwin":
+    elif r.os_name == "mac":
         r.macos_version, r.archs = _determine_macos_version_archs(env)
         if "_PYTHON_HOST_PLATFORM" in env:
             host_plat = env["_PYTHON_HOST_PLATFORM"]

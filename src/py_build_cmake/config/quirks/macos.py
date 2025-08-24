@@ -20,11 +20,9 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
     assert plat.archs is not None
     assert plat.macos_version is not None
     assert not config.is_value_set("cross")
-    logger.info(
-        "ARCHFLAGS was specified. Automatically enabling cross-compilation for %s (native platform: %s)",
-        ", ".join(plat.archs),
-        plat.machine,
-    )
+    msg = "ARCHFLAGS was specified. Automatically enabling cross-compilation for %s "
+    msg += "(native platform: %s)"
+    logger.info(msg, ", ".join(plat.archs), plat.machine)
     all = MultiConfigOption.default_index
     macos_version = plat.macos_version_str
     emulator = None
@@ -74,10 +72,11 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
         abi = plat.python_abiflags
         soabi = f"cpython-{version}{abi}-darwin"
         cross_cfg["soabi"] = soabi
+        env = {"SETUPTOOLS_EXT_SUFFIX": StringOption.create(f".{soabi}.so")}
         if config.is_value_set("cmake"):
-            cross_cfg["cmake"][all]["env"] = {
-                "SETUPTOOLS_EXT_SUFFIX": StringOption.create(f".{soabi}.so")
-            }
+            cross_cfg["cmake"][all]["env"] = env
+        if config.is_value_set("conan"):
+            cross_cfg["conan"][all]["cmake"]["env"] = env
     config.set_value("cross", cross_cfg)
 
 
@@ -88,9 +87,8 @@ def config_quirks_mac(plat: BuildPlatformInfo, config: ValueReference):
     if not plat.archs or plat.archs == (plat.machine,):
         return
     if config.is_value_set("cross"):
-        logger.warning(
-            "Cross-compilation configuration was not empty, so I'm ignoring ARCHFLAGS"
-        )
+        msg = "Cross-compilation configuration was not empty, so I'm ignoring ARCHFLAGS"
+        logger.warning(msg)
         return
     if not (config.is_value_set("cmake") or config.is_value_set("conan")):
         logger.warning("CMake configuration was empty, so I'm ignoring ARCHFLAGS")
@@ -98,11 +96,9 @@ def config_quirks_mac(plat: BuildPlatformInfo, config: ValueReference):
     if plat.machine not in plat.archs:
         cross_compile_mac(plat, config)
     else:
-        logger.info(
-            "ARCHFLAGS was set, adding CMAKE_OSX_ARCHITECTURES to cmake.options (%s, native platform: %s)",
-            ", ".join(plat.archs),
-            plat.machine,
-        )
+        msg = "ARCHFLAGS was set, adding CMAKE_OSX_ARCHITECTURES to cmake.options "
+        msg += "(%s, native platform: %s)"
+        logger.info(msg, ", ".join(plat.archs), plat.machine)
         all = MultiConfigOption.default_index
         if config.is_value_set("cmake"):
             cmake_pth = ConfPath(("cmake", all))

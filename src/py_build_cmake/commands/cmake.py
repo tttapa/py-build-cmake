@@ -103,7 +103,7 @@ class CMaker(Builder):
             if self.install_settings.prefix is not None:
                 install_prefix = str(self.install_settings.prefix)
                 self.environment[f"{pbc}_INSTALL_PREFIX"] = install_prefix
-            if not self.cross_compiling() and self.plat.machine == "Darwin":
+            if not self.cross_compiling() and self.plat.os_name == "mac":
                 version = self.plat.macos_version_str
                 self.environment["MACOSX_DEPLOYMENT_TARGET"] = version
             if self.conf_settings.environment:
@@ -142,7 +142,7 @@ class CMaker(Builder):
     def get_configure_options_target(self) -> list[Option]:
         """Sets CMake variables for the target."""
         opts = []
-        if not self.cross_compiling() and self.plat.machine == "Darwin":
+        if not self.cross_compiling() and self.plat.os_name == "mac":
             version = self.plat.macos_version_str
             opts += [Option("CMAKE_OSX_DEPLOYMENT_TARGET", version, "STRING")]
         return opts
