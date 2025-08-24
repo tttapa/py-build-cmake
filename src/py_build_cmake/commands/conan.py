@@ -21,7 +21,12 @@ import conan.tools.env  # type: ignore[import-untyped]
 from ..commands.cmd_runner import CommandRunner
 from ..common import ConfigError, PackageInfo
 from ..common.platform import BuildPlatformInfo, OSIdentifier
-from ..common.util import archs_to_conan_arch, os_to_conan_os, processor_to_conan_arch
+from ..common.util import (
+    archs_to_conan_arch,
+    os_to_conan_os,
+    processor_to_conan_arch,
+    python_sysconfig_platform_to_conan_arch_win,
+)
 from ..config.options.string import StringOption
 from .builder import Builder, PackageTags, PythonSettings
 from .chdir import chdir
@@ -214,10 +219,7 @@ class ConanCMaker(Builder):
             ]
         # Architecture
         if not self.cross_compiling():
-            arch = processor_to_conan_arch(self.plat.machine)
-            if self.plat.os_name == "mac" and self.plat.archs:
-                arch = archs_to_conan_arch(self.plat.archs)  # TODO: move to quirks
-            profile["settings"] += [f"arch={arch}"]
+            profile["settings"] += [f"arch={self._get_arch()}"]
         # Build type
         if self.conf_settings.build_type is not None:
             profile["settings"] += [
@@ -257,6 +259,19 @@ class ConanCMaker(Builder):
                 for line in v:
                     f.write(line + "\n")
         return profile_file
+
+    def _get_arch(self):
+        arch = processor_to_conan_arch(self.plat.machine)
+        if self.plat.os_name == "mac" and self.plat.archs:
+            arch = archs_to_conan_arch(self.plat.archs)  # TODO: move to quirks
+        elif self.plat.os_name == "windows":
+            win_arch = python_sysconfig_platform_to_conan_arch_win(
+                self.plat.sysconfig_platform
+            )
+            assert win_arch is not None, "Unknown platform"
+            arch = win_arch
+        # TODO: also deduce arch from sysconfig.platform() on macOS and Linux?
+        return arch
 
     def write_profile_build(self) -> Path:
         toolchain_file = self.write_toolchain_build()
