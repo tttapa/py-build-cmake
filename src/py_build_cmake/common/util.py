@@ -150,7 +150,7 @@ def archs_to_conan_arch(archs):
             ("x86_64",): "x86_64",
             ("arm64",): "armv8",
             ("arm64", "x86_64"): "armv8|x86_64",
-        }[sorted(archs)]
+        }[tuple(sorted(archs))]
     except KeyError as e:
         msg = "Invalid value for ARCHFLAGS"
         raise RuntimeError(msg) from e
