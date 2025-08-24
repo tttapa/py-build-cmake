@@ -181,6 +181,7 @@ jobs:
         python -m pip install -U pip nox distlib~=0.4.0 jinja2
         python -m nox --force-color
       env:
+        MACOSX_DEPLOYMENT_TARGET: '10.15'
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
 
   cibw:
