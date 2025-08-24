@@ -36,7 +36,7 @@ from .common.platform import (
     WheelTags,
     determine_build_platform_info,
 )
-from .common.util import cmake_processor_to_generator_platform_win, python_tag_to_cmake
+from .common.util import python_tag_to_cmake
 from .config import load as config_load
 from .config.dynamic import find_module, update_dynamic_metadata
 from .export import editable as export_editable
@@ -748,8 +748,7 @@ class _BuildBackend:
                 "soabi": cross_cfg.get("soabi"),
             }
         else:
-            if plat.os_name == "windows":
-                cmake_plat = cmake_processor_to_generator_platform_win(plat.machine)
+            cmake_plat = plat.cmake_generator_platform
             toolchain_file = None
             cross_python_opts = {
                 "prefix": None,
