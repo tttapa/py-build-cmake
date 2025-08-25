@@ -655,9 +655,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Override Wheel options when cross-compiling.",
                      inherit_from=wheel_pth,
                      create_if_inheritance_target_exists=True),
-        UncheckedConfigOption("_force_native_python",
-                              "Tell CMake to use the native Python interpreter "
-                              "(even when cross-compiling)"),
+        BoolConfigOption("force_native_python",
+                         "Tell CMake to use the native Python interpreter "
+                         "(even when cross-compiling). This is useful if the "
+                         "native interpreter is also compatible with the "
+                         "host system. This is the case for universal binaries "
+                         "on macOS, for example."),
     ])  # fmt: skip
 
     # [tool.py-build-cmake.{linux,windows,mac,pyodide}]

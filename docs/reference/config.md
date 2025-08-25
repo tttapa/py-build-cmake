@@ -33,7 +33,7 @@ Defines how to install the dependencies and how to build the project to package 
 
 | Option | Description | Type | Default |
 |--------|-------------|------|---------|
-| <a id="conan.output_folder"></a> `output_folder` | Conan output folder used to write temporary build files. The placeholder `{build_config}` can be used to insert the name of the Python version and ABI, operating system, and architecture. This ensures that separate build directories are used for different host systems and Python versions/implementations.<br/>Absolute or relative to project directory. | path | `'.py-build-cmake_cache/{build_config}'` |
+| <a id="conan.output_folder"></a> `output_folder` | Conan output folder used to write temporary build files. The placeholder `{build_config}` can be used to insert the name of the Python version and ABI, operating system, and architecture. This ensures that separate build directories are used for different host systems and Python versions/implementations.<br/>Absolute or relative to project directory.<br/>For example: `output_folder="/tmp/build/{build_config}"` | path | `'.py-build-cmake_cache'` |
 | <a id="conan.profile_host"></a> `profile_host` | List of Conan profiles to use when building packages for the host system. Passed to Conan using the `-pr:h` flag.<br/>For example: `profile_host = "raspberry_pi"` | list | `['default']` |
 | <a id="conan.profile_build"></a> `profile_build` | List of Conan profiles to use when building tools for the build system. Passed to Conan using the `-pr:b` flag.<br/>For example: `profile_build = "clang20"` | list | `['default']` |
 | <a id="conan.args"></a> `args` | Extra arguments passed to the `conan install` command.<br/>For example: `args = ["--no-remote", "--build=pybind11/*"]` | list+ | `['--build=missing']` |
@@ -127,12 +127,13 @@ Causes py-build-cmake to cross-compile the project. See <project:../usage/cross-
 | <a id="cross.include_dir"></a> `include_dir` | Python include directory (containing Python.h). Used to set the `Python3_INCLUDE_DIR` CMake artifact, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>Absolute or relative to current configuration file. | path | `none` |
 | <a id="cross.soabi"></a> `soabi` | Used to set the `Python3_SOABI` CMake variable, see <https://cmake.org/cmake/help/latest/module/FindPython3.html#artifacts-specification>.<br/>For example: `soabi = 'cpython-310-x86_64-linux-gnu'` | string | `none` |
 | <a id="cross.toolchain_file"></a> `toolchain_file` | CMake toolchain file to use. See <https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html> for more information.<br/>Absolute or relative to current configuration file. | filepath | `none` |
-| <a id="cross.generator_platform"></a> `generator_platform` | The value for `CMAKE_GENERATOR_PLATFORM`. Only applies to the Visual Studio generator on Windows. See <https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html> for details.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
+| <a id="cross.generator_platform"></a> `generator_platform` | The value for `CMAKE_GENERATOR_PLATFORM`. Only applies to the Visual Studio generator on Windows. See <https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR_PLATFORM.html> for details. Ignored when using Conan.<br/>For example: `generator_platform = 'ARM64'` | string | `none` |
 | <a id="cross.editable"></a> `editable` | Override editable options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
 | <a id="cross.sdist"></a> `sdist` | Override sdist options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
 | <a id="cross.conan"></a> `conan` | Override Conan options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/conan` |  | `none` |
 | <a id="cross.cmake"></a> `cmake` | Override CMake options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 | <a id="cross.wheel"></a> `wheel` | Override Wheel options when cross-compiling.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
+| <a id="cross.force_native_python"></a> `force_native_python` | Tell CMake to use the native Python interpreter (even when cross-compiling). This is useful if the native interpreter is also compatible with the host system. This is the case for universal binaries on macOS, for example. | bool | `none` |
 
 ## linux
 Specific options for Linux. 

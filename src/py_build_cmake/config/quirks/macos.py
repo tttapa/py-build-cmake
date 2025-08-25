@@ -32,7 +32,7 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
     cross_cfg: dict[str, Any] = {
         "arch": StringOption.create(plat.platform_tag),
         "os": "mac",
-        "_force_native_python": True,
+        "force_native_python": True,
     }
     # CMake configuration
     if config.is_value_set("cmake"):

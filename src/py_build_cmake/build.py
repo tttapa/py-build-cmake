@@ -533,7 +533,7 @@ class _BuildBackend:
                                 "find_python3_build_artifacts_prefix"
                             ),
                             force_native=(cross_cfg or {}).get(
-                                "_force_native_python", False
+                                "force_native_python", False
                             ),
                             **cross_python_opts,
                         ),
@@ -685,7 +685,7 @@ class _BuildBackend:
                 find_python3_build_artifacts_prefix=cmake_cfg.get(
                     "find_python3_build_artifacts_prefix"
                 ),
-                force_native=(cross_cfg or {}).get("_force_native_python", False),
+                force_native=(cross_cfg or {}).get("force_native_python", False),
                 **cross_python_opts,
             ),
             cmake_settings=CMakeSettings(
