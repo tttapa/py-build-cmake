@@ -30,7 +30,7 @@ def cmake_command(**kwargs):
             _, plat, cfg, _ = self._load()
             return backend.get_build_config_name(plat, cfg, index)
 
-        def get_cmaker(self, index: int):
+        def get_cmake_builder(self, index: int):
             src_dir, plat, cfg, pkg_info = self._load()
             cmake_cfgs = backend.get_cmake_config(plat, cfg)
             wheel_cfg = backend.get_wheel_config(plat, cfg)
@@ -53,7 +53,7 @@ def cmake_command(**kwargs):
             build_dir = Path(str(path).replace("{build_config}", build_cfg_name))
 
             # CMake builder
-            return backend.get_cmaker(
+            return backend.get_cmake_builder(
                 plat,
                 src_dir,
                 build_dir,
@@ -173,7 +173,7 @@ def cli(ctx: click.Context, **kwargs):
 )
 @click.argument("args", nargs=-1, required=False)
 def configure(obj, preset, use_build_presets, args, index):
-    cmaker = obj.get_cmaker(index)
+    cmaker = obj.get_cmake_builder(index)
     if cmaker is None:
         return
     cmaker.conf_settings.args += args or []
@@ -204,7 +204,7 @@ def configure(obj, preset, use_build_presets, args, index):
 )
 @click.argument("args", nargs=-1, required=False)
 def build(obj, preset, config, args, index):
-    cmaker = obj.get_cmaker(index)
+    cmaker = obj.get_cmake_builder(index)
     if cmaker is None:
         return
     cmaker.build_settings.args += args or []
@@ -238,7 +238,7 @@ def build(obj, preset, config, args, index):
 )
 @click.argument("args", nargs=-1, required=False)
 def install(obj, config, component, args, index):
-    cmaker = obj.get_cmaker(index)
+    cmaker = obj.get_cmake_builder(index)
     if cmaker is None:
         return
     cmaker.install_settings.args += args or []

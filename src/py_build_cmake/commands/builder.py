@@ -44,6 +44,7 @@ class PythonSettings:
 class PackageTags:
     python_tag: list[str]
     abi_tag: list[str]
+    platform_tag: list[str]
     limited_api: int | None = None
 
 

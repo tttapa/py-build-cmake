@@ -157,7 +157,7 @@ class _BuildComponentBackend:
             path = cmkcfg["build_path"]
             path = str(path).replace("{build_config}", build_cfg_name)
             build_dir = Path(path)
-            cmaker = self.get_cmaker(
+            cmaker = self.get_cmake_builder(
                 self.plat,
                 paths.source_dir,
                 build_dir,
@@ -181,7 +181,7 @@ class _BuildComponentBackend:
     # --- CMake builds --------------------------------------------------------
 
     @staticmethod
-    def get_cmaker(
+    def get_cmake_builder(
         plat: BuildPlatformInfo,
         source_dir: Path,
         build_dir: Path,
@@ -193,7 +193,7 @@ class _BuildComponentBackend:
         component: dict,
         **kwargs,
     ):
-        cmaker = std_backend.get_cmaker(
+        cmaker = std_backend.get_cmake_builder(
             plat=plat,
             source_dir=source_dir,
             build_dir=build_dir,
