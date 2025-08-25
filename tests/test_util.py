@@ -23,3 +23,26 @@ def test_sysconfig_platform_to_conan_arch():
     assert sysconfig_platform_to_conan_arch("macosx-11.5-x86_64") == "x86_64"
     assert sysconfig_platform_to_conan_arch("macosx-11.5-arm64") == "armv8"
     assert sysconfig_platform_to_conan_arch("macosx-11.5-universal2") == "armv8|x86_64"
+
+
+def test_platform_tag_to_conan_arch():
+    assert sysconfig_platform_to_conan_arch("win32") == "x86"
+    assert sysconfig_platform_to_conan_arch("win_amd64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("win_arm32") == "armv7"
+    assert sysconfig_platform_to_conan_arch("win_arm64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("linux_i686") == "x86"
+    assert sysconfig_platform_to_conan_arch("linux_x86_64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("linux_armv6l") == "armv6"
+    assert sysconfig_platform_to_conan_arch("linux_armv7l") == "armv7hf"
+    assert sysconfig_platform_to_conan_arch("linux_aarch64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("manylinux1_x86_64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("manylinux1_aarch64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("manylinux_2_17_x86_64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("manylinux_2_17_aarch64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("musllinux_x86_64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("musllinux_aarch64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("pyodide_2024_0_wasm32") == "wasm"
+    assert sysconfig_platform_to_conan_arch("macosx_11_5_x86_64") == "x86_64"
+    assert sysconfig_platform_to_conan_arch("macosx_11_5_arm64") == "armv8"
+    assert sysconfig_platform_to_conan_arch("macosx_11_5_universal2") == "armv8|x86_64"
+    assert sysconfig_platform_to_conan_arch("macosx_11_5_foo") is None

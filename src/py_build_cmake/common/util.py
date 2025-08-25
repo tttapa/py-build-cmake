@@ -181,24 +181,28 @@ def processor_to_conan_arch(machine: str) -> str:
 
 
 def sysconfig_platform_to_conan_arch(plat_name: str) -> str | None:
+    """Convert the value of sysconfig.get_platform() to the corresponding Conan
+    architecture. Also works for platform tags, whose format is often similar to
+    that of get_platform(), but with special characters replaced by
+    underscores."""
     # Windows
-    if plat_name.startswith("win"):
+    if plat_name == "win32":
+        return "x86"
+    windows = re.match(r"win[_\-]([0-9a-zA-Z_]+)", plat_name)
+    if windows:
         return {
-            "win32": "x86",
-            "win-amd64": "x86_64",
-            "win-arm32": "armv7",
-            "win-arm64": "armv8",
-        }.get(plat_name)
+            "amd64": "x86_64",
+            "arm32": "armv7",
+            "arm64": "armv8",
+        }.get(windows.group(1))
     # macOS
-    if plat_name.startswith("macosx"):
-        m = re.match(r"macosx[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
-        if m is None:
-            return None
+    macos = re.match(r"macosx[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
+    if macos:
         return {
             "arm64": "armv8",
             "x86_64": "x86_64",
             "universal2": "armv8|x86_64",
-        }[m.group(1)]
+        }.get(macos.group(1))
     # Linux
     linux = re.match(r"(many|musl)?linux[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
     if linux:
@@ -211,12 +215,12 @@ def sysconfig_platform_to_conan_arch(plat_name: str) -> str | None:
             "ppc64": "ppc64",
             "ppc64le": "ppc64le",
             "s390x": "s390x",
-        }[linux.group(2)]
+        }.get(linux.group(2))
     # Pyodide
-    pyodide = re.match(r"emscripten[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
+    pyodide = re.match(r"(emscripten|pyodide)[0-9_.\-]+([0-9a-zA-Z_]+)", plat_name)
     if pyodide:
         return {
             "wasm32": "wasm",
             "wasm64": "wasm64",
-        }[pyodide.group(1)]
+        }.get(pyodide.group(2))
     return None

@@ -218,7 +218,12 @@ class ConanCMaker(Builder):
             ]
         # Architecture
         if not self.cross_compiling():
-            profile["settings"] += [f"arch={self._get_arch()}"]
+            arch = self._get_arch()
+            if arch is not None:
+                profile["settings"] += [f"arch={arch}"]
+            else:
+                msg = "Could not determine Conan architecture for platform %s"
+                logger.warning(msg, ".".join(self.package_tags.platform_tag))
         # Build type
         if self.conf_settings.build_type is not None:
             profile["settings"] += [
@@ -260,10 +265,15 @@ class ConanCMaker(Builder):
         return profile_file
 
     def _get_arch(self):
-        arch = sysconfig_platform_to_conan_arch(self.plat.sysconfig_platform)
         if self.plat.os_name == "mac" and self.plat.archs:
-            arch = archs_to_conan_arch(self.plat.archs)  # TODO: move to quirks
-        return arch
+            return archs_to_conan_arch(self.plat.archs)  # TODO: move to quirks
+        archs = list(
+            dict.fromkeys(
+                sysconfig_platform_to_conan_arch(t)
+                for t in self.package_tags.platform_tag
+            )
+        )
+        return archs[0] if len(archs) == 1 else None
 
     def write_profile_build(self) -> Path:
         toolchain_file = self.write_toolchain_build()
