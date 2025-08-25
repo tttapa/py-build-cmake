@@ -160,7 +160,11 @@ class CMaker(Builder):
             kt = k.rsplit(":", 1)
             return Option(kt[0], v, "") if len(kt) == 1 else Option(kt[0], v, kt[1])
 
-        return [_cvt_opt(k, v) for k, v in self.conf_settings.options.items()]
+        options = [_cvt_opt(k, v) for k, v in self.conf_settings.options.items()]
+        build_type = self.conf_settings.build_type
+        if build_type is not None:
+            options += [Option("CMAKE_BUILD_TYPE", build_type)]
+        return options
 
     def get_configure_options(self) -> list[Option]:
         """Get the list of options (-D) passed to the CMake configure step

@@ -643,12 +643,6 @@ class _BuildBackend:
             plat, cross_cfg
         )
 
-        # Add some CMake configure options
-        options = cmake_cfg.get("options", {})
-        btype = cmake_cfg.get("build_type")
-        if btype:  # -D CMAKE_BUILD_TYPE={type}
-            options["CMAKE_BUILD_TYPE:STRING"] = btype
-
         # Check if we need to pass the Ninja path to CMake
         generator: str | None = cmake_cfg.get("generator")
         make_program: Path | None = None
@@ -704,7 +698,7 @@ class _BuildBackend:
                 toolchain_file=toolchain_file,
                 environment=cmake_cfg.get("env", {}),
                 build_type=cmake_cfg.get("build_type"),
-                options=options,
+                options=cmake_cfg.get("options", {}),
                 args=cmake_cfg.get("args", []),
                 preset=cmake_cfg.get("preset"),
                 generator=generator,
