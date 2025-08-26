@@ -3,4 +3,4 @@ Modern, PEP 517 compliant build backend for creating Python packages with
 extensions built using CMake.
 """
 
-__version__ = "0.6.0a1"
+__version__ = "0.6.0a2.dev0"
