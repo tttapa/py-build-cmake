@@ -339,10 +339,13 @@ class ConanCMaker(Builder):
 
         def _template_expand(k, a, vars):
             try:
-                try:
-                    return Template(a).substitute(vars)
-                except KeyError:
+                if vars is None:
                     return Template(a).substitute(os.environ)
+                else:
+                    try:
+                        return Template(a).substitute(vars)
+                    except KeyError:
+                        return Template(a).substitute(os.environ)
             except KeyError as e:
                 msg = f"Invalid substitution in environment variable '{k}': {e.args[0]}"
                 raise ConfigError(msg) from e
@@ -352,7 +355,8 @@ class ConanCMaker(Builder):
                 continue
             assert isinstance(v, StringOption)
             # Perform template substitution on the different components
-            vars = env.vars(self.conanfile)  # TODO: could be slow?
+            # TODO: could be slow?
+            vars = None if self.conanfile is None else env.vars(self.conanfile)
             for attr in "value", "append", "append_path", "prepend", "prepend_path":
                 a = getattr(v, attr)
                 if a is not None:
