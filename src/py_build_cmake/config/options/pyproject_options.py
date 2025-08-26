@@ -312,7 +312,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     ])  # fmt: skip
     conan_cmake = conan.insert(
         ConfigOption("cmake",
-                     "Defines options for the CMake build under Conan."),
+                     "Defines options for the CMake build under Conan.",
+                     default=DefaultValueValue({})),
     )  # fmt: skip
     conan_cmake.insert_multiple(common_cmake_options)
 
