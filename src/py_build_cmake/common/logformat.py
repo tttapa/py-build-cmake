@@ -9,7 +9,7 @@ class GitHubActionsFormatter(logging.Formatter):
     """Formats warnings etc. for GitHub Actions: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message"""
 
     def __init__(self):
-        super().__init__(fmt="%(name)s:%(message)s")
+        super().__init__(fmt="%(name)s: %(message)s")
 
     def format(self, record: logging.LogRecord):
         s = super().format(record)
