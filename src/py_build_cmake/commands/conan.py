@@ -42,6 +42,7 @@ class ConanSettings:
     extra_host_profile_data: dict[str, list[str]]
     build_config_name: str
     args: list[str]
+    regenerate: bool = False
 
 
 @dataclass
@@ -198,13 +199,14 @@ class ConanCMaker(Builder):
                 f.write(o.to_preload_set(force=False))
         return toolchain_file
 
-    def write_profile(self) -> Path:
+    def write_profile(self) -> Path:  # noqa: PLR0912
         of = self.conan_settings.output_folder / self.conan_settings.build_config_name
         profile_file = of / "py-build-cmake-profile"
         profile = deepcopy(self.conan_settings.extra_host_profile_data)
         profile.setdefault("settings", [])
         profile.setdefault("conf", [])
         profile.setdefault("tool_requires", [])
+        profile.setdefault("buildenv", [])
 
         # Operating system
         if all(not ln.startswith("os=") for ln in profile["settings"]):
@@ -255,6 +257,12 @@ class ConanCMaker(Builder):
             profile["conf"] += [
                 f"tools.cmake.cmake_layout:build_folder_vars={build_vars!r}"
             ]
+        # Environment variables
+        if not self.conan_settings.regenerate:
+            env = conan.tools.env.Environment()
+            self._configure_environment(env)
+            profile["buildenv"] += ["&:" + ln for ln in env.dumps().splitlines()]
+        # write to file
         with VerboseFile(
             self.runner, profile_file, "Conan profile (host context)"
         ) as f:
@@ -419,16 +427,17 @@ class ConanCMaker(Builder):
             # 3. Set environment variables
             # ---
             self.buildenv = conan.tools.env.VirtualBuildEnv(self.conanfile)
-            self._configure_environment(self.buildenv.environment())
-            self.buildenv.generate()
+            if self.conan_settings.regenerate:
+                self._configure_environment(self.buildenv.environment())
+                self.buildenv.generate()
 
-            # 4. Re-generate CMake toolchain (to include environment variables)
-            # ---
-            with contextlib.suppress(ValueError):
-                self.conanfile.generators.remove("CMakeToolchain")
-            tc = conan.tools.cmake.CMakeToolchain(self.conanfile)
-            tc.presets_build_environment = self.buildenv.environment()
-            tc.generate()
+                # 4. Re-generate CMake toolchain (to include environment variables)
+                # ---
+                with contextlib.suppress(ValueError):
+                    self.conanfile.generators.remove("CMakeToolchain")
+                tc = conan.tools.cmake.CMakeToolchain(self.conanfile)
+                tc.presets_build_environment = self.buildenv.environment()
+                tc.generate()
 
             # 5. Configure CMake
             # ---
