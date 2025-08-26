@@ -76,7 +76,11 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
             ],
         }
         cross_cfg["conan"] = {
-            all: {"profile_host": ListOption(clear=True), "_profile_data": profile}
+            all: {
+                "profile_host": ListOption(clear=True),
+                "cmake": {"env": {}, "options": {}},
+                "_profile_data": profile,
+            }
         }
 
     # Determine Python version
@@ -99,9 +103,11 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
         cross_cfg["soabi"] = StringOption.create(soabi)
 
     # The SETUPTOOLS_EXT_SUFFIX variable is used by e.g. pybind11
-    setuptools_ext = StringOption.create(ext_suffix)
+    ext_opt = StringOption.create(ext_suffix)
     if config.is_value_set("cmake"):
-        cross_cfg["cmake"][all]["env"]["SETUPTOOLS_EXT_SUFFIX"] = setuptools_ext
+        cross_cfg["cmake"][all]["env"]["SETUPTOOLS_EXT_SUFFIX"] = ext_opt
+    if config.is_value_set("conan"):
+        cross_cfg["conan"][all]["cmake"]["env"]["SETUPTOOLS_EXT_SUFFIX"] = ext_opt
 
     # Check Emscripten toolchain file
     # TODO: this is a hack. CMake older than 3.21 does not support setting the
