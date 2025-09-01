@@ -9,6 +9,7 @@ from typing import Any
 
 from ...common import ConfigError
 from ...common.platform import BuildPlatformInfo
+from ...config.options.cmake_opt import CMakeOption
 from ...config.options.config_option import MultiConfigOption
 from ...config.options.list import ListOption
 from ..options.string import StringOption
@@ -48,7 +49,11 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
     all = MultiConfigOption.default_index
     cross_cfg: dict[str, Any] = {"os": "pyodide"}
     if config.is_value_set("cmake"):
-        cross_cfg["cmake"] = {all: {"env": {}, "options": {}}}
+        options = {
+            "CMAKE_SYSTEM_NAME": CMakeOption.create("Emscripten", "STRING"),
+            "CMAKE_SYSTEM_PROCESSOR": CMakeOption.create("wasm32", "STRING"),
+        }
+        cross_cfg["cmake"] = {all: {"env": {}, "options": options}}
     if config.is_value_set("conan"):
         profile = {
             "settings": [
@@ -59,6 +64,8 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
             ],
             "conf": [
                 "tools.gnu:host_triplet=wasm32-unknown-emscripten",
+                "tools.cmake.cmaketoolchain:system_name=Emscripten",
+                "tools.cmake.cmaketoolchain:system_processor=wasm32",
                 "tools.build.cross_building:can_run=False",
                 # https://github.com/pybind/pybind11/blob/v2.13.6/tools/pybind11Common.cmake#L78-L102
                 "tools.cmake.cmaketoolchain:extra_variables*={'_pybind11_no_exceptions': 'On'}",
