@@ -48,5 +48,6 @@ class WheelBuilder(Wheel):
         with zipfile.ZipFile(pathname, "w", zipfile.ZIP_DEFLATED) as zf:
             for ap, p in archive_paths:
                 file_zipinfo = zipfile.ZipInfo(ap, date_time=filetime)
+                file_zipinfo.compress_type = zf.compression
                 zf.writestr(file_zipinfo, Path(p).read_bytes())
                 logger.debug("Wrote %s to %s in wheel", p, ap)
