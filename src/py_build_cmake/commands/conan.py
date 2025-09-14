@@ -142,6 +142,9 @@ class ConanCMaker(Builder):
     def cross_compiling(self) -> bool:
         return self.conf_settings.cross_compiling
 
+    def get_os(self) -> OSIdentifier:
+        return self.conf_settings.os
+
     def get_native_python_abi_tuple(self):
         cmake_version = self.cmake_settings.minimum_required
         return super()._get_native_python_abi_tuple(cmake_version)
