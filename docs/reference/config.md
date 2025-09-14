@@ -2,6 +2,13 @@
 
 The main configuration file for py-build-cmake is the standard `pyproject.toml` file in the root of your project. All py-build-cmake-specific options live in the `[tool.py-build-cmake]` section of the configuration file. Different subsections control different aspects of the build and packaging process, such as `[tool.py-build-cmake.sdist]` for source distributions, `[tool.py-build-cmake.cmake]` for CMake and other build-related options, and `[tool.py-build-cmake.wheel]` for properties of binary Wheel packages. Detailed descriptions of all available sections and options can be found below.
 
+## dynamic
+Options for determining metadata dynamically. 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| <a id="dynamic.version_file"></a> `version_file` | Read the package version from a plain text file. If unset (which is the default), the version is read from the `__version__` attribute of the package's `__init__.py` file.<br/>Relative to current configuration file.<br/>For example: `version_file = "version.txt"` | filepath | `none` |
+
 ## module
 Defines the import name of the module or package, and the directory where it can be found. 
 

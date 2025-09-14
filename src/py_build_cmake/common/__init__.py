@@ -104,6 +104,7 @@ class Config:
     wheel: dict[str, dict[str, Any]] = field(default_factory=dict)
     stubgen: dict[str, Any] | None = field(default=None)
     cross: dict[str, Any] | None = field(default=None)
+    dynamic: dict[str, Any] = field(default_factory=dict)
 
     @property
     def referenced_files(self) -> list[Path]:

@@ -57,6 +57,24 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         UncheckedConfigOption("component"),
     ])  # fmt: skip
 
+    # [tool.py-build-cmake.dynamic]
+    dynamic = pbc.insert(
+        ConfigOption("dynamic",
+                     "Options for determining metadata dynamically.",
+                     default=DefaultValueValue({}),
+        ))  # fmt: skip
+    dynamic.insert_multiple([
+        PathConfigOption("version_file",
+                         "Read the package version from a plain text file. "
+                         "If unset (which is the default), the version is read "
+                         "from the `__version__` attribute of the package's "
+                         "`__init__.py` file.",
+                         "version_file = \"version.txt\"",
+                         base_path=RelativeToCurrentConfig(project_path),
+                         must_exist=not test,
+                         is_folder=False)
+    ])  # fmt: skip
+
     # [tool.py-build-cmake.module]
     module = pbc.insert(
         ConfigOption("module",

@@ -40,8 +40,10 @@ import sys
 from contextlib import contextmanager
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+from typing import Any
 
 import distlib.version  # type: ignore[import-untyped]
+import packaging.version
 
 from ..common import (
     ConfigError,
@@ -204,7 +206,14 @@ def check_version(version, filename):
 from pyproject_metadata import StandardMetadata  # noqa: E402
 
 
-def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Path | None):
+def update_dynamic_metadata(
+    metadata: StandardMetadata, dynamic: dict[str, Any], mod_filename: Path | None
+):
+    version_file: Path | None = dynamic.get("version_file")
+    if "version" in metadata.dynamic and version_file:
+        version_str = version_file.read_text().strip()
+        metadata.version = packaging.version.Version(version_str)
+        metadata.dynamic.remove("version")
     if mod_filename is None:
         if metadata.dynamic:
             msg = "If no module is specified, dynamic metadata is not allowed"
@@ -212,7 +221,7 @@ def update_dynamic_metadata(metadata: StandardMetadata, mod_filename: Path | Non
         return
     res = get_info_from_module(mod_filename, metadata.dynamic)
     if "version" in res:
-        metadata.version = res["version"]
+        metadata.version = packaging.version.Version(res["version"])
     if "summary" in res:
         metadata.description = res["summary"]
     metadata.dynamic = []

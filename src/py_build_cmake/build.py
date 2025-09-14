@@ -319,15 +319,9 @@ class _BuildBackend:
         cfg = _BuildBackend.read_config(plat, src_dir, config_settings, verbose)
         module = find_module(cfg.module, src_dir)
         modfile = module.full_file
-        if cfg.standard_metadata.dynamic:
-            if module.is_generated:
-                msg = "Dynamic metadata is not supported for generated modules/packages"
-                raise ConfigError(msg)
-            elif module.is_namespace:
-                msg = "Dynamic metadata is not supported for namespace packages"
-                raise ConfigError(msg)
+        _BuildBackend.check_dynamic_metadata(cfg, module)
         try:
-            update_dynamic_metadata(cfg.standard_metadata, modfile)
+            update_dynamic_metadata(cfg.standard_metadata, cfg.dynamic, modfile)
         except ImportError as e:
             logger.error("Error importing %s for reading metadata", str(modfile))
             msg = (
@@ -352,6 +346,19 @@ class _BuildBackend:
             )
             raise FormattedErrorMessage(msg) from e
         return cfg, module
+
+    @staticmethod
+    def check_dynamic_metadata(cfg: Config, module: Module):
+        dynamic = cfg.standard_metadata.dynamic
+        if dynamic == ["version"] and cfg.dynamic.get("version_file"):
+            pass  # okay
+        elif dynamic:
+            if module.is_generated:
+                msg = "Dynamic metadata is not supported for generated modules/packages"
+                raise ConfigError(msg)
+            elif module.is_namespace:
+                msg = "Dynamic metadata is not supported for namespace packages"
+                raise ConfigError(msg)
 
     @staticmethod
     def read_config(

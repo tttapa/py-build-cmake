@@ -244,7 +244,7 @@ def check_pyproject(config_files: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return pyproject
 
 
-def process_config(
+def process_config(  # noqa: PLR0915
     plat: BuildPlatformInfo,
     pyproject_path: Path | PurePosixPath,
     config_files: dict[str, dict[str, Any]],
@@ -292,6 +292,11 @@ def process_config(
     else:
         msg = "Missing [tools.py-build-cmake.module] section"
         raise AssertionError(msg)
+
+    # Dynamic metadata
+    s = "dynamic"
+    if pbc_value_ref.is_value_set(s):
+        cfg.dynamic = pbc_value_ref.get_value(s)
 
     oses_cross = ("linux", "windows", "mac", "pyodide", "cross")
 
