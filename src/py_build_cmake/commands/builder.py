@@ -14,7 +14,6 @@ from .. import __version__
 from ..common import PackageInfo
 from ..common.platform import BuildPlatformInfo
 from ..common.util import (
-    OSIdentifier,
     python_version_int_to_py_limited_api_value,
     python_version_int_to_tuple,
 )
@@ -124,9 +123,6 @@ class Builder(ABC):
 
     @abstractmethod
     def install(self) -> None: ...
-
-    @abstractmethod
-    def get_os(self) -> OSIdentifier: ...
 
     @abstractmethod
     def cross_compiling(self) -> bool: ...
@@ -278,12 +274,7 @@ class Builder(ABC):
 
     def get_cross_python_hints(self, prefix: str, with_exec: bool) -> Iterable[Option]:
         """FindPython hints and artifacts to set when cross-compiling."""
-        if self.get_os() == "pyodide" and self.python_settings.prefix is not None:
-            executable = self.python_settings.prefix / "dist" / "python_cli_entry.mjs"
-            yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
-            yield from self.get_common_python_hints(prefix, with_exec=False)
-        else:
-            yield from self.get_common_python_hints(prefix, with_exec=with_exec)
+        yield from self.get_common_python_hints(prefix, with_exec=with_exec)
         if self.python_settings.prefix:
             pfx = self.python_settings.prefix.as_posix()
             yield Option(prefix + "_ROOT", pfx, "PATH")
