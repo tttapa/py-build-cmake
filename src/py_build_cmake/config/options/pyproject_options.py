@@ -199,6 +199,43 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               "args = [\"--debug-find\", \"-Wdev\"]",
                               default=DefaultValueValue([]),
                               append_by_default=True),
+        ListOfStrConfigOption("build_args",
+                              "Extra arguments passed to the build step.",
+                              "build_args = [\"-j\", \"--target\", \"foo\"]",
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
+        ListOfStrConfigOption("build_tool_args",
+                              "Extra arguments passed to the build tool in the "
+                              "build step (e.g. to Make or Ninja).",
+                              "build_tool_args = "
+                              "[\"--verbose\", \"-d\", \"explain\"]",
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
+        ListOfStrConfigOption("install_args",
+                              "Extra arguments passed to the install step.",
+                              "install_args = [\"--strip\"]",
+                              default=DefaultValueValue([]),
+                              append_by_default=True),
+        ListOfStrConfigOption("install_components",
+                              "List of components to install: The install step "
+                              "is executed once for each component, with the "
+                              "option `--component <?>`.\n"
+                              "Use an empty string to specify the default "
+                              "component.",
+                              default=DefaultValueValue([""])),
+        DictOfStrConfigOption("env",
+                              "Environment variables to set when running "
+                              "CMake. Supports variable expansion using "
+                              "`${VAR}`. Use a double dollar sign `$$` to "
+                              "insert a literal `$`.\n"
+                              "Note that setting `MACOSX_DEPLOYMENT_TARGET` "
+                              "here is not supported, see "
+                             "<{docs_url}/usage/faq.{docs_ext}#how-to-set-the-"
+                             "minimum-supported-macos-version>.",
+                              "env = { \"CMAKE_PREFIX_PATH\" "
+                              "= \"${HOME}/.local\" }",
+                              default=DefaultValueValue({}),
+                              finalize_to_str=False),
         BoolConfigOption("find_python",
                          "Specify hints for CMake's FindPython module.",
                          "find_python = false",
@@ -239,44 +276,34 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "native interpreter for the build system is "
                            "required (e.g. for code generation at build time).",
                            "find_python3_build_artifacts_prefix = \"_BUILD\""),
-        ListOfStrConfigOption("build_args",
-                              "Extra arguments passed to the build step.",
-                              "build_args = [\"-j\", \"--target\", \"foo\"]",
-                              default=DefaultValueValue([]),
-                              append_by_default=True),
-        ListOfStrConfigOption("build_tool_args",
-                              "Extra arguments passed to the build tool in the "
-                              "build step (e.g. to Make or Ninja).",
-                              "build_tool_args = "
-                              "[\"--verbose\", \"-d\", \"explain\"]",
-                              default=DefaultValueValue([]),
-                              append_by_default=True),
-        ListOfStrConfigOption("install_args",
-                              "Extra arguments passed to the install step.",
-                              "install_args = [\"--strip\"]",
-                              default=DefaultValueValue([]),
-                              append_by_default=True),
-        ListOfStrConfigOption("install_components",
-                              "List of components to install: The install step "
-                              "is executed once for each component, with the "
-                              "option `--component <?>`.\n"
-                              "Use an empty string to specify the default "
-                              "component.",
-                              default=DefaultValueValue([""])),
-        DictOfStrConfigOption("env",
-                              "Environment variables to set when running "
-                              "CMake. Supports variable expansion using "
-                              "`${VAR}`. Use a double dollar sign `$$` to "
-                              "insert a literal `$`.\n"
-                              "Note that setting `MACOSX_DEPLOYMENT_TARGET` "
-                              "here is not supported, see "
-                             "<{docs_url}/usage/faq.{docs_ext}#how-to-set-the-"
-                             "minimum-supported-macos-version>.",
-                              "env = { \"CMAKE_PREFIX_PATH\" "
-                              "= \"${HOME}/.local\" }",
-                              default=DefaultValueValue({}),
-                              finalize_to_str=False),
     ])  # fmt: skip
+
+    cmake_option_order = {
+        "minimum_version": 0,
+        "maximum_policy": 10,
+        "preset": 15,
+        "build_type": 20,
+        "generator": 30,
+        "source_path": 40,
+        "build_path": 45,
+        "options": 50,
+        "args": 60,
+        "build_presets": 64,
+        "config": 65,
+        "build_args": 70,
+        "build_tool_args": 80,
+        "install_config": 85,
+        "install_args": 90,
+        "install_components": 100,
+        "find_python": 110,
+        "find_python3": 120,
+        "find_python_build_artifacts_prefix": 130,
+        "find_python3_build_artifacts_prefix": 140,
+        "env": 150,
+    }
+
+    def order_cmake_options(option: ConfigOption):
+        return cmake_option_order[option.name]
 
     # [tool.py-build-cmake.conan]
     conan = pbc.insert(
@@ -333,7 +360,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Defines options for the CMake build under Conan.",
                      default=DefaultValueValue({})),
     )  # fmt: skip
-    conan_cmake.insert_multiple(common_cmake_options)
+    conan_cmake.insert_multiple(sorted(common_cmake_options, key=order_cmake_options))
 
     # [tool.py-build-cmake.cmake]
     cmake = pbc.insert(
@@ -345,7 +372,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                           "will produce a pure Python package.",
         ))  # fmt: skip
     cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
-    cmake.insert_multiple([*common_cmake_options,
+    cmake_options = [*common_cmake_options,
         PathConfigOption("build_path",
                          "CMake build and cache folder. The placeholder "
                          "`{build_config}` can be used to insert the name of "
@@ -372,7 +399,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                                   relative=True,
                               ),
                               convert_str_to_singleton=True),
-        ListOfStrConfigOption('build_presets',
+        ListOfStrConfigOption("build_presets",
                               "CMake presets to use for building. Passed as "
                               "`--preset <?>` during the build phase, once "
                               "for each preset.",
@@ -391,7 +418,8 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                                   relative=True,
                               ),
                               convert_str_to_singleton=True),
-    ])  # fmt: skip
+    ]  # fmt: skip
+    cmake.insert_multiple(sorted(cmake_options, key=order_cmake_options))
 
     # [tool.py-build-cmake.wheel]
     wheel = pbc.insert(
