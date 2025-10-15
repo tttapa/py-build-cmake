@@ -48,6 +48,13 @@ test_packages += "local-options", "bare-c-module", "cmake-preset", "cmake-option
 purity = {"empty-config": True, "namespace-project-b": True}
 
 
+# Set up Conan cache
+conan_home = project_dir / ".conan2"
+conan_home.mkdir(exist_ok=True)
+os.environ["CONAN_HOME"] = str(conan_home)
+os.system("conan profile detect -e")
+
+
 def get_platform():
     if platform.system() == "Darwin":
         return "macosx"

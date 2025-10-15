@@ -10,3 +10,4 @@ dist-nox
 wheelhouse
 .nox
 old
+.conan2
