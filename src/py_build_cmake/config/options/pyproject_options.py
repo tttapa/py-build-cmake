@@ -152,14 +152,6 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
     ])  # fmt: skip
 
     common_cmake_options = ([
-         StringConfigOption("minimum_version",
-                           "Minimum required CMake version. Used for policies "
-                           "in the automatically generated CMake cache pre-"
-                           "load files. If this version is not available in "
-                           "the system PATH, it will be installed "
-                           "automatically as a build dependency (using Pip).",
-                           "minimum_version = \"3.18\"",
-                           default=DefaultValueValue(CMAKE_MINIMUM_REQUIRED)),
         StringConfigOption("maximum_policy",
                            "Maximum supported CMake version to use for "
                            "policies in the automatically generated CMake "
@@ -360,7 +352,17 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                      "Defines options for the CMake build under Conan.",
                      default=DefaultValueValue({})),
     )  # fmt: skip
-    conan_cmake.insert_multiple(sorted(common_cmake_options, key=order_cmake_options))
+    conan_cmake_options = [*common_cmake_options,
+        StringConfigOption("minimum_version",
+                           "Minimum required CMake version. Used for policies "
+                           "in the automatically generated CMake cache pre-"
+                           "load files. If this version is not available in "
+                           "the system PATH, it will be installed "
+                           "automatically as a build dependency (using Conan).",
+                           "minimum_version = \"3.18\"",
+                           default=DefaultValueValue(CMAKE_MINIMUM_REQUIRED)),
+    ]  # fmt: skip
+    conan_cmake.insert_multiple(sorted(conan_cmake_options, key=order_cmake_options))
 
     # [tool.py-build-cmake.cmake]
     cmake = pbc.insert(
@@ -373,6 +375,14 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
         ))  # fmt: skip
     cmake_pth = ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cmake")
     cmake_options = [*common_cmake_options,
+        StringConfigOption("minimum_version",
+                           "Minimum required CMake version. Used for policies "
+                           "in the automatically generated CMake cache pre-"
+                           "load files. If this version is not available in "
+                           "the system PATH, it will be installed "
+                           "automatically as a build dependency (using Pip).",
+                           "minimum_version = \"3.18\"",
+                           default=DefaultValueValue(CMAKE_MINIMUM_REQUIRED)),
         PathConfigOption("build_path",
                          "CMake build and cache folder. The placeholder "
                          "`{build_config}` can be used to insert the name of "
