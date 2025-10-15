@@ -1,0 +1,13 @@
+pybind11_project_conan-{{version}}/CMakeLists.txt
+pybind11_project_conan-{{version}}/conanfile.txt
+pybind11_project_conan-{{version}}/LICENSE
+pybind11_project_conan-{{version}}/PKG-INFO
+pybind11_project_conan-{{version}}/README.md
+pybind11_project_conan-{{version}}/cmake/Pybind11Stubgen.cmake
+pybind11_project_conan-{{version}}/pyproject.toml
+pybind11_project_conan-{{version}}/src/pybind11_project_conan/__init__.py
+pybind11_project_conan-{{version}}/src/pybind11_project_conan/add.py
+pybind11_project_conan-{{version}}/src/pybind11_project_conan/add_module.py
+pybind11_project_conan-{{version}}/src/pybind11_project_conan/py.typed
+pybind11_project_conan-{{version}}/src/pybind11_project_conan/sub_package/__init__.py
+pybind11_project_conan-{{version}}/src/ext/add_module.cpp

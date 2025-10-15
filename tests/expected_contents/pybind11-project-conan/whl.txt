@@ -1,0 +1,18 @@
+pybind11_project_conan-{{version}}.dist-info/licenses/LICENSE
+pybind11_project_conan-{{version}}.dist-info/METADATA
+pybind11_project_conan-{{version}}.dist-info/RECORD
+pybind11_project_conan-{{version}}.dist-info/WHEEL
+pybind11_project_conan-{{version}}.dist-info/entry_points.txt
+pybind11_project_conan/__init__.py
+pybind11_project_conan/_add_module{{ext_suffix}}
+pybind11_project_conan/_add_module.pyi
+pybind11_project_conan/add.py
+pybind11_project_conan/add_module.py
+pybind11_project_conan/py.typed
+pybind11_project_conan/sub_package/__init__.py
+{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+pybind11_project_conan/__init__.pyi
+pybind11_project_conan/add.pyi
+pybind11_project_conan/add_module.pyi
+pybind11_project_conan/sub_package/__init__.pyi
+{% endif %}

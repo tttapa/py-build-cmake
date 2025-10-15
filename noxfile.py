@@ -39,7 +39,8 @@ else:
 version = "0.6.0a3.dev0"
 project_dir = Path(__file__).resolve().parent
 
-examples = "minimal-program", "pybind11-project", "nanobind-project"
+examples = "pybind11-project-conan", "pybind11-project"
+examples += "minimal-program", "nanobind-project"
 examples += "swig-project", "minimal"
 test_packages = "empty-config", "namespace-project-a", "namespace-project-b"
 test_packages += "local-options", "bare-c-module", "cmake-preset", "cmake-options"
@@ -137,6 +138,11 @@ def get_ext_suffix(name: str):
     free_threading = bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
     if simple and ext_suffix.endswith(".pyd") and py_v < (3, 8):
         ext_suffix = ".pyd"  # what a mess ...
+    elif name == "pybind11-project-conan":
+        if py_v < (3, 8):
+            ext_suffix = None  # skip
+        elif impl.name == "pypy":
+            ext_suffix = None  # skip https://github.com/pypy/pypy/issues/5328
     elif name == "nanobind-project":
         if py_v < (3, 8):
             ext_suffix = None  # skip
@@ -308,7 +314,7 @@ def editable(session: nox.Session, mode):
         "build",
         "pytest",
         "pybind11>=2.13.6,<4",
-        "pybind11-stubgen~=2.5.4",
+        "pybind11-stubgen~=2.5.5",
         "nanobind~=2.8.0",
         "swig~=4.3.1",
         "cmake",
