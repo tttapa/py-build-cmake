@@ -317,6 +317,7 @@ def editable(session: nox.Session, mode):
         "pybind11-stubgen~=2.5.5",
         "nanobind~=2.8.0",
         "swig~=4.3.1",
+        "conan~=2.21.0",
         "cmake",
         "ninja",
     )
