@@ -65,7 +65,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox distlib~=0.4.0 jinja2
+        python -m pip install -U pip nox distlib~=0.4.0 jinja2 conan
         python -m nox --force-color
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -118,7 +118,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox distlib~=0.4.0 jinja2
+        python -m pip install -U pip nox distlib~=0.4.0 jinja2 conan
         python -m nox --force-color
       env:
         PY_BUILD_CMAKE_WHEEL_DIR: ${{ github.workspace }}/dist
@@ -178,7 +178,7 @@ jobs:
         path: dist
     - name: Run Nox
       run: |
-        python -m pip install -U pip nox distlib~=0.4.0 jinja2
+        python -m pip install -U pip nox distlib~=0.4.0 jinja2 conan
         python -m nox --force-color
       env:
         MACOSX_DEPLOYMENT_TARGET: '10.15'
