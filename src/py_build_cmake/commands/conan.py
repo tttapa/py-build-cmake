@@ -162,20 +162,20 @@ class ConanCMaker(Builder):
         user_toolchain_file = self.conf_settings.toolchain_file
         if not self.runner.dry:
             of.mkdir(parents=True, exist_ok=True)
+        # https://github.com/pyodide/pyodide-build/issues/104
+        pyodide104 = "pyodide_build/tools/cmake/Modules/Platform/Emscripten.cmake"
+        if (
+            self.conf_settings.os == "pyodide"
+            and user_toolchain_file is not None
+            and user_toolchain_file.as_posix().endswith(pyodide104)
+        ):
+            user_toolchain_file = self._wrap_pyodide_toolchain(user_toolchain_file)
         with VerboseFile(
             self.runner, toolchain_file, "CMake toolchain file (host context)"
         ) as f:
             f.write(f"cmake_minimum_required(VERSION {_CMAKE_TOOLCHAIN_POLICY})\n")
             for o in opts:
                 f.write(o.to_preload_set(force=False))
-            # https://github.com/pyodide/pyodide-build/issues/104
-            pyodide104 = "pyodide_build/tools/cmake/Modules/Platform/Emscripten.cmake"
-            if (
-                self.conf_settings.os == "pyodide"
-                and user_toolchain_file is not None
-                and user_toolchain_file.as_posix().endswith(pyodide104)
-            ):
-                user_toolchain_file = self._wrap_pyodide_toolchain(user_toolchain_file)
             if user_toolchain_file is not None:
                 content = f"""\
                 set(PBC_USER_TOOLCHAIN_FILE "{user_toolchain_file.as_posix()}")
@@ -289,7 +289,7 @@ class ConanCMaker(Builder):
         profile_file = of / "py-build-cmake-profile-build"
         conf = "[conf]\n"
         if toolchain_file is not None:
-            conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}"
+            conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}\n"
         with VerboseFile(
             self.runner, profile_file, "Conan profile (build context)"
         ) as f:
