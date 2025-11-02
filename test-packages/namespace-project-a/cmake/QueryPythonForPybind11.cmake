@@ -18,23 +18,25 @@ macro(find_pybind11_python_first)
     endif()
 
     # Query Python to see if it knows where the pybind11 root is
-    if (NOT USE_GLOBAL_PYBIND11 AND Python3_EXECUTABLE)
-        if (NOT pybind11_ROOT OR NOT EXISTS ${pybind11_ROOT})
-            message(STATUS "Detecting pybind11 CMake location")
-            execute_process(COMMAND ${Python3_EXECUTABLE}
-                    -m pybind11 --cmakedir
-                OUTPUT_VARIABLE PY_BUILD_PYBIND11_ROOT
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                RESULT_VARIABLE PY_BUILD_CMAKE_PYBIND11_RESULT)
-            # If it was successful
-            if (PY_BUILD_CMAKE_PYBIND11_RESULT EQUAL 0)
-                message(STATUS "pybind11 CMake location: ${PY_BUILD_PYBIND11_ROOT}")
-                set(pybind11_ROOT ${PY_BUILD_PYBIND11_ROOT}
-                    CACHE PATH "Path to the pybind11 CMake configuration." FORCE)
-            else()
-                unset(pybind11_ROOT CACHE)
+    if (NOT USE_GLOBAL_PYBIND11)
+        set(host_interp ${CMAKE_CROSSCOMPILING_EMULATOR} ${Python3_EXECUTABLE})
+        foreach(interp "${host_interp}" "${PY_BUILD_CMAKE_BUILD_PYTHON_INTERPRETER}")
+            if (NOT pybind11_ROOT OR NOT EXISTS ${pybind11_ROOT})
+                message(STATUS "Detecting pybind11 CMake location (${interp})")
+                execute_process(COMMAND ${interp} -m pybind11 --cmakedir
+                    OUTPUT_VARIABLE PY_BUILD_PYBIND11_ROOT
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    RESULT_VARIABLE PY_BUILD_CMAKE_PYBIND11_RESULT)
+                # If it was successful
+                if (PY_BUILD_CMAKE_PYBIND11_RESULT EQUAL 0)
+                    message(STATUS "pybind11 CMake location: ${PY_BUILD_PYBIND11_ROOT}")
+                    set(pybind11_ROOT ${PY_BUILD_PYBIND11_ROOT}
+                        CACHE PATH "Path to the pybind11 CMake configuration." FORCE)
+                else()
+                    unset(pybind11_ROOT CACHE)
+                endif()
             endif()
-        endif()
+        endforeach()
     endif()
 
     # pybind11 is header-only, so finding a native version is fine

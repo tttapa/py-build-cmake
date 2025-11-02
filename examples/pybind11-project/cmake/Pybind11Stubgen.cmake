@@ -16,7 +16,7 @@ function(pybind11_stubgen target)
     endif()
 
     set(STUBGEN_MODULE ${STUBGEN_PACKAGE}.$<TARGET_FILE_BASE_NAME:${target}>)
-    set(STUBGEN_CMD "\"${Python3_EXECUTABLE}\" -m pybind11_stubgen -o . --exit-code \"${STUBGEN_MODULE}\"")
+    set(STUBGEN_CMD "${CMAKE_CROSSCOMILING_EMULATOR} \"${Python3_EXECUTABLE}\" -m pybind11_stubgen -o . --exit-code \"${STUBGEN_MODULE}\"")
     install(CODE "
         execute_process(COMMAND ${STUBGEN_CMD}
                         WORKING_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}/${STUBGEN_DESTINATION}\"

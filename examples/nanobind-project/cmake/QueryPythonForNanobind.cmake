@@ -43,23 +43,26 @@ macro(find_nanobind_python_first)
     endif()
 
     # Query Python to see if it knows where the pybind11 root is
-    if (NOT USE_GLOBAL_NANOBIND AND Python_EXECUTABLE)
-        if (NOT nanobind_ROOT OR NOT EXISTS ${nanobind_ROOT})
-            message(STATUS "Detecting nanobind CMake location")
-            execute_process(COMMAND ${Python_EXECUTABLE}
-                    -c "import nanobind; print(nanobind.cmake_dir())"
-                OUTPUT_VARIABLE PY_BUILD_NANOBIND_ROOT
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                RESULT_VARIABLE PY_BUILD_CMAKE_NANOBIND_RESULT)
-            # If it was successful
-            if (PY_BUILD_CMAKE_NANOBIND_RESULT EQUAL 0)
-                message(STATUS "nanobind CMake location: ${PY_BUILD_NANOBIND_ROOT}")
-                set(nanobind_ROOT ${PY_BUILD_NANOBIND_ROOT}
-                    CACHE PATH "Path to the nanobind CMake configuration." FORCE)
-            else()
-                unset(nanobind_ROOT CACHE)
+    if (NOT USE_GLOBAL_NANOBIND)
+        set(host_interp ${CMAKE_CROSSCOMPILING_EMULATOR} ${Python3_EXECUTABLE})
+        foreach(interp "${host_interp}" "${PY_BUILD_CMAKE_BUILD_PYTHON_INTERPRETER}")
+            if (NOT nanobind_ROOT OR NOT EXISTS ${nanobind_ROOT})
+                message(STATUS "Detecting nanobind CMake location (${interp})")
+                execute_process(COMMAND ${interp}
+                        -c "import nanobind; print(nanobind.cmake_dir())"
+                    OUTPUT_VARIABLE PY_BUILD_NANOBIND_ROOT
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    RESULT_VARIABLE PY_BUILD_CMAKE_NANOBIND_RESULT)
+                # If it was successful
+                if (PY_BUILD_CMAKE_NANOBIND_RESULT EQUAL 0)
+                    message(STATUS "nanobind CMake location: ${PY_BUILD_NANOBIND_ROOT}")
+                    set(nanobind_ROOT ${PY_BUILD_NANOBIND_ROOT}
+                        CACHE PATH "Path to the nanobind CMake configuration." FORCE)
+                else()
+                    unset(nanobind_ROOT CACHE)
+                endif()
             endif()
-        endif()
+        endforeach()
     endif()
 
     # nanobind consists of just sources and a CMake config file, so finding a
