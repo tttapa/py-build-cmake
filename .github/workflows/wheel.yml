@@ -224,7 +224,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [pybind11-project, nanobind-project, swig-project]
+        project: [pybind11-project, nanobind-project, swig-project, pybind11-project-conan]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
