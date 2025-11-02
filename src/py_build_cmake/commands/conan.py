@@ -160,7 +160,7 @@ class ConanCMaker(Builder):
 
     def write_toolchain(self) -> Path | None:
         opts = self.get_configure_options_python(native=None)
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         toolchain_file = of / "py-build-cmake-toolchain.cmake"
         user_toolchain_file = self.conf_settings.toolchain_file
         if not self.runner.dry:
@@ -190,7 +190,7 @@ class ConanCMaker(Builder):
 
     def write_toolchain_build(self) -> Path | None:
         opts = self.get_configure_options_python(native=True)
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         toolchain_file = of / "py-build-cmake-toolchain-build.cmake"
         if not self.runner.dry:
             of.mkdir(parents=True, exist_ok=True)
@@ -203,7 +203,7 @@ class ConanCMaker(Builder):
         return toolchain_file
 
     def write_profile(self) -> Path:  # noqa: PLR0912
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         profile_file = of / "py-build-cmake-profile"
         profile = deepcopy(self.conan_settings.extra_host_profile_data)
         profile.setdefault("settings", [])
@@ -266,6 +266,8 @@ class ConanCMaker(Builder):
             self._configure_environment(env)
             profile["buildenv"] += ["&:" + ln for ln in env.dumps().splitlines()]
         # write to file
+        if not self.runner.dry:
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(
             self.runner, profile_file, "Conan profile (host context)"
         ) as f:
@@ -288,8 +290,10 @@ class ConanCMaker(Builder):
 
     def write_profile_build(self) -> Path:
         toolchain_file = self.write_toolchain_build()
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         profile_file = of / "py-build-cmake-profile-build"
+        if not self.runner.dry:
+            of.mkdir(parents=True, exist_ok=True)
         conf = "[conf]\n"
         if toolchain_file is not None:
             conf += f"tools.cmake.cmaketoolchain:user_toolchain+={toolchain_file.as_posix()}\n"
@@ -308,7 +312,7 @@ class ConanCMaker(Builder):
         if not opts:
             return None
 
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         preload_file = of / "py-build-cmake-preload.cmake"
         if not self.runner.dry:
             of.mkdir(parents=True, exist_ok=True)
@@ -507,9 +511,12 @@ class ConanCMaker(Builder):
         assert isinstance(self.conanfile.build_folder, str)
         return Path(self.conanfile.build_folder)
 
+    def get_config_dir(self) -> Path:
+        return self.conan_settings.output_folder / self.conan_settings.build_config_name
+
     def _wrap_pyodide_toolchain(self, toolchain_file: Path) -> Path:
         """Workaround for https://github.com/pyodide/pyodide-build/issues/104."""
-        of = self.conan_settings.output_folder / self.conan_settings.build_config_name
+        of = self.get_config_dir()
         wrapper = of / "pyodide-build-toolchain.cmake"
         content = f"""\
         cmake_minimum_required(VERSION {_CMAKE_TOOLCHAIN_POLICY})
@@ -523,6 +530,7 @@ class ConanCMaker(Builder):
         if (DEFINED CMAKE_SHARED_LINKER_FLAGS)
             set(PBC_CMAKE_SHARED_LINKER_FLAGS_SET On)
         endif()
+        find_program(NODE_JS_EXECUTABLE NAMES node nodejs) # prefer node over nodejs
         message(STATUS "Including Pyodide toolchain: ${{PYODIDE_TOOLCHAIN_FILE}}")
         include(${{PYODIDE_TOOLCHAIN_FILE}})
         message(STATUS "Adding side module flags to CMAKE_C_FLAGS_INIT, CMAKE_CXX_FLAGS_INIT, CMAKE_SHARED_LINKER_FLAGS_INIT")

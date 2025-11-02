@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import re
+import stat
 import sysconfig
+import textwrap
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +21,7 @@ from ..common.util import (
     python_version_int_to_tuple,
 )
 from .cmd_runner import CommandRunner
+from .file import VerboseFile
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +109,9 @@ class Builder(ABC):
 
     @abstractmethod
     def get_working_dir(self) -> Path: ...
+
+    @abstractmethod
+    def get_config_dir(self) -> Path: ...
 
     @abstractmethod
     def get_build_environment(self) -> Mapping[str, str]: ...
@@ -280,6 +286,7 @@ class Builder(ABC):
         """FindPython hints and artifacts to set when cross-compiling."""
         if self.get_os() == "pyodide" and self.python_settings.prefix is not None:
             executable = self.python_settings.prefix / "dist" / "python_cli_entry.mjs"
+            executable = self._wrap_pyodide_interpreter(executable)
             yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
             yield from self.get_common_python_hints(prefix, with_exec=False)
         else:
@@ -343,6 +350,25 @@ class Builder(ABC):
             msg += "supported. Its value will be ignored.\n"
             msg += _MACOSX_DEPL_TGT_MSG
             logger.warning(msg)
+
+    def _wrap_pyodide_interpreter(self, python_cli_entry: Path) -> Path:
+        """The python_cli_entry.mjs script in Pyodide expects the
+        --this-program argument, but CMake does not provide it."""
+        of = self.get_config_dir()
+        wrapper = of / "python.mjs"
+        content = f"""\
+        #!/usr/bin/env node
+        if (!process.argv.some(arg => arg.startsWith("--this-program="))) {{
+          process.argv.splice(1, 1, "--this-program={wrapper.as_posix()}");
+        }}
+        import("{python_cli_entry.as_posix()}");
+        """
+        if not self.runner.dry:
+            of.mkdir(parents=True, exist_ok=True)
+        with VerboseFile(self.runner, wrapper, "pyodide-build toolchain wrapper") as f:
+            f.write(textwrap.dedent(content))
+        wrapper.chmod(wrapper.stat().st_mode | stat.S_IXUSR)
+        return wrapper
 
 
 class BuilderConfig(ABC):

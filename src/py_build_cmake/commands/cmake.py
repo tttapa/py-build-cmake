@@ -122,6 +122,9 @@ class CMaker(Builder):
         cmake_version = self.cmake_settings.minimum_required
         return super()._get_native_python_abi_tuple(cmake_version)
 
+    def get_config_dir(self) -> Path:
+        return self.conf_settings.build_path
+
     def get_configure_options_install(self) -> list[Option]:
         prefix = self.install_settings.prefix
         if prefix:
@@ -194,9 +197,10 @@ class CMaker(Builder):
         if not opts:
             return None
 
-        preload_file = self.conf_settings.build_path / "py-build-cmake-preload.cmake"
+        of = self.get_config_dir()
+        preload_file = of / "py-build-cmake-preload.cmake"
         if not self.runner.dry:
-            self.conf_settings.build_path.mkdir(parents=True, exist_ok=True)
+            of.mkdir(parents=True, exist_ok=True)
         with VerboseFile(self.runner, preload_file, "CMake pre-load file") as f:
             f.write(f"cmake_minimum_required(VERSION {self.cmake_version_policy})\n")
             for o in opts:
