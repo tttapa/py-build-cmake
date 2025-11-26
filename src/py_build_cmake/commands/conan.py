@@ -4,6 +4,7 @@ import contextlib
 import logging
 import os
 import shlex
+import sys
 import textwrap
 import types
 from copy import deepcopy
@@ -17,6 +18,8 @@ import conan.api.conan_api  # type: ignore[import-untyped]
 import conan.cli.cli  # type: ignore[import-untyped]
 import conan.tools.cmake  # type: ignore[import-untyped]
 import conan.tools.env  # type: ignore[import-untyped]
+from conan.errors import ConanException  # type: ignore[import-untyped]
+from conan.internal.api.detect.detect_api import detect_default_compiler  # type: ignore[import-untyped]
 
 from ..commands.cmd_runner import CommandRunner
 from ..common import ConfigError, PackageInfo
@@ -42,6 +45,8 @@ class ConanSettings:
     extra_host_profile_data: dict[str, list[str]]
     build_config_name: str
     args: list[str]
+    requirements: list[str]
+    shared: bool = False
     regenerate: bool = False
 
 
@@ -112,6 +117,7 @@ class ConanCMaker(Builder):
         runner: CommandRunner,
     ):
         super().__init__(plat, package_info, package_tags, python_settings, runner)
+        self.conan_api = conan.api.conan_api.ConanAPI()
         self.conan_settings = conan_settings
         self.cmake_settings = cmake_settings
         self.conf_settings = conf_settings
@@ -122,6 +128,9 @@ class ConanCMaker(Builder):
 
         self.check_environment(self.conf_settings.environment)
         self.check_cmake_options(self.conf_settings.options)
+
+        # TODO: Why is this necessary? Where is this documented?
+        conan.cli.cli.Cli(self.conan_api).add_commands()
 
     def check_cmake_options(self, opts: dict[str, Any]):
         super().check_cmake_options(opts)
@@ -322,6 +331,21 @@ class ConanCMaker(Builder):
                 f.write(o.to_preload_set())
         return preload_file
 
+    def write_conanfile(self) -> Path:
+        _requirements = '\n        '.join(self.conan_settings.requirements)
+        conanfile_path = self.conan_settings.output_folder / "conanfile.txt"
+        content = f"""\
+        [requires]
+        {_requirements}
+        [generators]
+        CMakeDeps
+        CMakeToolchain
+        """
+
+        with VerboseFile(self.runner, conanfile_path, "conanfile.txt file") as f:
+            f.write(textwrap.dedent(content))
+        return conanfile_path
+
     def _configure_environment(self, env: conan.tools.env.Environment):
         for k, v in self.get_env_vars_package().items():
             env.define(k, v)
@@ -398,14 +422,30 @@ class ConanCMaker(Builder):
                 env.unset(k)
             # TODO: ensure all cases are handled, add more thorough testing
 
+    def check_default_profiles(self):
+        try:
+            self.conan_api.profiles.get_default_host()
+            self.conan_api.profiles.get_default_build()
+        except ConanException:
+            compiler, _, _ = detect_default_compiler()
+            if not compiler:
+                raise ConanException("No compiler was detected.")
+            cmd = ['profile', 'detect']
+            if self.runner.verbose:
+                print(["conan", *cmd])
+            self.conan_api.command.run(shlex.join(cmd))
+
     def configure(self):
         conan_project_dir = self.conf_settings.source_path
         with chdir(self.conf_settings.working_dir):
             # 0. Write config files and pre-load files
             # ---
+            self.check_default_profiles()
             build_profile = self.write_profile_build()
             host_profile = self.write_profile()
             pre_load = self.write_preload_options()
+            if self.conan_settings.requirements:
+                conan_project_dir = self.write_conanfile()
 
             # 1. Install dependencies
             # ---
@@ -417,13 +457,16 @@ class ConanCMaker(Builder):
             cmd += ["-pr:b", build_profile.as_posix()]
             cmd += ["-pr:h", host_profile.as_posix()]
             cmd += ["-of", self.conan_settings.output_folder.as_posix()]
+            if self.conan_settings.shared:
+                cmd += ["-o", "*:shared=True"]
+                if sys.platform == "win32":
+                    module_folder = self.install_settings.prefix / self.package_info.module_name
+                    cmd += ["--deployer=runtime_deploy",
+                            f"--deployer-folder={module_folder.as_posix()}"]
             cmd += self.conan_settings.args
             if self.runner.verbose:
                 print(["conan", *cmd])  # noqa: T201
-            api = conan.api.conan_api.ConanAPI()
-            # TODO: Why is this necessary? Where is this documented?
-            conan.cli.cli.Cli(api).add_commands()
-            install = api.command.run(shlex.join(cmd))
+            install = self.conan_api.command.run(shlex.join(cmd))
             dep_graph = install["graph"]
             self.conanfile = cast(conan.ConanFile, dep_graph.root.conanfile)
 
@@ -480,6 +523,38 @@ class ConanCMaker(Builder):
                     component=component,
                     cli_args=self.install_settings.args,
                 )
+
+    def postbuild(self, wheel, *args, **kargs):
+        if self.conan_settings.shared:
+            vars = conan.tools.env.VirtualRunEnv(self.conanfile).vars()
+            if sys.platform == "win32":
+                pass
+            elif sys.platform == "darwin":
+                from delocate import delocate_wheel
+                with vars.apply():
+                    delocate_wheel(wheel, wheel)
+            elif sys.platform == "linux":
+                import zlib
+                from auditwheel.repair import repair_wheel
+                from auditwheel.patcher import Patchelf
+                from auditwheel.policy import WheelPolicies
+                with vars.apply():
+                    wheel_policy = WheelPolicies()
+                    plat = wheel_policy.highest.name
+                    requested_policy = wheel_policy.get_policy_by_name(plat)
+                    wheel = repair_wheel(
+                        wheel_policy,
+                        wheel,
+                        abis=[requested_policy.name, *requested_policy.aliases],
+                        lib_sdir=".libs",
+                        out_dir=wheel.parent,
+                        update_tags=True,
+                        patcher=Patchelf(),
+                        exclude=frozenset([]),
+                        strip=False,
+                        zip_compression_level=zlib.Z_DEFAULT_COMPRESSION,
+                    )
+        return wheel
 
     def get_build_environment(self):
         assert self.buildenv is not None

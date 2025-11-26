@@ -11,3 +11,4 @@ wheelhouse
 .nox
 old
 .conan2
+examples/*/CMakeUserPresets.json

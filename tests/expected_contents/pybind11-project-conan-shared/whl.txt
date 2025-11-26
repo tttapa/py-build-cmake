@@ -1,0 +1,17 @@
+pybind11_project_conan_shared-{{version}}.dist-info/METADATA
+pybind11_project_conan_shared-{{version}}.dist-info/RECORD
+pybind11_project_conan_shared-{{version}}.dist-info/WHEEL
+pybind11_project_conan_shared-{{version}}.dist-info/entry_points.txt
+pybind11_project_conan_shared/__init__.py
+pybind11_project_conan_shared/_add_module{{ext_suffix}}
+pybind11_project_conan_shared/add.py
+pybind11_project_conan_shared/add_module.py
+{% if sys.platform == 'darwin'%}
+pybind11_project_conan_shared-{{version}}.dist-info/
+pybind11_project_conan_shared/
+pybind11_project_conan_shared/.dylibs/
+pybind11_project_conan_shared/.dylibs/libfmt.12.0.0.dylib
+{% endif %}
+{% if sys.platform == 'win32'%}
+pybind11_project_conan_shared/fmt.dll
+{% endif %}

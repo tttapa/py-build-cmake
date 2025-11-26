@@ -53,14 +53,24 @@ Tracker = "https://github.com/tttapa/py-build-cmake/issues"
 py-build-cmake = "py_build_cmake.cli:cli"
 
 [project.optional-dependencies]
-test = ["nox>=2023.4.22,<2026", "jinja2~=3.1.2", "conan~=2.21.0"]
+test = [
+    "nox>=2023.4.22,<2026",
+    "jinja2~=3.1.2",
+    "conan~=2.21.0",
+    "delocate==0.13.0",
+    "auditwheel==6.3.0"
+]
 docs = [
     "sphinx==8.2.3",
     "sphinx-book-theme==1.1.4",
     "sphinx_design==0.6.1",
     "myst-parser==4.0.1",
 ]
-conan = ["conan~=2.21.0"]
+conan = [
+    "conan~=2.21.0",
+    "delocate==0.13.0",
+    "auditwheel==6.3.0"
+]
 
 [tool.py-build-cmake.module]
 name = "py_build_cmake"

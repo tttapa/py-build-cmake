@@ -1,0 +1,45 @@
+[project]
+name = "pybind11-project-conan-shared"
+requires-python = ">=3.8"
+dynamic = ["version", "description"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.2.0,<9"]
+
+[project.scripts]
+add = "pybind11_project_conan_shared.add:main"
+
+[build-system]
+requires = [
+    "py-build-cmake~=0.6.0a3.dev0",
+    "conan~=2.21.0",
+    "cmake~=4.1",
+    "delocate==0.13.0",
+    "auditwheel==6.3.0"]
+build-backend = "py_build_cmake.build"
+
+[tool.py-build-cmake.module]
+name = "pybind11_project_conan_shared" # Import name
+directory = "src"
+
+[tool.py-build-cmake.sdist]
+include = ["CMakeLists.txt", "src"]
+
+[tool.py-build-cmake.conan]
+args = ["--build=missing", "-o *:header_only=False"]
+requirements = [
+    "pybind11/3.0.1",
+    "fmt/12.0.0",
+]
+shared = true
+
+[tool.py-build-cmake.conan.cmake]
+minimum_version = "4.1"
+build_type = "Release"
+install_components = ["python_modules"]
+find_python3_build_artifacts_prefix = "_HOST"
+
+[tool.py-build-cmake.linux.conan.cmake]
+generator = "Ninja Multi-Config"
+[tool.py-build-cmake.mac.conan.cmake]
+generator = "Ninja Multi-Config"

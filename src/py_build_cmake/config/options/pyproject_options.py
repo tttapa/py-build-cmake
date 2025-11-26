@@ -346,6 +346,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                               append_by_default=True),
         UncheckedConfigOption("_profile_data",
                               "Extra rules to add to the Conan profile."),
+        ListOfStrConfigOption("requirements",
+                              "List of Conan requirements.",
+                              default=DefaultValueValue([])),
+        BoolConfigOption("shared",
+                         "Compile the Conan requirements in shared mode.",
+                         default=DefaultValueValue(False)),
     ])  # fmt: skip
     conan_cmake = conan.insert(
         ConfigOption("cmake",

@@ -298,3 +298,6 @@ class CMaker(Builder):
         """Get the environment variables to add to the build hook files."""
         env = self.prepare_environment()
         return {k: v for k, v in env.items() if k in self.conf_settings.environment}
+
+    def postbuild(self, wheel, *args, **kargs):
+        return wheel

@@ -39,7 +39,7 @@ else:
 version = "0.6.0a3.dev0"
 project_dir = Path(__file__).resolve().parent
 
-examples = "pybind11-project-conan", "pybind11-project"
+examples = "pybind11-project-conan", "pybind11-project-conan-shared", "pybind11-project"
 examples += "minimal-program", "nanobind-project"
 examples += "swig-project", "minimal"
 test_packages = "empty-config", "namespace-project-a", "namespace-project-b"
@@ -325,6 +325,8 @@ def editable(session: nox.Session, mode):
         "nanobind~=2.8.0",
         "swig~=4.3.1",
         "conan~=2.21.0",
+        "delocate==0.13.0",
+        "auditwheel==6.3.0",
         "cmake",
         "ninja",
     )

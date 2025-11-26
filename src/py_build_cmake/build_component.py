@@ -62,8 +62,14 @@ class _BuildComponentBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
+
+        # Some Linux builds generate 'metadata_directory', but it can be ignored.
+        if metadata_directory:
+            logger.warning(
+                "'metadata_directory' was provided but py-build-backend does not use it."
+                "It will be ignored."
+            )
         try:
-            assert metadata_directory is None
 
             # Parse options
             self.parse_config_settings(config_settings)
@@ -174,9 +180,10 @@ class _BuildComponentBackend:
             cmaker.install()
 
         # Create wheel
-        return std_backend.create_wheel(
+        wheel = std_backend.create_wheel(
             self.plat, paths, cfg, bool(cmake_cfg), pkg_info
         )
+        return str(wheel.relative_to(paths.wheel_dir))
 
     # --- CMake builds --------------------------------------------------------
 

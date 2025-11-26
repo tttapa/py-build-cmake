@@ -88,8 +88,14 @@ class _BuildBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0517/#build-wheel"""
+
+        # Some Linux builds generate 'metadata_directory', but it can be ignored.
+        if metadata_directory:
+            logger.warning(
+                "'metadata_directory' was provided but py-build-backend does not use it."
+                "It will be ignored."
+            )
         try:
-            assert metadata_directory is None
 
             # Parse options
             self.parse_config_settings(config_settings)
@@ -106,8 +112,14 @@ class _BuildBackend:
         self, wheel_directory, config_settings=None, metadata_directory=None
     ):
         """https://www.python.org/dev/peps/pep-0660/#build-editable"""
+
+        # Some Linux builds generate 'metadata_directory', but it can be ignored.
+        if metadata_directory:
+            logger.warning(
+                "'metadata_directory' was provided but py-build-buckend does not use it."
+                "It will be ignored."
+            )
         try:
-            assert metadata_directory is None
 
             # Parse options
             self.parse_config_settings(config_settings)
@@ -263,16 +275,15 @@ class _BuildBackend:
         # Configure, build and install the CMake project
         has_build_step = False
         wheel_cfg = _BuildBackend.get_wheel_config(self.plat, cfg)
-        for idx, cmkcfg in self.get_builder_configs(self.plat, cfg).items():
+        builders = [(idx, cmkcfg.get_builder(paths.source_dir,
+                                             paths.staging_dir,
+                                             cfg.cross,
+                                             wheel_cfg,
+                                             pkg_info,
+                                             runner=self.runner)
+                     ) for idx, cmkcfg in self.get_builder_configs(self.plat, cfg).items()]
+        for idx, builder in builders:
             has_build_step = True
-            builder = cmkcfg.get_builder(
-                paths.source_dir,
-                paths.staging_dir,
-                cfg.cross,
-                wheel_cfg,
-                pkg_info,
-                runner=self.runner,
-            )
             builder.configure()
             builder.build()
             builder.install()
@@ -287,7 +298,10 @@ class _BuildBackend:
             self.generate_stubs(paths, module, cfg.stubgen)
 
         # Create wheel
-        return self.create_wheel(self.plat, paths, cfg, has_build_step, pkg_info)
+        wheel = self.create_wheel(self.plat, paths, cfg, has_build_step, pkg_info)
+        for idx, builder in builders:
+            wheel = builder.postbuild(wheel)
+        return str(wheel.relative_to(paths.wheel_dir))
 
     @staticmethod
     def get_pkg_info(cfg: Config | ComponentConfig, module: Module | None):
@@ -392,7 +406,7 @@ class _BuildBackend:
             whl.buildver = wheel_cfg["build_tag"]
         wheel_path = whl.build(whl_paths, tags=tags, wheel_version=(1, 0))
         logger.debug("Built Wheel: %s", wheel_path)
-        return str(Path(wheel_path).relative_to(paths.wheel_dir))
+        return Path(wheel_path)
 
     @staticmethod
     def get_wheel_tags(
@@ -700,6 +714,8 @@ class _BuildBackend:
                 host_profiles=conan_cfg["profile_host"],
                 extra_host_profile_data=conan_cfg.get("_profile_data", {}),
                 build_config_name=build_config_name,
+                requirements=conan_cfg.get("requirements", []),
+                shared=conan_cfg.get("shared", False),
                 args=conan_cfg.get("args", []),
             ),
             cmake_settings=CMakeSettings(
