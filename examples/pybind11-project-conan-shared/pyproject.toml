@@ -23,14 +23,10 @@ name = "pybind11_project_conan_shared" # Import name
 directory = "src"
 
 [tool.py-build-cmake.sdist]
-include = ["CMakeLists.txt", "src"]
+include = ["CMakeLists.txt", "conanfile.*", "src"]
 
 [tool.py-build-cmake.conan]
 args = ["--build=missing", "-o *:header_only=False"]
-requirements = [
-    "pybind11/3.0.1",
-    "fmt/12.0.0",
-]
 shared = true
 
 [tool.py-build-cmake.conan.cmake]

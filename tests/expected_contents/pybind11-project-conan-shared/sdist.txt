@@ -1,5 +1,6 @@
 pybind11_project_conan_shared-{{version}}/CMakeLists.txt
 pybind11_project_conan_shared-{{version}}/PKG-INFO
+pybind11_project_conan_shared-{{version}}/conanfile.py
 pybind11_project_conan_shared-{{version}}/pyproject.toml
 pybind11_project_conan_shared-{{version}}/src/ext/add_module.cpp
 pybind11_project_conan_shared-{{version}}/src/pybind11_project_conan_shared/__init__.py

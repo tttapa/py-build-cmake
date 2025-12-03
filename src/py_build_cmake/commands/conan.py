@@ -45,7 +45,6 @@ class ConanSettings:
     extra_host_profile_data: dict[str, list[str]]
     build_config_name: str
     args: list[str]
-    requirements: list[str]
     shared: bool = False
     regenerate: bool = False
 
@@ -331,21 +330,6 @@ class ConanCMaker(Builder):
                 f.write(o.to_preload_set())
         return preload_file
 
-    def write_conanfile(self) -> Path:
-        _requirements = '\n        '.join(self.conan_settings.requirements)
-        conanfile_path = self.conan_settings.output_folder / "conanfile.txt"
-        content = f"""\
-        [requires]
-        {_requirements}
-        [generators]
-        CMakeDeps
-        CMakeToolchain
-        """
-
-        with VerboseFile(self.runner, conanfile_path, "conanfile.txt file") as f:
-            f.write(textwrap.dedent(content))
-        return conanfile_path
-
     def _configure_environment(self, env: conan.tools.env.Environment):
         for k, v in self.get_env_vars_package().items():
             env.define(k, v)
@@ -444,8 +428,6 @@ class ConanCMaker(Builder):
             build_profile = self.write_profile_build()
             host_profile = self.write_profile()
             pre_load = self.write_preload_options()
-            if self.conan_settings.requirements:
-                conan_project_dir = self.write_conanfile()
 
             # 1. Install dependencies
             # ---

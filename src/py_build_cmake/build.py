@@ -714,7 +714,6 @@ class _BuildBackend:
                 host_profiles=conan_cfg["profile_host"],
                 extra_host_profile_data=conan_cfg.get("_profile_data", {}),
                 build_config_name=build_config_name,
-                requirements=conan_cfg.get("requirements", []),
                 shared=conan_cfg.get("shared", False),
                 args=conan_cfg.get("args", []),
             ),
