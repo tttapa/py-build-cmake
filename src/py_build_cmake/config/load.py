@@ -140,7 +140,15 @@ def load_extra_config_files(flag_overrides, targetpath, config_files, overrides)
         elif path.suffix == ".pbc":
             options = try_load_pbc(fullpath)
             for i, o in enumerate(options):
-                label = f"{fullpath.as_posix()}[{i+1}]"
+                # Support adding the same file multiple times by adding a suffix
+                multiple = 0
+                while True:
+                    label_multiple = f"({multiple})" if multiple > 0 else ""
+                    label = f"{fullpath.as_posix()}{label_multiple}:{i+1}"
+                    if ConfPath((label,)) not in overrides:
+                        break
+                    multiple += 1
+                # Add all overrides from the file, each with a unique label
                 override = add_cli_override(config_files, o, label, targetpath)
                 overrides.update(override)
         else:
@@ -185,6 +193,9 @@ def read_config(
     # Command-line overrides
     for i, o in enumerate(cli_overrides):
         overrides.update(add_cli_override(config_files, o, f"<cli:{i+1}>"))
+
+    for k, v in overrides.items():
+        logger.debug("override: %s -> %s", k, v)
 
     return process_config(plat, pyproject_path, config_files, overrides)
 

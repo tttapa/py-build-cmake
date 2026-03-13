@@ -37,3 +37,11 @@ class ConfPath:
 
     def __bool__(self):
         return bool(self.pth)
+
+    def __eq__(self, other):
+        if isinstance(other, ConfPath):
+            return self.pth == other.pth
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.pth)
