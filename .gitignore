@@ -10,3 +10,6 @@ dist-nox
 wheelhouse
 .nox
 old
+# pixi environments
+.pixi/*
+!.pixi/config.toml
