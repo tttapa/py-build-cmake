@@ -34,7 +34,7 @@ test = ["pytest>=7.2.0,<9"]
 requires = [
     "py-build-cmake~=0.6.0a3.dev0",
     "pybind11-stubgen~=2.5.5",
-    "conan~=2.21.0",
+    "conan~=2.31.2",
 ]
 build-backend = "py_build_cmake.build"
 
