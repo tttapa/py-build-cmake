@@ -12,7 +12,7 @@ pybind11_project/add.py
 pybind11_project/add_module.py
 pybind11_project/py.typed
 pybind11_project/sub_package/__init__.py
-{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+{% if have_stubgen %}
 pybind11_project/__init__.pyi
 pybind11_project/add.pyi
 pybind11_project/add_module.pyi

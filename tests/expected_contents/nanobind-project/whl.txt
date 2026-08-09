@@ -12,7 +12,7 @@ nanobind_project/add.py
 nanobind_project/add_module.py
 nanobind_project/py.typed
 nanobind_project/sub_package/__init__.py
-{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+{% if have_stubgen %}
 nanobind_project/__init__.pyi
 nanobind_project/add.pyi
 nanobind_project/add_module.pyi

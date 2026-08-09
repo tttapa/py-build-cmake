@@ -70,6 +70,10 @@ def get_contents_subs(ext_suffix: str):
             "implementation": sys.implementation,
             "platform": sys.platform,
         },
+        "have_stubgen": (
+            sys.implementation.name != "pypy"
+            and not sysconfig.get_config_var("Py_GIL_DISABLED")
+        ),
     }
 
 
