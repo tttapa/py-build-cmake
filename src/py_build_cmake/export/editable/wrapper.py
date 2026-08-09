@@ -38,7 +38,9 @@ def write_editable_wrapper(staging_dir: Path, module: Module):
         _spec.loader.exec_module(_mod)
         # After importing, add its symbols to our global scope
         _vars = _mod.__dict__.copy()
-        for _k in ['{"','".join(special_dunders)}']: _vars.pop(_k)
+        for _k in ['{"','".join(special_dunders)}']:
+            try: _vars.pop(_k)
+            except KeyError: pass
         globals().update(_vars)
         # Clean up
         del _k, _spec, _mod, _vars, _util

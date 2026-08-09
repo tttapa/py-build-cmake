@@ -133,18 +133,21 @@ def get_ext_suffix(name: str):
     ext_suffix = dist_sysconfig.get_config_var("EXT_SUFFIX")
     assert isinstance(ext_suffix, str)
     free_threading = bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
+    abi3_multiarch = ""
+    if py_v >= (3, 15) and impl.name == "cpython":
+        abi3_multiarch = "-" + sysconfig.get_config_var("MULTIARCH")
     if name == "nanobind-project":
         if impl.name == "cpython" and py_v >= (3, 12) and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
-                ext_suffix = ".abi3" + ext_suffix
+                ext_suffix = ".abi3" + abi3_multiarch + ext_suffix
     elif name == "swig-project":
         if sys.platform == "win32" and free_threading:
             ext_suffix = None  # skip
         if impl.name == "cpython" and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
-                ext_suffix = ".abi3" + ext_suffix
+                ext_suffix = ".abi3" + abi3_multiarch + ext_suffix
     return ext_suffix
 
 

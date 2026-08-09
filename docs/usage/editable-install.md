@@ -89,7 +89,9 @@ _mod = _util.module_from_spec(_spec)
 _spec.loader.exec_module(_mod)
 # After importing, add its symbols to our global scope
 _vars = _mod.__dict__.copy()
-for _k in ['__builtins__','__cached__','__file__','__loader__','__name__','__package__','__path__','__spec__']: _vars.pop(_k)
+for _k in ['__builtins__','__cached__','__file__','__loader__','__name__','__package__','__path__','__spec__']:
+    try: _vars.pop(_k)
+    except KeyError: pass
 globals().update(_vars)
 # Clean up
 del _k, _spec, _mod, _vars, _util
