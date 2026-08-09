@@ -163,7 +163,12 @@ def find_python(session: nox.Session):
         dist_dir = "dist"
     session.env["PIP_FIND_LINKS"] = str(Path(dist_dir).resolve())
     session.install(f"py-build-cmake=={version}")
-    for name in "find-python", "find-python-4":
+    if sysconfig.get_config_var("Py_GIL_DISABLED"):
+        # old CMake policies don't support free-threading builds
+        tests = ("find-python-4",)
+    else:
+        tests = "find-python", "find-python-4"
+    for name in tests:
         with session.chdir(f"test-packages/{name}"):
             shutil.rmtree(".py-build-cmake_cache", ignore_errors=True)
             shutil.rmtree("dist-nox", ignore_errors=True)
