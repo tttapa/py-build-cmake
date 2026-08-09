@@ -40,7 +40,7 @@ build_args = ["-j"]
 install_components = ["python_modules", "python_stubs"]
 
 [tool.py-build-cmake.stubgen]
-packages = ["namespace_project.add_module"]
+modules = ["namespace_project.add_module"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
