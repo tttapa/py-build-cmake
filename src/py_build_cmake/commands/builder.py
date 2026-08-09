@@ -213,12 +213,19 @@ class Builder(ABC):
         yield Option(prefix + "_FIND_VIRTUALENV", "FIRST")
 
     @abstractmethod
-    def get_native_python_abi_tuple(self) -> str: ...
+    def get_native_python_abi_tuple(self) -> tuple[str, ...]: ...
 
     def _get_native_python_abi_tuple(self, cmake_version):
         has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
         dmu = "dmut" if has_t_flag else "dmu"
-        return ";".join("ON" if c in self.plat.python_abiflags else "OFF" for c in dmu)
+        flags = self.plat.python_abiflags
+        if "t" in flags and not has_t_flag:
+            msg = "CMake version %s does not support the free-threaded ABI, but "
+            msg += "the current interpreter requires it. You should upgrade to "
+            msg += "CMake 3.30 or later, and upgrade the CMake minimum required "
+            msg += "version or policies in your CMakeLists.txt file accordingly."
+            logger.warning(msg, cmake_version)
+        return tuple("ON" if c in flags else "OFF" for c in dmu)
 
     def get_native_python_hints(self, prefix: str, with_exec: bool) -> Iterable[Option]:
         """FindPython hints and artifacts for this (native) Python installation."""
@@ -279,8 +286,11 @@ class Builder(ABC):
                 yield Option(prefix + "_SOSABI", "")
             else:
                 yield Option(prefix + "_SOSABI", "abi3")
-        # TODO: FIND_ABI seems to confuse CMake
-        # yield Option(prefix + "_FIND_ABI", self.get_native_python_abi_tuple())
+        # TODO: FIND_ABI seems to confuse CMake on older versions, so only set
+        #       it if we need to enable the free-threaded ABI
+        abi = self.get_native_python_abi_tuple()
+        if len(abi) == 4 and abi[-1] == "ON":
+            yield Option(prefix + "_FIND_ABI", ";".join(abi))
 
     def get_cross_python_hints(self, prefix: str, with_exec: bool) -> Iterable[Option]:
         """FindPython hints and artifacts to set when cross-compiling."""
