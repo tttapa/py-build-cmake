@@ -21,20 +21,15 @@ import re
 import shutil
 import sys
 import sysconfig
+import sysconfig as dist_sysconfig
 from difflib import unified_diff
 from pathlib import Path
+from sysconfig import get_platform as sysconfig_get_platform
 from tarfile import open as open_tar
 from zipfile import ZipFile
 
 import jinja2
 import nox
-
-if sys.version_info < (3, 8):
-    import distutils.sysconfig as dist_sysconfig
-    from distutils.util import get_platform as sysconfig_get_platform
-else:
-    import sysconfig as dist_sysconfig
-    from sysconfig import get_platform as sysconfig_get_platform
 
 version = "0.5.1.dev0"
 project_dir = Path(__file__).resolve().parent
@@ -137,21 +132,16 @@ def get_ext_suffix(name: str):
     py_v = sys.version_info
     ext_suffix = dist_sysconfig.get_config_var("EXT_SUFFIX")
     assert isinstance(ext_suffix, str)
-    simple = name in ["minimal", "bare-c-module"]
     free_threading = bool(sysconfig.get_config_var("Py_GIL_DISABLED"))
-    if simple and ext_suffix.endswith(".pyd") and py_v < (3, 8):
-        ext_suffix = ".pyd"  # what a mess ...
-    elif name == "nanobind-project":
-        if py_v < (3, 8):
-            ext_suffix = None  # skip
-        elif impl.name == "cpython" and py_v >= (3, 12) and not free_threading:
+    if name == "nanobind-project":
+        if impl.name == "cpython" and py_v >= (3, 12) and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix
     elif name == "swig-project":
         if sys.platform == "win32" and free_threading:
             ext_suffix = None  # skip
-        if impl.name == "cpython" and py_v >= (3, 7) and not free_threading:
+        if impl.name == "cpython" and not free_threading:
             ext_suffix = "." + ext_suffix.rsplit(".", 1)[-1]
             if sys.platform != "win32":
                 ext_suffix = ".abi3" + ext_suffix

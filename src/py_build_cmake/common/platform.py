@@ -8,7 +8,7 @@ import sys
 import sysconfig
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Mapping, cast
+from typing import Dict, List, Literal, Mapping, cast
 
 import packaging.tags
 
@@ -28,14 +28,9 @@ from .util import (
 
 logger = logging.getLogger(__name__)
 
-if sys.version_info < (3, 8):
-    OSIdentifier = str
-    WheelTags = Dict[str, List[str]]
-else:
-    from typing import Literal
 
-    OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
-    WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
+OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
+WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
 def _get_python_prefixes():

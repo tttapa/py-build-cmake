@@ -124,7 +124,7 @@ for more information about specific options. More information about the
 [project]
 name = "minimal"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ "name" = "Pieter P", "email" = "pieter.p.dev@outlook.com" }]
@@ -132,7 +132,6 @@ keywords = ["example", "addition", "subtraction"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",

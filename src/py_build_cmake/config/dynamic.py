@@ -85,12 +85,8 @@ def get_docstring_and_version_via_ast(mod_filename: Path):
             for target in child.targets
         ):
             v_node = child.value
-            if sys.version_info >= (3, 8):
-                if isinstance(v_node, ast.Constant) and isinstance(v_node.value, str):
-                    version = v_node.value
-                    break
-            elif isinstance(v_node, ast.Str):
-                version = v_node.s
+            if isinstance(v_node, ast.Constant) and isinstance(v_node.value, str):
+                version = v_node.value
                 break
     return ast.get_docstring(node), version
 

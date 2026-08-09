@@ -13,10 +13,10 @@ endif()
 
 # Find Python
 if (CMAKE_CROSSCOMPILING AND NOT (APPLE AND "$ENV{CIBUILDWHEEL}" STREQUAL "1"))
-    find_package(Python 3.7 REQUIRED COMPONENTS Development.Module
+    find_package(Python 3.8 REQUIRED COMPONENTS Development.Module
                                      OPTIONAL_COMPONENTS Development.SABIModule)
 else()
-    find_package(Python 3.7 REQUIRED COMPONENTS Interpreter Development.Module
+    find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module
                                      OPTIONAL_COMPONENTS Development.SABIModule)
 endif()
 
