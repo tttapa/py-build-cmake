@@ -13,10 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 def config_quirks_pypy(plat: BuildPlatformInfo, config: ValueReference):
-    if plat.python_version_info < (3, 8):
-        with contextlib.suppress(KeyError):
-            del config.values["stubgen"]
-            logger.info("Mypy is not supported on PyPy <3.8, disabling stubgen")
+    with contextlib.suppress(KeyError):
+        del config.values["stubgen"]
+        msg = "ast-serialize and librt (mypy dependencies) do not support "
+        msg += "PyPy (https://github.com/python/mypy/issues/21460), "
+        msg += "disabling stubgen"
+        logger.info(msg)
+
+
+def config_quirks_free_threaded(plat: BuildPlatformInfo, config: ValueReference):
+    with contextlib.suppress(KeyError):
+        del config.values["stubgen"]
+        msg = "ast-serialize and librt (mypy dependencies) do not support the "
+        msg += "free-threaded ABI (https://github.com/python/mypy/issues/21460), "
+        msg += "disabling stubgen"
+        logger.info(msg)
 
 
 def config_quirks(plat: BuildPlatformInfo, config: ValueReference):
@@ -32,3 +43,6 @@ def config_quirks(plat: BuildPlatformInfo, config: ValueReference):
     }.get(plat.implementation)
     if dispatch is not None:
         dispatch(plat, config)
+    if "t" in plat.python_abiflags:
+        # TODO: how best to check on Windows?
+        config_quirks_free_threaded(plat, config)
