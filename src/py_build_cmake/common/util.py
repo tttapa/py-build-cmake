@@ -2,16 +2,10 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Dict, List, Sequence
+from typing import Dict, List, Literal, Sequence
 
-if sys.version_info < (3, 8):
-    OSIdentifier = str
-    WheelTags = Dict[str, List[str]]
-else:
-    from typing import Literal
-
-    OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
-    WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
+OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
+WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
 def normalize_name_wheel_pep_427(name: str) -> str:

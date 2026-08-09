@@ -3,11 +3,10 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
-import pprint
-import sys
 from copy import copy
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
+from pprint import pp
 from typing import Any, Dict, Optional, cast
 
 import pyproject_metadata
@@ -41,11 +40,6 @@ except ImportError:
     import tomli as toml_  # type: ignore[import,no-redef,unused-ignore]
 
 logger = logging.getLogger(__name__)
-
-if sys.version_info < (3, 8):
-    pp = pprint.pprint
-else:
-    pp = pprint.pp
 
 
 def read_full_config(

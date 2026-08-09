@@ -71,7 +71,7 @@ and tell py-build-cmake how to build your CMake project. For example:
 ```toml
 [project] # Project metadata
 name = "example-project"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

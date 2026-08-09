@@ -52,10 +52,6 @@ def get_abi_flags() -> str:
         debug = "d"
     if py_version >= (3, 13) and sysconfig.get_config_var("Py_GIL_DISABLED"):
         threading = "t"
-    if py_version < (3, 8):
-        with_pymalloc = sysconfig.get_config_var("WITH_PYMALLOC")
-        if with_pymalloc or with_pymalloc is None:
-            pymalloc = "m"
     return f"{threading}{debug}{pymalloc}"  # tdm
 
 
