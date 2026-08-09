@@ -10,7 +10,7 @@ pybind11_project_conan/add.py
 pybind11_project_conan/add_module.py
 pybind11_project_conan/py.typed
 pybind11_project_conan/sub_package/__init__.py
-{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+{% if have_stubgen %}
 pybind11_project_conan/__init__.pyi
 pybind11_project_conan/add.pyi
 pybind11_project_conan/add_module.pyi

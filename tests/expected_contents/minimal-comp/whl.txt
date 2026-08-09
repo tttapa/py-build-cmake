@@ -8,7 +8,7 @@ minimal_comp/_add_module{{ext_suffix}}
 minimal_comp/_add_module.pyi
 minimal_comp/add_module.py
 minimal_comp/py.typed
-{% if sys.implementation.name != 'pypy' or sys.version_info >= (3, 8) %}
+{% if have_stubgen %}
 minimal_comp/__init__.pyi
 minimal_comp/add_module.pyi
 {% endif %}
