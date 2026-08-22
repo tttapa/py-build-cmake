@@ -22,7 +22,7 @@ To use `py-build-cmake` as your Python build backend, add the following section 
 
 ```toml
 [build-system]
-requires = ["py-build-cmake~=0.6.0a3.dev0"]
+requires = ["py-build-cmake~=0.6.0a3"]
 build-backend = "py_build_cmake.build"
 ```
 
