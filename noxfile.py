@@ -32,7 +32,7 @@ from zipfile import ZipFile
 import jinja2
 import nox
 
-version = "0.5.1.dev0"
+version = "0.5.1"
 project_dir = Path(__file__).resolve().parent
 
 examples = "minimal-program", "pybind11-project", "nanobind-project"
