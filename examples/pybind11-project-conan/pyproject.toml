@@ -56,6 +56,7 @@ build_args = ["-j"]
 build_tool_args = []
 install_args = ["--verbose"]
 install_components = ["python_modules", "python_stubs"]
+find_python3_build_artifacts_prefix = "_HOST"
 env = {}
 
 [tool.py-build-cmake.linux.conan.cmake] # Linux-specific options
