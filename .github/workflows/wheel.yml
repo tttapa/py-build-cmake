@@ -217,6 +217,10 @@ jobs:
         CIBW_ENVIRONMENT_MACOS: 'PIP_FIND_LINKS=${{ github.workspace }}/dist PY_BUILD_CMAKE_VERBOSE=1 MACOSX_DEPLOYMENT_TARGET="10.15"'
         CIBW_ENVIRONMENT_LINUX: 'PIP_FIND_LINKS=/project/dist PY_BUILD_CMAKE_VERBOSE=1'
         CIBW_ENVIRONMENT_WINDOWS: 'PIP_FIND_LINKS=D:/a/py-build-cmake/py-build-cmake/dist PY_BUILD_CMAKE_VERBOSE=1'
+        CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: ''
+        # delvewheel fails when cross-compiling for ARM64 on Windows:
+        #     https://github.com/pypa/cibuildwheel/issues/2918
+        #     https://github.com/adang1345/delvewheel/issues/44
     - name: Upload Wheels
       uses: actions/upload-artifact@v4
       with:
