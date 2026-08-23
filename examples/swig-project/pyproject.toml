@@ -63,6 +63,10 @@ generator = "Ninja"
 [tool.py-build-cmake.mac.cmake] # macOS-specific options
 generator = "Ninja"
 
+[tool.py-build-cmake.pyodide.cmake] # pyodide-specific options
+minimum_version = "4.3.3"
+generator = "Ninja"
+
 [tool.py-build-cmake.wheel]
 python_abi = 'abi3'
 abi3_minimum_cpython_version = 37 # Should match Py_LIMITED_API

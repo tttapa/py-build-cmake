@@ -64,6 +64,7 @@ generator = "Ninja"
 [tool.py-build-cmake.mac.conan.cmake] # macOS-specific options
 generator = "Ninja"
 [tool.py-build-cmake.pyodide.conan.cmake] # pyodide-specific options
+minimum_version = "4.3.3"
 generator = "Ninja"
 
 [tool.py-build-cmake.stubgen]
