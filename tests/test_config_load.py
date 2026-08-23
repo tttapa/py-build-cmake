@@ -72,7 +72,7 @@ def test_inherit_cross_cmake():
                 "cross": {
                     "implementation": "cp",
                     "version": "310",
-                    "abi": "cp310",
+                    "abi": "cp310t",
                     "arch": "linux_aarch64",
                     "toolchain_file": "aarch64-linux-gnu.cmake",
                     "cmake": {
@@ -270,8 +270,9 @@ def test_inherit_cross_cmake():
     assert conf.cross == {
         "implementation": "cp",
         "version": "310",
-        "abi": "cp310",
+        "abi": "cp310t",
         "arch": "linux_aarch64",
+        "abiflags": "t",
         "toolchain_file": PurePosixPath("/project/aarch64-linux-gnu.cmake"),
     }
 
@@ -484,6 +485,7 @@ def test_inherit_cross_os_cmake():
         "version": "310",
         "abi": "cp310",
         "arch": "linux_aarch64",
+        "abiflags": "",
         "toolchain_file": PurePosixPath("/project/aarch64-linux-gnu.cmake"),
         "os": "linux",
     }

@@ -767,7 +767,9 @@ class _BuildBackend:
                 "sabi_library": cvt_path(cross_cfg.get("sabi_library")),
                 "include_dir": cvt_path(cross_cfg.get("include_dir")),
                 "interpreter_id": python_tag_to_cmake(impl),
+                "abiflags": cross_cfg.get("abiflags"),
                 "soabi": cross_cfg.get("soabi"),
+                "sosabi": cross_cfg.get("sosabi"),
             }
         else:
             cmake_plat = plat.cmake_generator_platform
@@ -778,7 +780,9 @@ class _BuildBackend:
                 "sabi_library": None,
                 "include_dir": None,
                 "interpreter_id": None,
+                "abiflags": None,
                 "soabi": None,
+                "sosabi": None,
             }
 
         return cmake_plat, toolchain_file, cross_python_opts

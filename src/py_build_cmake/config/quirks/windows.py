@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_python_lib(
-    plat: BuildPlatformInfo, library_dirs: str | list[str] | None, stable: bool
+    py_version, abiflags, library_dirs: str | list[str] | None, stable: bool
 ) -> Path | None:
     """Return the path the the first python<major><minor>.lib or
     python<major>.lib file in any of the library_dirs.
@@ -34,13 +34,10 @@ def get_python_lib(
         library_dirs = [library_dirs]
 
     def possible_locations():
-        # TODO: can we always assume that cibw uses a native interpreter with
-        #       the same ABI as the target when cross-compiling?
-        v = plat.python_version_info
-        x = "" if stable else v.minor
-        t = "t" if "t" in plat.python_abiflags else ""
-        d = "_d" if "d" in plat.python_abiflags else ""
-        py3xlib = lambda p: Path(p) / f"python{v.major}{x}{t}{d}.lib"
+        minor = "" if stable else py_version.minor
+        t = "t" if "t" in abiflags else ""
+        d = "_d" if "d" in abiflags else ""
+        py3xlib = lambda p: Path(p) / f"python{py_version.major}{minor}{t}{d}.lib"
         yield from map(py3xlib, library_dirs)
 
     try:
@@ -52,7 +49,12 @@ def get_python_lib(
 def configure_python_artifacts(
     plat: BuildPlatformInfo, library_dirs, cross_cfg: dict, stable: bool
 ):
-    python_lib = get_python_lib(plat, library_dirs, stable)
+    # TODO: can we always assume that cibw uses a native interpreter with
+    #       the same ABI as the target when cross-compiling?
+    py_version = plat.python_version_info
+    abiflags = plat.python_abiflags
+    cross_cfg.setdefault("abiflags", abiflags)
+    python_lib = get_python_lib(py_version, abiflags, library_dirs, stable)
     lib_key = "sabi_library" if stable else "library"
     if python_lib is not None:
         cross_cfg[lib_key] = str(python_lib)

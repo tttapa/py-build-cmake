@@ -67,6 +67,8 @@ class BuildPlatformInfo:
     implementation: str = sys.implementation.name
     python_version: str = field(default_factory=platform.python_version)
     python_version_info = sys.version_info
+    # sys.abiflags if available, otherwise determines the tdm flags of the
+    # current interpreter (notably on Windows, which lacks sys.abiflags).
     python_abiflags: str = field(default_factory=_get_abi_flags)
     python_prefixes: dict[str, Path] = field(default_factory=_get_python_prefixes)
     sysconfig_platform: str = field(default_factory=sysconfig.get_platform)

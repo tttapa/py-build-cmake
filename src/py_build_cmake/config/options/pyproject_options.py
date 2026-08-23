@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import re
 from pathlib import Path, PurePosixPath
 
 from ...common import CMAKE_MINIMUM_REQUIRED
@@ -10,6 +12,7 @@ from .config_path import ConfPath
 from .default import (
     DefaultValueEnvVar,
     DefaultValueValue,
+    DefaultValueWrapper,
     NoDefaultValue,
     RefDefaultValue,
     RequiredValue,
@@ -22,6 +25,8 @@ from .list import ListOfStrConfigOption
 from .path import PathConfigOption, RelativeToCurrentConfig, RelativeToProject
 from .string import StringConfigOption
 
+logger = logging.getLogger(__name__)
+
 
 def get_tool_pbc_path():
     return ConfPath.from_string("pyproject.toml/tool/py-build-cmake")
@@ -33,6 +38,33 @@ def get_component_path():
 
 def get_cross_path():
     return ConfPath.from_string("pyproject.toml/tool/py-build-cmake/cross")
+
+
+class DefaultABIFlags(RefDefaultValue):
+    """
+    Determines the `abiflags` value based on the value of the `abi` option.
+    """
+
+    def __init__(self):
+        super().__init__(ConfPath.from_string("abi"), relative=True)
+
+    def get_default(
+        self,
+        defaulter,
+    ) -> DefaultValueWrapper | None:
+        d = super().get_default(defaulter)
+        if d is None or d.value is None:
+            return d
+        abi = d.value
+        m = re.fullmatch(r"(?:abi|cp|pp)\d+(?P<flags>[dmut]*)", abi)
+        abiflags = m.group("flags") if m else ""
+        if not m:
+            msg = f"Could not determine abiflags from abi value '{abi}'"
+            logger.warning(msg)
+        return DefaultValueWrapper(abiflags)
+
+    def get_name(self) -> str:
+        return "based on " + super().get_name()
 
 
 def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
@@ -614,7 +646,7 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "For details about platform compatibility tags, see "
                            "the PyPA specification: <https://packaging.python.org/"
                            "en/latest/specifications/platform-compatibility-tags>",
-                           "abi = 'cp310'",
+                           "abi = 'cp310t'",
                            default=NoDefaultValue("same as current interpreter")),
         StringConfigOption("arch",
                            "Platform tag, consisting of the operating system "
@@ -646,6 +678,15 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                          is_folder=False,
                          must_exist=True,
                          default=None),
+        StringConfigOption("abiflags",
+                           "Python ABI flags. "
+                           "Used to set the `Python3_FIND_ABI` CMake hint, "
+                           "see <https://cmake.org/cmake/help/latest/module/"
+                           "FindPython3.html#artifacts-specification>. "
+                           "Note that this should be consistent with the `abi` "
+                           "option. No validation checks are performed.",
+                           "abiflags = 'td'",
+                           default=DefaultABIFlags()),
         PathConfigOption("sabi_library",
                          "Python library file (.so on Linux, .lib on Windows) "
                          "for the stable ABI. Used to set the "
@@ -673,6 +714,12 @@ def get_options(project_path: Path | PurePosixPath, *, test: bool = False):
                            "see <https://cmake.org/cmake/help/latest/module/"
                            "FindPython3.html#artifacts-specification>.",
                            "soabi = 'cpython-310-x86_64-linux-gnu'",
+                           default=None),
+        StringConfigOption("sosabi",
+                           "Used to set the `Python3_SOSABI` CMake variable, "
+                           "see <https://cmake.org/cmake/help/latest/module/"
+                           "FindPython3.html#artifacts-specification>.",
+                           "sosabi = 'abi3t'",
                            default=None),
         PathConfigOption("toolchain_file",
                          "CMake toolchain file to use. See "

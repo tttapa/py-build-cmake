@@ -33,7 +33,9 @@ class PythonSettings:
     sabi_library: Path | None
     include_dir: Path | None
     interpreter_id: str | None
+    abiflags: str | None
     soabi: str | None
+    sosabi: str | None
     find_python: bool
     find_python3: bool
     find_python_build_artifacts_prefix: str | None
@@ -215,17 +217,28 @@ class Builder(ABC):
     @abstractmethod
     def get_native_python_abi_tuple(self) -> tuple[str, ...]: ...
 
-    def _get_native_python_abi_tuple(self, cmake_version):
+    @abstractmethod
+    def get_cross_python_abi_tuple(self) -> tuple[str, ...]: ...
+
+    @staticmethod
+    def _get_python_abi_tuple(abiflags, cmake_version):
         has_t_flag = NormalizedVersion("3.30") <= NormalizedVersion(cmake_version)
         dmu = "dmut" if has_t_flag else "dmu"
-        flags = self.plat.python_abiflags
-        if "t" in flags and not has_t_flag:
+        if "t" in abiflags and not has_t_flag:
             msg = "CMake version %s does not support the free-threaded ABI, but "
             msg += "the current interpreter requires it. You should upgrade to "
             msg += "CMake 3.30 or later, and upgrade the CMake minimum required "
             msg += "version or policies in your CMakeLists.txt file accordingly."
             logger.warning(msg, cmake_version)
-        return tuple("ON" if c in flags else "OFF" for c in dmu)
+        return tuple("ON" if c in abiflags else "OFF" for c in dmu)
+
+    def _get_native_python_abi_tuple(self, cmake_version):
+        return self._get_python_abi_tuple(self.plat.python_abiflags, cmake_version)
+
+    def _get_cross_python_abi_tuple(self, abiflags, cmake_version):
+        if abiflags is None:
+            return "ANY", "ANY", "ANY"
+        return self._get_python_abi_tuple(abiflags, cmake_version)
 
     def get_native_python_hints(self, prefix: str, with_exec: bool) -> Iterable[Option]:
         """FindPython hints and artifacts for this (native) Python installation."""
@@ -297,7 +310,8 @@ class Builder(ABC):
         if self.get_os() == "pyodide" and self.python_settings.prefix is not None:
             executable = self.python_settings.prefix / "dist" / "python_cli_entry.mjs"
             executable = self._wrap_pyodide_interpreter(executable)
-            yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
+            if with_exec:
+                yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
             yield from self.get_common_python_hints(prefix, with_exec=False)
         else:
             yield from self.get_common_python_hints(prefix, with_exec=with_exec)
@@ -320,6 +334,14 @@ class Builder(ABC):
         if self.python_settings.soabi is not None:
             soabi = self.python_settings.soabi
             yield Option(prefix + "_SOABI", soabi, "STRING")
+        if self.python_settings.sosabi is not None:
+            sosabi = self.python_settings.sosabi
+            yield Option(prefix + "_SOSABI", sosabi, "STRING")
+        # TODO: FIND_ABI seems to confuse CMake on older versions, so only set
+        #       it if we need to enable the free-threaded ABI
+        abi = self.get_cross_python_abi_tuple()
+        if len(abi) == 4 and abi[-1] == "ON":
+            yield Option(prefix + "_FIND_ABI", ";".join(abi))
 
     def get_configure_options_python(self, native=None) -> list[Option]:
         """Flags to help CMake find the right version of Python."""

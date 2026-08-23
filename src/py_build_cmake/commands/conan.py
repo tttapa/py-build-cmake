@@ -149,6 +149,11 @@ class ConanCMaker(Builder):
         cmake_version = self.cmake_settings.minimum_required
         return super()._get_native_python_abi_tuple(cmake_version)
 
+    def get_cross_python_abi_tuple(self):
+        cmake_version = self.cmake_settings.minimum_required
+        abiflags = self.python_settings.abiflags
+        return super()._get_cross_python_abi_tuple(abiflags, cmake_version)
+
     @property
     def cmake_version_policy(self):
         """Determine argument for cmake_minimum_required(VERSION X)."""

@@ -122,6 +122,11 @@ class CMaker(Builder):
         cmake_version = self.cmake_settings.minimum_required
         return super()._get_native_python_abi_tuple(cmake_version)
 
+    def get_cross_python_abi_tuple(self):
+        cmake_version = self.cmake_settings.minimum_required
+        abiflags = self.python_settings.abiflags
+        return super()._get_cross_python_abi_tuple(abiflags, cmake_version)
+
     def get_config_dir(self) -> Path:
         return self.conf_settings.build_path
 

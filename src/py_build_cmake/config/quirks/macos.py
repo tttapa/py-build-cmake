@@ -70,8 +70,11 @@ def cross_compile_mac(plat: BuildPlatformInfo, config: ValueReference):
         #       ABIs between the build Python and host Python installations.
         version = f"{plat.python_version_info.major}{plat.python_version_info.minor}"
         abi = plat.python_abiflags
+        cross_cfg["abiflags"] = abi
         soabi = f"cpython-{version}{abi}-darwin"
         cross_cfg["soabi"] = soabi
+        sosabi = f"abi{plat.python_version_info.major}{'t' if 't' in abi else ''}"
+        cross_cfg["sosabi"] = sosabi
         env = {"SETUPTOOLS_EXT_SUFFIX": StringOption.create(f".{soabi}.so")}
         if config.is_value_set("cmake"):
             cross_cfg["cmake"][all]["env"] = env
