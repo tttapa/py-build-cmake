@@ -30,13 +30,15 @@ def _get_emcc_version():
 
 
 _COMPILERS = {"c": "emcc", "cpp": "em++"}
-_BINUTILS = {  # use the em-prefixed binutils programs
-    f"CMAKE_{t.upper()}": f"em{t}" for t in ("ar", "nm", "ranlib", "strip")
+_CMAKE_BINUTILS = {  # use the em-prefixed binutils programs
+    f"CMAKE_{t.upper()}": f"em{t}" for t in ("ar", "nm", "ranlib")
 }
-_NO_BINUTILS = {  # otherwise CMake sets these to /usr/bin/objcopy etc.
+_CMAKE_NO_BINUTILS = {  # otherwise CMake sets these to /usr/bin/objcopy etc.
     f"CMAKE_{t.upper()}": "FALSE"
     for t in ("objcopy", "objdump", "readelf", "addr2line")
 }
+_STRIP = ["emstrip", "--keep-section=dylink.0"]
+_CMAKE_STRIP = {"CMAKE_STRIP": ";".join(_STRIP)}
 
 
 def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
@@ -70,8 +72,9 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
                 "tools.build.cross_building:can_run=False",
                 # https://github.com/pybind/pybind11/blob/v2.13.6/tools/pybind11Common.cmake#L78-L102
                 "tools.cmake.cmaketoolchain:extra_variables*={'_pybind11_no_exceptions': 'On'}",
-                f"tools.cmake.cmaketoolchain:extra_variables*={_BINUTILS!r}",
-                f"tools.cmake.cmaketoolchain:extra_variables*={_NO_BINUTILS!r}",
+                f"tools.cmake.cmaketoolchain:extra_variables*={_CMAKE_BINUTILS!r}",
+                f"tools.cmake.cmaketoolchain:extra_variables*={_CMAKE_NO_BINUTILS!r}",
+                f"tools.cmake.cmaketoolchain:extra_variables*={_CMAKE_STRIP!r}",
                 f"tools.build:compiler_executables={_COMPILERS!r}",
             ],
             "buildenv": [
@@ -80,7 +83,7 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
                 "AR=emar",
                 "NM=emnm",
                 "RANLIB=emranlib",
-                "STRIP=emstrip",
+                f"STRIP={' '.join(_STRIP)}",
             ],
         }
         cross_cfg["conan"] = {
