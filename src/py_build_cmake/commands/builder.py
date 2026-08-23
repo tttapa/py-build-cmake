@@ -310,8 +310,8 @@ class Builder(ABC):
         if self.get_os() == "pyodide" and self.python_settings.prefix is not None:
             executable = self.python_settings.prefix / "dist" / "python_cli_entry.mjs"
             executable = self._wrap_pyodide_interpreter(executable)
-            if with_exec:
-                yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
+            # Even if not with_exec:
+            yield Option(prefix + "_EXECUTABLE", executable.as_posix(), "FILEPATH")
             yield from self.get_common_python_hints(prefix, with_exec=False)
         else:
             yield from self.get_common_python_hints(prefix, with_exec=with_exec)
