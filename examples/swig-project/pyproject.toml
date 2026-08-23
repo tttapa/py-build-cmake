@@ -64,7 +64,6 @@ generator = "Ninja"
 generator = "Ninja"
 
 [tool.py-build-cmake.pyodide.cmake] # pyodide-specific options
-minimum_version = "4.3.3"
 generator = "Ninja"
 
 [tool.py-build-cmake.wheel]

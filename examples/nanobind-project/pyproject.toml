@@ -82,7 +82,6 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO = "/INCREMENTAL:NO /OPT:REF /DEBUG:FULL
 CMAKE_RELWITHDEBINFO_POSTFIX = "_d"
 
 [tool.py-build-cmake.pyodide.cmake] # pyodide-specific options
-minimum_version = "4.3.3"
 generator = "Ninja Multi-Config"
 
 [tool.py-build-cmake.stubgen]
