@@ -85,7 +85,7 @@ If you need both interpreters in the same directory, things are a bit more
 involved:
 ```cmake
 # CMake 4.0 or later is required for this technique to work
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 4.0...4.4)
 # Look for the development files for the target first
 if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     find_package(Python3 REQUIRED COMPONENTS Development.Module)

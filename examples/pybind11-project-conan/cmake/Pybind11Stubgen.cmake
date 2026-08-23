@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 4.1...4.4)
 
 function(pybind11_stubgen target)
 
