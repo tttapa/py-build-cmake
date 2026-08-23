@@ -32,7 +32,7 @@ from zipfile import ZipFile
 import jinja2
 import nox
 
-version = "0.6.0a3"
+version = "0.6.0a4.dev0"
 project_dir = Path(__file__).resolve().parent
 
 examples = "pybind11-project-conan", "pybind11-project"
