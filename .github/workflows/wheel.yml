@@ -202,12 +202,12 @@ jobs:
         name: py_build_cmake-whl-python3.11
         path: dist
     - name: Build Wheels
-      uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c
+      uses: pypa/cibuildwheel@1828c10ab37f080699c7b81cea34097c684a7074
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
       env:
-        CIBW_ENABLE: ${{ startsWith(matrix.os, 'macos') && 'pypy' || 'pypy cpython-freethreading' }}
+        CIBW_ENABLE: 'pypy'
         CIBW_ARCHS_LINUX: 'x86_64 i686'
         CIBW_ARCHS_WINDOWS: 'AMD64 x86 ARM64'
         CIBW_ARCHS_MACOS: 'x86_64 universal2 arm64'
@@ -240,7 +240,7 @@ jobs:
         python3.12 -m build -w -o pbc-dist
         conan profile detect -f
     - name: Build Wheels
-      uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c
+      uses: pypa/cibuildwheel@1828c10ab37f080699c7b81cea34097c684a7074
       with:
         package-dir: examples/${{ matrix.project }}
         output-dir: dist
