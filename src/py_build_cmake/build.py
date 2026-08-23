@@ -18,7 +18,7 @@ from .commands.cmake import (
     PackageTags,
 )
 from .commands.cmd_runner import CommandRunner
-from .commands.try_run import check_cmake_program, check_stubgen_program
+from .commands.try_run import check_cmake_program
 from .common import (
     BuildPaths,
     ComponentConfig,
@@ -219,7 +219,8 @@ class _BuildBackend:
         if cfg.cmake:
             check_cmake_program(plat, cfg, deps, runner)
         if cfg.stubgen:
-            check_stubgen_program(deps, runner)
+            # we need https://github.com/python/mypy/pull/14722
+            deps.append("mypy>=1.4.0")
         if runner.verbose:
             print("Dependencies for build:", deps)
         return deps

@@ -47,9 +47,3 @@ def check_cmake_program(
         # If so, check if a working version exists in the PATH, otherwise,
         # add it as a build requirement
         deps.append("ninja")
-
-
-def check_stubgen_program(deps: list[str], runner: CommandRunner):
-    if not runner.check_program_version("stubgen", None, None, False):
-        # we need https://github.com/python/mypy/pull/14722
-        deps.append("mypy>=1.4.0")
