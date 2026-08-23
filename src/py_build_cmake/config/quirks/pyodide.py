@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import re
@@ -133,6 +134,13 @@ def cross_compile_pyodide(plat: BuildPlatformInfo, config: ValueReference):
 
     # Enable cross-compilation
     config.set_value("cross", cross_cfg)
+
+    # Disable stubgen
+    # TODO: can we get stubgen to work by calling python_cli_entry.mjs?
+    with contextlib.suppress(KeyError):
+        del config.values["stubgen"]
+        msg = "Disabling stubgen (not supported on pyodide)."
+        logger.info(msg)
 
 
 def _determine_pyodide_python_version(plat: BuildPlatformInfo) -> tuple[str, ...]:
