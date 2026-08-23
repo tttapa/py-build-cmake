@@ -217,7 +217,8 @@ class _BuildBackend:
         deps: list[str] = []
         # Check if we need CMake
         if cfg.cmake:
-            check_cmake_program(plat, cfg, deps, runner)
+            builders = _BuildBackend.get_builder_configs(plat, cfg)
+            check_cmake_program(plat, builders, deps, runner)
         if cfg.stubgen:
             # we need https://github.com/python/mypy/pull/14722
             deps.append("mypy>=1.4.0")
@@ -467,6 +468,12 @@ class _BuildBackend:
                         runner,
                     )
 
+                def get_minimum_cmake_version(self) -> str | None:
+                    return self.config.get("minimum_version")
+
+                def requires_ninja(self) -> bool:
+                    return "ninja" in self.config.get("generator", "").lower()
+
             cmake_cfg = cfg.cmake.get(plat.os_name if cfg.cross is None else "cross")
             if not cmake_cfg:
                 return {}
@@ -505,6 +512,12 @@ class _BuildBackend:
                         package_info,
                         runner,
                     )
+
+                def get_minimum_cmake_version(self) -> str | None:
+                    return self.config["cmake"].get("minimum_version")
+
+                def requires_ninja(self) -> bool:
+                    return "ninja" in self.config["cmake"].get("generator", "").lower()
 
             cmake_cfg = cfg.conan.get(plat.os_name if cfg.cross is None else "cross")
             if not cmake_cfg:

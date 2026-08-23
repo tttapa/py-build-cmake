@@ -415,3 +415,9 @@ class BuilderConfig(ABC):
         package_info: PackageInfo,
         runner: CommandRunner,
     ) -> Builder: ...
+
+    @abstractmethod
+    def get_minimum_cmake_version(self) -> str | None: ...
+
+    @abstractmethod
+    def requires_ninja(self) -> bool: ...

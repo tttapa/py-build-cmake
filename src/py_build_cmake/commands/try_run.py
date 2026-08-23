@@ -1,37 +1,27 @@
 from __future__ import annotations
 
-from typing import Any
-
 from distlib.version import NormalizedVersion  # type: ignore[import-untyped]
 
-from ..common import CMAKE_MINIMUM_REQUIRED, Config
+from ..common import CMAKE_MINIMUM_REQUIRED
 from ..common.platform import BuildPlatformInfo
+from .builder import BuilderConfig
 from .cmd_runner import CommandRunner
 
 
 def check_cmake_program(
-    plat: BuildPlatformInfo, cfg: Config, deps: list[str], runner: CommandRunner
+    plat: BuildPlatformInfo,
+    builders: dict[int, BuilderConfig],
+    deps: list[str],
+    runner: CommandRunner,
 ):
-    assert cfg.cmake
-    # Do we need to perform a native build?
-    native = not cfg.cross
-    native_cfg = cfg.cmake.get(plat.os_name, {}) if native else {}
-    # Do we need to perform a cross build?
-    cross = cfg.cross
-    cross_cfg = cfg.cmake.get("cross", {})
-    cfgs: list[dict[str, Any]] = []
-    if native:
-        cfgs.append(native_cfg)
-    if cross:
-        cfgs.append(cross_cfg)
     # Find the strictest version requirement
     min_cmake_ver = max(
         NormalizedVersion(CMAKE_MINIMUM_REQUIRED),
         NormalizedVersion(CMAKE_MINIMUM_REQUIRED),  # deliberate, for empty case
         *(
-            NormalizedVersion(v.get("minimum_version", "0.0"))
-            for c in cfgs
-            for v in c.values()
+            NormalizedVersion(version)
+            for v in builders.values()
+            if (version := v.get_minimum_cmake_version()) is not None
         ),
     )
     # If CMake in PATH doesn't work or is too old, add it as a build
@@ -40,9 +30,7 @@ def check_cmake_program(
         deps.append("cmake>=" + str(min_cmake_ver))
 
     # Do any of the configs require Ninja as a generator?
-    need_ninja = any(
-        "ninja" in v.get("generator", "").lower() for c in cfgs for v in c.values()
-    )
+    need_ninja = any(v.requires_ninja() for v in builders.values())
     if need_ninja and not runner.check_program_version("ninja", None, "Ninja"):
         # If so, check if a working version exists in the PATH, otherwise,
         # add it as a build requirement

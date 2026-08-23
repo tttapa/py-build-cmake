@@ -61,6 +61,15 @@ def _get_abi_flags():
     return tags_get_abi_flags()
 
 
+def _is_pyodide_build(env: Mapping[str, str] | None = None) -> bool:
+    if env is None:
+        env = os.environ
+    if env.get("PYODIDE") == "1":
+        return True
+    cibw_build_id = env.get("CIBUILDWHEEL_BUILD_IDENTIFIER", "")
+    return "PYODIDE_ROOT" in env and "pyodide" in cibw_build_id
+
+
 @dataclass
 class BuildPlatformInfo:
     executable: Path = field(default_factory=lambda: Path(sys.executable))
@@ -77,7 +86,7 @@ class BuildPlatformInfo:
     abi_tag: str = field(default_factory=get_abi_tag)
     system: str = field(default_factory=platform.system)
     machine: str = field(default_factory=platform.machine)
-    pyodide: bool = field(default_factory=lambda: os.getenv("PYODIDE") == "1")
+    pyodide: bool = field(default_factory=_is_pyodide_build)
     archs: tuple[str, ...] | None = None
     macos_version: tuple[int, int] | None = None
     cmake_generator_platform: str | None = None
