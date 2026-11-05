@@ -107,6 +107,16 @@ Specific options for macOS.
 | <a id="mac.cmake"></a> `cmake` | macOS-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
 | <a id="mac.wheel"></a> `wheel` | macOS-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
 
+## fallback
+Specific options for other OS (e.g. OpenBSD). 
+
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| <a id="fallback.editable"></a> `editable` | Fallback-specific editable options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/editable` |  | `none` |
+| <a id="fallback.sdist"></a> `sdist` | Fallback-specific sdist options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/sdist` |  | `none` |
+| <a id="fallback.cmake"></a> `cmake` | Fallback-specific CMake options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/cmake` |  | `none` |
+| <a id="fallback.wheel"></a> `wheel` | Fallback-specific Wheel options.<br/>Inherits from: `/pyproject.toml/tool/py-build-cmake/wheel` |  | `none` |
+
 ## pyodide
 Specific options for Pyodide. 
 

@@ -29,7 +29,7 @@ from .util import (
 logger = logging.getLogger(__name__)
 
 
-OSIdentifier = Literal["linux", "windows", "mac", "pyodide"]
+OSIdentifier = Literal["linux", "windows", "mac", "fallback", "pyodide"]
 WheelTags = Dict[Literal["pyver", "abi", "arch"], List[str]]
 
 
@@ -97,10 +97,7 @@ class BuildPlatformInfo:
             "Linux": "linux",
             "Windows": "windows",
             "Darwin": "mac",
-        }.get(self.system)
-        if not osname:
-            msg = f"Unsupported platform: {self.system}"
-            raise ValueError(msg)
+        }.get(self.system, "fallback")
         return cast(OSIdentifier, osname)
 
     @property

@@ -290,7 +290,7 @@ def process_config(
     # Store the editable configuration
     cfg.editable = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "editable"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in ("linux", "windows", "mac", "fallback", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "editable")))
     }
 
@@ -303,14 +303,14 @@ def process_config(
 
     cfg.sdist = {
         os: get_sdist_cludes(pbc_value_ref.sub_ref(os))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in ("linux", "windows", "mac", "fallback", "pyodide", "cross")
         if pbc_value_ref.is_value_set(os)
     }
 
     # Store the CMake configuration
     cfg.cmake = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "cmake"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in ("linux", "windows", "mac", "fallback", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "cmake")))
     }
     cfg.cmake = cfg.cmake or None
@@ -318,7 +318,7 @@ def process_config(
     # Store the Wheel configuration
     cfg.wheel = {
         os: cast(Dict[str, Any], pbc_value_ref.get_value(ConfPath((os, "wheel"))))
-        for os in ("linux", "windows", "mac", "pyodide", "cross")
+        for os in ("linux", "windows", "mac", "fallback", "pyodide", "cross")
         if pbc_value_ref.is_value_set(ConfPath((os, "wheel")))
     }
 
